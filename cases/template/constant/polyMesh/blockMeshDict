@@ -1,0 +1,186 @@
+/*---------------------------------------------------------------------------*\               
+| =========                 |                                                 |                
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |                
+|  \\    /   O peration     | Version:  1.0                                   |                
+|   \\  /    A nd           | Web:      http://www.openfoam.org               |                
+|    \\/     M anipulation  |                                                 |                
+\*---------------------------------------------------------------------------*/                
+                                        
+FoamFile                                
+{                                       
+    version         2.0;                
+    format          ascii;              
+                                        
+    root            "";               
+    case            "";               
+    instance        "";               
+    local           "";               
+                                        
+    class           dictionary;         
+    object          blockMeshDict;      
+}          
+
+convertToMeters 0.001;
+
+R1X 1.87321541546598000000E+000;
+R2X 2.41769669622810000000E+000;
+R3X 7.25309008868429000000E+001;
+R4X 7.55280455515885000000E+001;
+
+R1Y 8.17863513100050000000E-002;
+R2Y 1.05558917424113000000E-001;
+R3Y 3.16676752272339000000E+000;
+R4Y 3.29762568481940000000E+000;
+
+R1Ym -8.17863513100050000000E-002;
+R2Ym -1.05558917424113000000E-001;
+R3Ym -3.16676752272339000000E+000;
+R4Ym -3.29762568481940000000E+000;
+
+L  500;
+Lm -10;
+
+vertices                                
+(                                       
+   (0. 		0.  		0.	)   // 0
+   ($R1X 	$R1Y      	0.	)   // 1
+   ($R1X 	$R1Y      	$L			)   // 2
+
+   (0. 		0. 		$L)   // 3
+   ($R1X 	$R1Ym    	0)   	// 4
+   ($R1X 	$R1Ym    	$L)   // 5
+
+   (0. 		0. 		$Lm)   // 6
+   ($R1X 	$R1Y     	$Lm)   // 7
+   ($R1X 	$R1Ym    	$Lm)   // 8
+
+   ($R2X  	$R2Y     0.)   // 9
+   ($R2X  	$R2Ym    0.)   // 10
+   ($R2X  	$R2Y     $L)   // 11
+   ($R2X  	$R2Ym    $L)   // 12
+
+   ($R3X 	$R3Y     	0.)   // 13
+   ($R3X 	$R3Ym    	0.)   // 14
+   ($R3X 	$R3Y     	$L)   // 15
+   ($R3X 	$R3Ym     	$L)   // 16
+
+   ($R2X  $R2Y     	$Lm)   // 17
+   ($R3X  $R3Y      	$Lm)   // 18
+   ($R3X  $R3Ym    	$Lm)   // 19
+   ($R2X  $R2Ym    	$Lm)   // 20
+
+   ($R4X  $R4Y       0.)   // 21
+   ($R4X  $R4Ym      0.)   // 22
+   ($R4X  $R4Y       $L)   // 23
+   ($R4X  $R4Ym      $L)   // 24
+);
+
+nFuel          3;
+nBurner        1;
+nCoflow        10;
+nExternal      2;
+nLength        20;
+nLengthReverse 2;
+
+gradingFuel          1;
+gradingCoflow        5;
+gradingLength        10.;
+gradingLengthInverse 0.4;
+
+blocks
+( 	
+	// Fuel
+	hex (6 8 7 6 0 4 1 0)         ($nFuel  1 $nLengthReverse  )  	simpleGrading   ($gradingFuel  1. $gradingLengthInverse	)
+	hex (0 4 1 0 3 5 2 3)         ($nFuel  1 $nLength )  		simpleGrading   ($gradingFuel  1. $gradingLength	)
+	
+	// Wall
+	hex (4 10 9 1 5 12 11 2)      ($nBurner  1 $nLength )  		simpleGrading   (1.  1. $gradingLength	)
+	
+	// Coflow
+	hex (20 19 18 17 10 14 13 9)  ($nCoflow 1 $nLengthReverse  )  	simpleGrading   ($gradingCoflow  1. $gradingLengthInverse	)
+	hex (10 14 13 9 12 16 15 11)  ($nCoflow 1 $nLength )  		simpleGrading   ($gradingCoflow  1. $gradingLength	)
+
+	// External wall
+	hex (14 22 21 13 16 24 23 15) ($nExternal 1 $nLength )  	simpleGrading   (1.  1. $gradingLength	)
+);
+                                     
+edges                                
+(                                    
+);                                         
+                             
+patches                              
+(                                    
+    patch inletfuel                  
+    (                                
+        (6 8 7 6)                    
+    )                                
+                                     
+    patch inletair                   
+    (                                
+        (19 20 17 18)                
+    )                                
+                                     
+    patch outlet                     
+    (                                
+        (5 3 3 2)                    
+        (12 11 2 5)                  
+        (16 15 11 12)   
+        (15 16 24 23)                
+    )                                
+                                     
+    empty axis                       
+    (                                
+        (3 0 0 3)                    
+        (0 6 6 0)                    
+    )                                
+                                     
+    wall leftside                    
+    (                                
+        (14 13 21 22)                
+        (19 18 13 14)
+        (23 24 22 21)                                
+    )                                
+                                     
+    wall burnerwall                  
+    (                                
+        (8 7 1 4)                    
+        (10 9 17 20)                 
+        (4 1 9 10)                   
+    )                                
+                                     
+    wedge front                      
+    (                                
+        (1 0 3 2)                    
+        (7 6 0 1)                    
+        (9 1 2 11)                   
+        (13 9 11 15)                 
+        (18 17 9 13)   
+        (15 23 21 13)                 
+    )                                
+                                     
+    wedge back                       
+    (                                
+	(5 3 0 4)                    
+        (4 0 6 8)                    
+        (12 5 4 10)                  
+        (16 12 10 14)                
+        (19 14 10 20) 
+        (16 14 22 24)                  
+    )                                
+                                     
+);                                   
+                                     
+mergePatchPairs                      
+(                                    
+);                                   
+                                                                  
+                      
+
+                             
+          
+	
+
+        
+                           
+                                        
+

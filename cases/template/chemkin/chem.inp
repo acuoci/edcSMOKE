@@ -1,0 +1,10 @@
+ELEMENTS
+O  H  C  N  
+END
+SPECIES
+H2             O2             H2O           
+HE             AR             N2
+END
+REACTIONS
+N2=>N2 1 0 0
+END

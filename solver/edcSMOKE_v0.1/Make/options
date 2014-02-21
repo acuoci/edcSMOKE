@@ -1,0 +1,37 @@
+EXE_INC = \
+    -I$(OPENSMOKE_LIBRARY_PATH) \
+    -I$(BOOST_LIBRARY_PATH)/include \
+    -I$(EIGEN_LIBRARY_PATH) \
+    -I$(RAPIDXML_LIBRARY_PATH) \
+    -I$(LIB_SRC)/finiteVolume/lnInclude \
+    -I$(LIB_SRC)/fvOptions/lnInclude \
+    -I$(LIB_SRC)/meshTools/lnInclude \
+    -I$(LIB_SRC)/sampling/lnInclude \
+    -I$(LIB_SRC)/turbulenceModels/compressible/turbulenceModel \
+    -I$(LIB_SRC)/thermophysicalModels/specie/lnInclude \
+    -I$(LIB_SRC)/thermophysicalModels/reactionThermo/lnInclude \
+    -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude \
+    -I$(LIB_SRC)/thermophysicalModels/chemistryModel/lnInclude \
+    -I$(LIB_SRC)/ODE/lnInclude \
+    -I$(LIB_SRC)/combustionModels/lnInclude
+
+EXE_LIBS = \
+    -L$(FOAM_USER_LIBBIN) \
+    -L$(BOOST_LIBRARY_PATH)/lib \
+    -lfiniteVolume \
+    -lfvOptions \
+    -lmeshTools \
+    -lsampling \
+    -lcompressibleTurbulenceModel \
+    -lcompressibleRASModels \
+    -lcompressibleLESModels \
+    -lreactionThermophysicalModels \
+    -lspecie \
+    -lfluidThermophysicalModels \
+    -lchemistryModel \
+    -lODE \
+    -lcombustionModels \
+    -lboost_date_time \
+    -lboost_filesystem \
+    -lboost_system \
+    -lboost_regex

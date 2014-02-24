@@ -3,6 +3,7 @@ EXE_INC = \
     -I$(BOOST_LIBRARY_PATH)/include \
     -I$(EIGEN_LIBRARY_PATH) \
     -I$(RAPIDXML_LIBRARY_PATH) \
+    -I$(MKL_PATH)/include \
     -I$(LIB_SRC)/finiteVolume/lnInclude \
     -I$(LIB_SRC)/fvOptions/lnInclude \
     -I$(LIB_SRC)/meshTools/lnInclude \
@@ -18,6 +19,7 @@ EXE_INC = \
 EXE_LIBS = \
     -L$(FOAM_USER_LIBBIN) \
     -L$(BOOST_LIBRARY_PATH)/lib \
+    $(MKL_LIBS) \
     -lfiniteVolume \
     -lfvOptions \
     -lmeshTools \

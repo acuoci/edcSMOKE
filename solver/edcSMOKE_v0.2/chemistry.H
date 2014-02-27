@@ -1,33 +1,38 @@
 if (homogeneousReactions == true)
 {
 	bool debug = false;
+	
 	const double relaxFineStructures = 1.;
+	const double chi = 1.;
 
 	Info << "Fine structure properties..." << endl;
 	{
 		scalarField nu = thermo.mu().internalField()/rho;
-		scalarField gammaL = 2.1377 * pow(nu*turbulence->epsilon()/pow(turbulence->k(),2.),0.25);	
+		scalarField gammaL = Ccsi * pow(nu*turbulence->epsilon()/pow(turbulence->k(),2.),0.25);	
 		gammaStar = pow(gammaL, 2.);
-		gammaStar = min(0.75487766248,gammaStar);
-		mDotStar  = 2.45*sqrt(turbulence->epsilon()/nu);
+		gammaStar = min(maxGammaSquared,gammaStar);
+		mDotStar  = 1./Ctau*sqrt(turbulence->epsilon()/nu);
 
-		const double chi = 1.;
 		edc_coefficient = rho*gammaStar*mDotStar*chi/(1.-gammaStar*chi);
 	}
 
 	Info << "ODE Integration..." << endl;
-	const int ns = Y.size();
+	const int unsigned ns = Y.size();
+	const int unsigned ne = ns+1;
 
-	Eigen::VectorXd yStar0(ns);
-	Eigen::VectorXd yStarf(ns);
-	OpenSMOKE::OpenSMOKEVectorDouble yMean(ns);
-	OpenSMOKE::OpenSMOKEVectorDouble h_species(ns);
-	Eigen::VectorXd yMin(ns);
-	Eigen::VectorXd yMax(ns);
+	Eigen::VectorXd yStar0(ne);
+	Eigen::VectorXd yStarf(ne);
+	Eigen::VectorXd yMin(ne);
+	Eigen::VectorXd yMax(ne);
 	
-	for(unsigned int i=0;i<ns;i++)	yMin(i) = 0.;
-	for(unsigned int i=0;i<ns;i++)	yMax(i) = 1.;
+	for(unsigned int i=0;i<ns;i++)	yMin(i) = 0.; yMin(ne-1) = 200.;
+	for(unsigned int i=0;i<ns;i++)	yMax(i) = 1.; yMax(ne-1) = 5000.;
 
+	OpenSMOKE::OpenSMOKEVectorDouble yMean(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble xMean(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble h_species(ns);
+	
+	double hMean, MWMean;
 	const scalarField& pCells = thermo.p().internalField();
 	const scalarField& TCells = thermo.T().internalField();
 	const scalarField& hCells = thermo.he().internalField();
@@ -41,13 +46,21 @@ if (homogeneousReactions == true)
 		// Extract the mean mass fractions
 		for(unsigned int i=0;i<ns;i++)
 			yMean[i+1] = Y[i].internalField()[celli];
+			
+		// Convert to mole fractions
+		thermodynamicsMapXML->MoleFractions_From_MassFractions(xMean, MWMean, yMean);
 
 		// Extract the fine strucutres mass fractions
 		for(unsigned int i=0;i<ns;i++)
 			yStar0[i] = YStar_[i].internalField()[celli];
+		yStar0[ne-1] = TStar_[0].internalField()[celli];
 
 		// Initialize the fine structure
-		fine_structure_ode.Set(TCells[celli], pCells[celli], yMean, gammaStar[celli], mDotStar[celli]);
+		thermodynamicsMapXML->SetTemperature(TCells[celli]);
+		thermodynamicsMapXML->SetPressure(pCells[celli]);
+		thermodynamicsMapXML->hMolar_Mixture_From_MoleFractions(hMean, xMean);
+		hMean/=MWMean;	
+		fine_structure_ode.Set(TCells[celli], pCells[celli], yMean, hMean, gammaStar[celli], mDotStar[celli], chi);
 
 		// Final solution
 		const double t0 = 0.;
@@ -64,6 +77,7 @@ if (homogeneousReactions == true)
 				
 		for(unsigned int i=0;i<ns;i++)
 			YStar_[i].internalField()[celli] = (1.-relaxFineStructures)*yStar0[i] + relaxFineStructures*yStarf[i];
+		TStar_[0].internalField()[celli] = (1.-relaxFineStructures)*yStar0[ne-1] + relaxFineStructures*yStarf[ne-1];
  
 		for(unsigned int i=0;i<ns;i++)
 			R_[i].internalField()[celli] = edc_coefficient[celli]*(YStar_[i].internalField()[celli]-Y[i].internalField()[celli]);
@@ -90,4 +104,7 @@ if (homogeneousReactions == true)
 	const double tEnd = OpenSMOKE::OpenSMOKEGetCpuTime();
 			
 	Info << tEnd - tStart << " s " << "(" << (tEnd - tStart)/double(TCells.size())*1e3 << " ms per cell)" << endl;
+	
+	WriteScalarField(mesh, mDotStar,  "edc::mDotStar");
+	WriteScalarField(mesh, gammaStar, "edc::gammaStar");
 }

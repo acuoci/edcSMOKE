@@ -2,6 +2,7 @@ if (homogeneousReactions == true)
 {
 	bool debug = false;
 	const double chi = 1.;
+	const double relaxationFactorFineStructures = 1.;
 
 	Info << "Fine structure properties..." << endl;
 	{
@@ -62,16 +63,17 @@ if (homogeneousReactions == true)
 
 		// Final solution
 		const double t0 = 0.;
-		const double tf = 1000./max(mDotStar[celli], SMALL);
+		const double tf = numberOfResidenceTimes/max(mDotStar[celli], SMALL);
 		ODESystem_OpenSMOKE_Homogeneous ode(fine_structure_ode);
 		OpenSMOKE::StiffOdeSolverObject_Dense o( yStar0, t0, &ode, "Eigen" );
 		
 		o.SetMinimumConstraints(yMin);
 		o.SetMaximumConstraints(yMax);
-		//o.SetTollAbs(speciesAbsoluteTolerance_);
-		//o.SetTollRel(speciesRelativeTolerance_);
+		o.SetTollAbs(absTolerance);
+		o.SetTollRel(relTolerance);
 
-		yStarf = o(tf,tf);	
+		//yStarf = o(tf,tf);
+		yStarf = o(tf);	
 				
 		for(unsigned int i=0;i<ns;i++)
 			YStar_[i].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0[i] + relaxationFactorFineStructures*yStarf[i];

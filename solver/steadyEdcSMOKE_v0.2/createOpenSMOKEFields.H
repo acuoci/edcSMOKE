@@ -27,6 +27,9 @@ scalarField mDotStar(mesh.nCells(),0.);
 scalarField edc_coefficient(mesh.nCells(),0.);
 {
 	// Check the order of species
+	if (thermodynamicsMapXML->NumberOfSpecies() != Y.size())
+		FatalError << "Kinetic schemes do not match..." << endl;
+
 	for (unsigned int i=0;i<thermodynamicsMapXML->NumberOfSpecies();i++)
 		if (Y[i].name() != thermodynamicsMapXML->NamesOfSpecies()[i])
 		{
@@ -36,6 +39,9 @@ scalarField edc_coefficient(mesh.nCells(),0.);
 	YStar_.resize(Y.size());
 	TStar_.resize(1);
 	R_.resize(Y.size());
+
+	unsigned int species_from_file = 0;
+	unsigned int species_from_default = 0;
 
 	forAll(Y,i)
 	{
@@ -68,6 +74,7 @@ scalarField edc_coefficient(mesh.nCells(),0.);
 					mesh
 				)
 			);
+			species_from_file++;
 		}
 		else
 		{
@@ -91,6 +98,7 @@ scalarField edc_coefficient(mesh.nCells(),0.);
 			);
 			
 			YStar_[i] = Y[i];
+			species_from_default++;
 		}
 
 		R_.set
@@ -191,8 +199,74 @@ Switch homogeneousReactions(thermo.lookup("homogeneousReactions"));
 scalar Ccsi = readScalar(thermo.lookup("Ccsi"));	// default: 2.1377
 scalar Ctau = readScalar(thermo.lookup("Ctau"));	// default: 0.40825
 scalar maxGammaSquared = readScalar(thermo.lookup("maxGammaSquared"));	// default: 0.75487766248
-scalar relaxationFactorFineStructures = readScalar(thermo.lookup("relaxationFactorFineStructures"));	// default: 0.5
+scalar relTolerance = readScalar(thermo.lookup("relTolerance"));	// default: 1.e-7
+scalar absTolerance = readScalar(thermo.lookup("absTolerance"));	// default: 1.e-12
+scalar numberOfResidenceTimes = readScalar(thermo.lookup("numberOfResidenceTimes"));	// default: 100.
+
+// Normalize the mass fractions (mean fields)
+{
+	Info << "Normalizing mass fractions (on entry...)" << endl;
+
+	const scalarField& TCells = thermo.T().internalField();
 	
+	const double maxSumMassFractionsError = 1e-3;
+	double sumTotal = 0.;
+	double maxError = 0.;
+	forAll(TCells, celli)
+	{	
+		double sum = 0.;
+
+		for (unsigned int i=0;i<thermodynamicsMapXML->NumberOfSpecies();i++)
+			sum += Y[i].internalField()[celli];
+
+		double e = fabs(sum-1.);
+
+		if ( e > maxSumMassFractionsError)
+			FatalError << "Fatal error: the sum of mass fractions in cell " << celli << " is equal to " << sum << " (error " << sum-1. << endl; 
+			
+		for (unsigned int i=0;i<thermodynamicsMapXML->NumberOfSpecies();i++)
+			Y[i].internalField()[celli]/=sum;
+
+		sumTotal += sum;
+		if (e>maxError) maxError = e;
+	}
+
+	Info << "Mean error (mean field): " << fabs( sumTotal/double(TCells.size())-1.) << endl;
+	Info << "Max error (mean field):  " << maxError << endl;
+}
+
+// Normalize the mass fractions (fine structures)
+{
+	Info << "Normalizing mass fractions (on entry...)" << endl;
+
+	const scalarField& TCells = thermo.T().internalField();
+	
+	const double maxSumMassFractionsError = 1e-3;
+	double sumTotal = 0.;
+	double maxError = 0.;
+	forAll(TCells, celli)
+	{	
+		double sum = 0.;
+
+		for (unsigned int i=0;i<thermodynamicsMapXML->NumberOfSpecies();i++)
+			sum += YStar_[i].internalField()[celli];
+
+		double e = fabs(sum-1.);
+
+		if ( e > maxSumMassFractionsError)
+			FatalError << "Fatal error: the sum of mass fractions in cell " << celli << " is equal to " << sum << " (error " << sum-1. << endl; 
+			
+		for (unsigned int i=0;i<thermodynamicsMapXML->NumberOfSpecies();i++)
+			YStar_[i].internalField()[celli]/=sum;
+
+		sumTotal += sum;
+		if (e>maxError) maxError = e;
+	}
+
+	Info << "Mean error (fine structures): " << fabs( sumTotal/double(TCells.size())-1.) << endl;
+	Info << "Max error (fine structures):  " << maxError << endl;
+}
+
 // Spark (to ignite the mixture)
 #include "spark.H"
 

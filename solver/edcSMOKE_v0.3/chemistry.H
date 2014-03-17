@@ -6,8 +6,10 @@ if (homogeneousReactions == true)
 
 	Info << "Fine structure properties..." << endl;
 	{
+		dimensionedScalar small_k( "small_k", dimensionSet(0,2,-2,0,0,0,0), scalar(1e-12) );
+
 		scalarField nu = thermo.mu().internalField()/rho;
-		scalarField gammaL = Ccsi * pow(nu*turbulence->epsilon()/pow(turbulence->k(),2.),0.25);	
+		scalarField gammaL = Ccsi * pow(nu*turbulence->epsilon()/ pow(turbulence->k()+small_k,2.),0.25);	
 		gammaStar = pow(gammaL, 2.);
 		gammaStar = min(maxGammaSquared,gammaStar);
 		mDotStar  = 1./Ctau*sqrt(turbulence->epsilon()/nu);

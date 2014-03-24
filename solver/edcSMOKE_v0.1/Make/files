@@ -1,3 +1,0 @@
-edcSMOKE.C
-
-EXE = $(FOAM_USER_APPBIN)/edcSMOKE_v0.1

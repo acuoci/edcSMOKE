@@ -77,10 +77,10 @@ vertices
 
 nFuel          3;
 nBurner        1;
-nCoflow        10;
+nCoflow        20;
 nExternal      2;
-nLength        20;
-nLengthReverse 2;
+nLength        60;
+nLengthReverse 3;
 
 gradingFuel          1;
 gradingCoflow        5;

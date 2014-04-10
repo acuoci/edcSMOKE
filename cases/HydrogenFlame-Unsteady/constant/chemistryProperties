@@ -10,54 +10,36 @@ FoamFile
     version     2.0;
     format      ascii;
     class       dictionary;
-    location    "system";
-    object      fvSchemes;
+    location    "constant";
+    object      chemistryProperties;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-ddtSchemes
+chemistryType
 {
-    default         Euler;
+    chemistrySolver   ode;
+    chemistryThermo   psi;
 }
 
-gradSchemes
+chemistry           off;
+
+initialChemicalTimeStep 1e-07;
+
+sequentialCoeffs
 {
-    default         Gauss linear;
+    cTauChem        0.001;
 }
 
-divSchemes
+EulerImplicitCoeffs
 {
-    default         none;
-
-    div(phi,U)      Gauss limitedLinearV 1;
-    div(phi,Yi_h)   Gauss limitedLinear 1;
-    div(phi,K)      Gauss limitedLinear 1;
-    div(phid,p)     Gauss limitedLinear 1;
-    div(phi,epsilon) Gauss limitedLinear 1;
-    div(phi,k) Gauss limitedLinear 1;
-    div((muEff*dev2(T(grad(U))))) Gauss linear;
+    cTauChem        0.05;
+    equilibriumRateLimiter off;
 }
 
-laplacianSchemes
+odeCoeffs
 {
-    default         Gauss linear orthogonal;
+    solver          KRR4;
+    eps             0.05;
 }
-
-interpolationSchemes
-{
-    default         linear;
-}
-
-snGradSchemes
-{
-    default         orthogonal;
-}
-
-fluxRequired
-{
-    default         no;
-    p;
-}
-
 
 // ************************************************************************* //

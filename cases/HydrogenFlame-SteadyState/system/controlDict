@@ -1,0 +1,132 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.2.2                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+application     edcSimpleSMOKE;
+
+startFrom       latestTime;
+
+startTime       0;
+
+stopAt          endTime;
+
+endTime         5000;
+
+deltaT          1;
+
+writeControl    timeStep;
+
+writeInterval   1000;
+
+purgeWrite      0;
+
+writeFormat     ascii;
+
+writePrecision  12;
+
+writeCompression off;
+
+timeFormat      general;
+
+timePrecision   6;
+
+graphFormat     raw;
+
+runTimeModifiable true;
+// ************************************************************************* //
+
+functions
+{
+	outputFrequency 250;
+
+	probes
+	{
+		// Where to load it from
+		functionObjectLibs ( "libsampling.so" );
+
+		// Type
+		type probes;
+
+		// Name of the directory for probe data
+		name probes;
+
+		// Write at same frequency as fields
+		outputControl timeStep;
+		outputInterval $outputFrequency;
+
+		// Fields to be probed
+		fields
+		( 
+			T H2 O2 H2O
+		);
+
+		// Locations to be probed. runTime modifiable!
+		probeLocations
+		( 
+			(1e-8 0 150e-3) 
+			(1e-8 0 300e-3)
+			(1e-8 0 450e-3)
+		);
+
+	}
+
+	fieldMinMax
+    	{
+        	type fieldMinMax;
+        	functionObjectLibs ("libfieldFunctionObjects.so");
+        	log no;
+        
+		outputControl  timeStep;
+        	outputInterval $outputFrequency;
+        	mode magnitude;
+        	fields
+        	(
+            		T H2 O2 H2O
+        	);
+    	}
+
+	profiles
+  	{
+		// Where to load it from
+		functionObjectLibs ( "libsampling.so" );
+
+   		type sets;
+    		enabled true;
+    		verbose false;
+    		interpolationScheme cellPoint;
+
+    		outputControlMode timeStep;
+		outputInterval $outputFrequency;
+
+    		setFormat raw;
+    		fields 
+		( 
+			T H2 O2 N2
+		);
+
+    		sets
+    		(
+      			profile-axis
+      			{
+        			type face;
+        			axis z;
+        			start ( 1e-8 0  0 	);
+        			end   ( 1e-8 0  500e-3  );
+        			nPoints 100;
+      			}
+    		);
+  	}
+}

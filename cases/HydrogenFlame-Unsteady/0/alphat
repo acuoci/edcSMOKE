@@ -42,13 +42,13 @@ boundaryField
     }
     leftside
     {
-        type            compressible::alphatWallFunction;
+        type            alphatWallFunction;
         Prt             0.85;
         value           uniform 0;
     }
     burnerwall
     {
-        type            compressible::alphatWallFunction;
+        type            alphatWallFunction;
         Prt             0.85;
         value           uniform 0;
     }

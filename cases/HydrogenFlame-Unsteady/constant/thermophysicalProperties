@@ -10,60 +10,29 @@ FoamFile
     version     2.0;
     format      ascii;
     class       dictionary;
-    location    "system";
-    object      fvSolution;
+    location    "constant";
+    object      thermophysicalProperties;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-solvers
+kineticMechanism 	"kinetics";
+CHEMKINFile             "../kinetics/chemkin/chem.inp";
+CHEMKINThermoFile       "../kinetics/chemkin/therm.dat";
+
+inertSpecie N2;
+
+thermoType
 {
-    "rho.*"
-    {
-        solver          diagonal;
-    }
-
-    p
-    {
-        solver           PCG;
-        preconditioner   DIC;
-        tolerance        1e-6;
-        relTol           0.1;
-    }
-
-    pFinal
-    {
-        $p;
-        tolerance        1e-6;
-        relTol           0.0;
-    }
-
-    "(U|h|k|epsilon)"
-    {
-        solver          PBiCG;
-        preconditioner  DILU;
-        tolerance       1e-6;
-        relTol          0.1;
-    }
-
-    "(U|h|k|epsilon)Final"
-    {
-        $U;
-        relTol          0;
-    }
-
-    Yi
-    {
-        $hFinal;
-    }
+    type            hePsiThermo;
+    mixture         reactingMixture;
+    transport       sutherland;
+    thermo          janaf;
+    energy          sensibleEnthalpy;
+    equationOfState perfectGas;
+    specie          specie;
 }
 
-PIMPLE
-{
-    momentumPredictor no;
-    nOuterCorrectors  1;
-    nCorrectors     2;
-    nNonOrthogonalCorrectors 0;
-}
+chemistryReader 	chemkinReader;
 
 
 // ************************************************************************* //

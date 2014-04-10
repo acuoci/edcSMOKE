@@ -11,33 +11,30 @@ FoamFile
     format      ascii;
     class       volScalarField;
     location    "0";
-    object      k;
+    object      mut;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-dimensions      [0 2 -2 0 0 0 0];
+dimensions      [1 -1 -1 0 0 0 0];
 
-internalField   uniform 1;
+internalField   uniform 0;
 
 boundaryField
 {
     inletfuel
     {
-        type            turbulentIntensityKineticEnergyInlet;
-        intensity       0.05;
-        value           uniform 1;
+        type            calculated;
+        value           uniform 0;
     }
     inletair
     {
-        type            turbulentIntensityKineticEnergyInlet;
-        intensity       0.05;
-        value           uniform 1;
+        type            calculated;
+        value           uniform 0;
     }
     outlet
     {
-        type            inletOutlet;
-        inletValue      uniform 1;
-        value           uniform 1;
+        type            calculated;
+        value           uniform 0;
     }
     axis
     {
@@ -45,13 +42,19 @@ boundaryField
     }
     leftside
     {
-        type            compressible::kqRWallFunction;
-        value           uniform 1;
+        type            mutkWallFunction;
+        Cmu             0.09;
+        kappa           0.41;
+        E               9.8;
+        value           uniform 0;
     }
     burnerwall
     {
-        type            compressible::kqRWallFunction;
-        value           uniform 1;
+        type            mutkWallFunction;
+        Cmu             0.09;
+        kappa           0.41;
+        E               9.8;
+        value           uniform 0;
     }
     front
     {

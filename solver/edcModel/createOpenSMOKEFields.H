@@ -36,6 +36,8 @@ IOdictionary combustionOptionsDictionary
 // Selecting combustion model
 Switch homogeneousReactions(combustionOptionsDictionary.lookup("homogeneousReactions"));
 word combustionModel(combustionOptionsDictionary.lookup("combustionModel"));
+const scalar maxT = readScalar(combustionOptionsDictionary.lookup("maxT"));
+const scalar minT = readScalar(combustionOptionsDictionary.lookup("minT"));
 
 // Numerical parameters for EDC
 scalar Ccsi = 2.1377;
@@ -44,6 +46,8 @@ scalar maxGammaSquared = 0.75487766248;
 scalar relTolerance = 1.e-7;
 scalar absTolerance = 1e-12;
 scalar numberOfResidenceTimes = 100.;
+label  numberIterationsToUpdateChemistry = 1;
+label  edcCounter = 0;
 
 // Numerical parameters for ED
 scalar constA = 4.;
@@ -84,6 +88,8 @@ else if (combustionModel == "EDC")
 	relTolerance = readScalar(edcSubDictionary.lookup("relTolerance"));				// default: 1.e-7
 	absTolerance = readScalar(edcSubDictionary.lookup("absTolerance"));				// default: 1.e-12
 	numberOfResidenceTimes = readScalar(edcSubDictionary.lookup("numberOfResidenceTimes"));		// default: 100.
+	numberIterationsToUpdateChemistry = readLabel(edcSubDictionary.lookup("numberIterationsToUpdateChemistry")); // default 1
+	edcCounter = numberIterationsToUpdateChemistry;
 }
 // Error Message
 else

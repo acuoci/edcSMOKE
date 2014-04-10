@@ -41,7 +41,7 @@ volVectorField U
 
 volScalarField& p = thermo.p();
 const volScalarField& psi = thermo.psi();
-const volScalarField& T = thermo.T();
+      volScalarField& T = thermo.T();
 
 #include "compressibleCreatePhi.H"
 
@@ -86,3 +86,6 @@ forAll(Y, i)
 }
 fields.add(thermo.he());
 
+//const word turbmodel = turbulence->name();
+//Info << turbmodel << endl;
+//getchar();

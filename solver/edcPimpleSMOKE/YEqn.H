@@ -5,14 +5,14 @@ tmp<fv::convectionScheme<scalar> > mvConvection
         mesh,
         fields,
         phi,
-        mesh.divScheme("div(phi,Yi_h)")
+        mesh.divScheme("div(phi,Yi)")
     )
 );
 
 {
     reaction->correct();
     #include "chemistry.H"
-    //dQ = reaction->dQ();
+    
     label inertIndex = -1;
     volScalarField Yt(0.0*Y[0]);
 
@@ -28,8 +28,7 @@ tmp<fv::convectionScheme<scalar> > mvConvection
               + mvConvection->fvmDiv(phi, Yi)
               - fvm::laplacian(turbulence->muEff(), Yi)
              ==
-              //  reaction->R(Yi)
-		  R_[i]
+		R_[i]
               + fvOptions(rho, Yi)
             );
 

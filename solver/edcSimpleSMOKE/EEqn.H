@@ -1,16 +1,17 @@
 {
-	T.max(270.);
-    	T.min(3500.);
+	T.max(minT);
+    	T.min(maxT);
 
 	if (combustionModel == "EDC")
 	{
-		TStar_[0].max(270.);
-    		TStar_[0].min(3500.);
+		TStar_[0].max(minT);
+    		TStar_[0].min(maxT);
 	}
 	volScalarField& he = thermo.he();
 
 	// Energy equation
 	{
+		
 		fvScalarMatrix EEqn
 		(
 			fvm::div(phi, he)
@@ -20,22 +21,22 @@
 					: fvc::div(phi, volScalarField("K", 0.5*magSqr(U)))
 			)
 			- fvm::laplacian(turbulence->alphaEff(), he)
-           	     - radiation->Sh(thermo)
+           	     	- radiation->Sh(thermo)
 			==
 			Sh_ +
 			fvOptions(rho, he)
 		);
 
-		EEqn.relax();
+    		EEqn.relax();
 
-		fvOptions.constrain(EEqn);
+    		fvOptions.constrain(EEqn);
 
-		EEqn.solve();
+   		EEqn.solve();
 
-		fvOptions.correct(he);
+    		fvOptions.correct(he);
 
-		thermo.correct();
-		radiation->correct();
+    		thermo.correct();
+    		radiation->correct();
 	}
 
 	Info<< "min/max(T) = " << min(T).value() << ", " << max(T).value() << endl;

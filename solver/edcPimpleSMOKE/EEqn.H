@@ -1,4 +1,13 @@
 {
+	T.max(minT);
+    	T.min(maxT);
+
+	if (combustionModel == "EDC")
+	{
+		TStar_[0].max(minT);
+    		TStar_[0].min(maxT);
+	}
+
     volScalarField& he = thermo.he();
 
     fvScalarMatrix EEqn

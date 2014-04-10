@@ -5,10 +5,9 @@ tmp<fv::convectionScheme<scalar> > mvConvection
         mesh,
         fields,
         phi,
-        mesh.divScheme("div(phi,Yi_h)")
+        mesh.divScheme("div(phi,Yi)")
     )
 );
-
 
 {
     reaction->correct();
@@ -52,23 +51,3 @@ tmp<fv::convectionScheme<scalar> > mvConvection
     Y[inertIndex] = scalar(1.0) - Yt;
     Y[inertIndex].max(0.0);
 }
-/*
-if (combustionModel == "ED")
-{
-    	if( 	(spark == true) && 
-		(runTime.value() >= ignitionTime)&&(runTime.value() <= (ignitionTime+ignitionDuration)) ) 
-	{
-		const int unsigned ns = Y.size();
-		const double add = 1e-6;
-		const double sum = 1.+add*ns;
-
-		forAll(Y, j)
-   		{
-			Info << "Forcing the spark (species)..." << endl;
-        		for(int i = 0; i<ignCellsList.size(); i++)
-           			 Y[j].internalField()[ignCellsList[i]] = (Y[j].internalField()[ignCellsList[i]]+add)/sum;
-    		}
-	}
-	Info << "Done" << endl;
-}
-*/

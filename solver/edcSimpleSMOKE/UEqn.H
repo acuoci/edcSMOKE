@@ -5,7 +5,8 @@
         fvm::div(phi, U)
       + turbulence->divDevRhoReff(U)
      ==
-        fvOptions(rho, U)
+	rho*g
+      + fvOptions(rho, U)
     );
 
     UEqn().relax();

@@ -1,4 +1,7 @@
+if (edcCounter == numberIterationsToUpdateChemistry)
 {
+	edcCounter = 0;
+
 	bool debug = false;
 	const double chi = 1.;
 	const double relaxationFactorFineStructures = 1.;
@@ -108,3 +111,6 @@
 	WriteScalarField(mesh, mDotStar,  "edc::mDotStar");
 	WriteScalarField(mesh, gammaStar, "edc::gammaStar");
 }
+
+edcCounter++;
+

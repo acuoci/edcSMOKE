@@ -8,7 +8,7 @@ OpenSMOKE::KineticsMap_CHEMKIN<double>* kineticsMapXML;
 
 	rapidxml::xml_document<> doc;
 	std::vector<char> xml_string;
-	OpenSMOKE::OpenXMLFile(doc, xml_string,path_kinetics / "kinetics.xml");
+	OpenSMOKE::OpenInputFileXML(doc, xml_string,path_kinetics / "kinetics.xml");
 
 	double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
 	thermodynamicsMapXML = new OpenSMOKE::ThermodynamicsMap_CHEMKIN<double>(doc); 

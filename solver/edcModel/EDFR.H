@@ -70,7 +70,7 @@
 			kineticsMapXML->SetTemperature(TCells[celli]);
 			kineticsMapXML->SetPressure(pCells[celli]);
 			kineticsMapXML->ReactionEnthalpiesAndEntropies();
-			kineticsMapXML->ArrheniusKineticConstants();
+			kineticsMapXML->KineticConstants();
 			kineticsMapXML->ReactionRates(c_);
 
 			for(unsigned int k=0;k<kineticsMapXML->NumberOfReactions();k++)
@@ -109,7 +109,7 @@
 		{
 			thermodynamicsMapXML->SetTemperature(TCells[celli]);
 			thermodynamicsMapXML->SetPressure(pCells[celli]);
-			thermodynamicsMapXML->hMolar_Species_From_MoleFractions(h_species);
+			thermodynamicsMapXML->hMolar_Species(h_species);
 
 			double HeatRelease = 0.;
 			for(unsigned int i=0;i<ns;i++)

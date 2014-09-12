@@ -40,8 +40,6 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 	//const scalarField& hCells = thermo.he().internalField();
 	scalarField& ShCells = Sh_.internalField();
 
-	HomogeneousODE fine_structure_ode(*thermodynamicsMapXML, *kineticsMapXML);
-
 	const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
 	forAll(TCells, celli)
 	{	
@@ -54,8 +52,8 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 
 		// Extract the fine strucutres mass fractions
 		for(unsigned int i=0;i<ns;i++)
-			yStar0[i] = YStar_[i].internalField()[celli];
-		yStar0[ne-1] = TStar_[0].internalField()[celli];
+			yStar0(i) = YStar_[i].internalField()[celli];
+		yStar0(ne-1) = TStar_[0].internalField()[celli];
 
 		// Initialize the fine structure
 		thermodynamicsMapXML->SetTemperature(TCells[celli]);
@@ -67,27 +65,100 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 		// Final solution
 		const double t0 = 0.;
 		const double tf = numberOfResidenceTimes/max(mDotStar[celli], SMALL);
-		ODESystem_OpenSMOKE_Homogeneous ode(fine_structure_ode);
-		OpenSMOKE::StiffOdeSolverObject_Dense o( yStar0, t0, &ode, "Eigen" );
-		
-		o.SetMinimumConstraints(yMin);
-		o.SetMaximumConstraints(yMax);
-		o.SetTollAbs(absTolerance);
-		o.SetTollRel(relTolerance);
 
-		//yStarf = o(tf,tf);
-		yStarf = o(tf);	
+		// Solve the ODE system
+		if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_OPENSMOKE)
+		{
+			// Set initial conditions
+			odeSolver.SetInitialConditions(t0, yStar0);
+
+			// Additional ODE solver options
+			if (celli == 0)
+			{
+				// Set linear algebra options
+				odeSolver.SetLinearAlgebraSolver(odeParametersFineStructures.linear_algebra());
+				odeSolver.SetFullPivoting(odeParametersFineStructures.full_pivoting());
+
+				// Set relative and absolute tolerances
+				odeSolver.SetAbsoluteTolerances(odeParametersFineStructures.absolute_tolerance());
+				odeSolver.SetRelativeTolerances(odeParametersFineStructures.relative_tolerance());
+
+				// Set minimum and maximum values
+				odeSolver.SetMinimumValues(yMin);
+				odeSolver.SetMaximumValues(yMax);
+			}
+						
+			// Solve
+			OdeSMOKE::OdeStatus status = odeSolver.Solve(tf);
+			odeSolver.Solution(yStarf);
+		}
+		#if OPENSMOKE_USE_DVODE == 1
+		else if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_DVODE)
+		{
+			SolverDVODE->SetInitialValues(t0, yStar0.data());
+			SolverDVODE->Solve(tf);
+			SolverDVODE->Solution(yStarf.data());
+		}
+		#endif
+		#if OPENSMOKE_USE_ODEPACK == 1
+		else if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_DLSODE)
+		{
+			SolverDLSODE->SetInitialValues(t0, yStar0.data());
+			SolverDLSODE->Solve(tf);
+			SolverDLSODE->Solution(yStarf.data());
+		}
+		#endif
+		#if OPENSMOKE_USE_ODEPACK == 1
+		else if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_DLSODA)
+		{
+			SolverDLSODA->SetInitialValues(t0, yStar0.data());
+			SolverDLSODA->Solve(tf);
+			SolverDLSODA->Solution(yStarf.data());
+		}
+		#endif
+		#if OPENSMOKE_USE_DASPK == 1
+		else if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_DASPK)
+		{
+			SolverDASPK->SetInitialValues(t0, yStar0.data());
+			SolverDASPK->Solve(tf);
+			SolverDASPK->Solution(yStarf.data());
+		}
+		#endif
+		#if OPENSMOKE_USE_RADAU == 1
+		else if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_RADAU5)
+		{
+			SolverRADAU5->SetInitialValues(t0, yStar0.data());
+			SolverRADAU5->Solve(tf);
+			SolverRADAU5->Solution(yStarf.data());
+		}
+		#endif
+		#if OPENSMOKE_USE_MEBDF == 1
+		else if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_MEBDF)
+		{
+			SolverMEBDF->SetInitialValues(t0, yStar0.data());
+			SolverMEBDF->Solve(tf);
+			SolverMEBDF->Solution(yStarf.data());
+		}
+		#endif
+		#if OPENSMOKE_USE_SUNDIALS == 1
+		else if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_CVODE)
+		{
+			SolverCVODE->SetInitialValues(t0, yStar0.data());
+			SolverCVODE->Solve(tf);
+			SolverCVODE->Solution(yStarf.data());
+		}
+		#endif
 				
 		for(unsigned int i=0;i<ns;i++)
-			YStar_[i].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0[i] + relaxationFactorFineStructures*yStarf[i];
-		TStar_[0].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0[ne-1] + relaxationFactorFineStructures*yStarf[ne-1];
+			YStar_[i].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0(i) + relaxationFactorFineStructures*yStarf(i);
+		TStar_[0].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0(ne-1) + relaxationFactorFineStructures*yStarf(ne-1);
  
 		for(unsigned int i=0;i<ns;i++)
 			R_[i].internalField()[celli] = edc_coefficient[celli]*(YStar_[i].internalField()[celli]-Y[i].internalField()[celli]);
 
 		thermodynamicsMapXML->SetTemperature(TCells[celli]);
 		thermodynamicsMapXML->SetPressure(pCells[celli]);
-		thermodynamicsMapXML->hMolar_Species_From_MoleFractions(h_species);
+		thermodynamicsMapXML->hMolar_Species(h_species);
 
 		double HeatRelease = 0.;
 		for(unsigned int i=0;i<ns;i++)

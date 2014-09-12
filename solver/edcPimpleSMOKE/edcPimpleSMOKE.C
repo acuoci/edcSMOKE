@@ -29,28 +29,20 @@ Description
 
 \*---------------------------------------------------------------------------*/
 
-// OpenSMOKE
-#include "OpenSMOKE_Definitions.h"
-#include <string>
-#include <iostream>
-#include <numeric>
-#include <Eigen/Dense>
+// OpenSMOKE++ Definitions
+#include "OpenSMOKEpp"
 
-// Base classes
-#include "thermo/ThermoPolicy_CHEMKIN.h"
-#include "kinetics/ReactionPolicy_CHEMKIN.h"
-#include "math/PhysicalConstants.h"
-#include "math/OpenSMOKEUtilities.h"
+// CHEMKIN maps
+#include "maps/Maps_CHEMKIN"
 
-// Maps
-#include "maps/ThermodynamicsMap_CHEMKIN.h"
-//#include "maps/TransportPropertiesMap_CHEMKIN.h"
-#include "maps/KineticsMap_CHEMKIN.h"
+// Reactor utilities
+#include "reactors/utilities/Utilities"
 
-// ODE system
-#include <stdio.h>
-#include "HomogeneousODE.H"
+// ODE solvers
+#include "math/multivalue-ode-solvers/MultiValueSolver"
+#include "ode/ODE_Parameters.h"
 
+// OpenFOAM
 #include "fvCFD.H"
 #include "turbulenceModel.H"
 #include "psiCombustionModel.H"
@@ -61,6 +53,10 @@ Description
 
 // Utilities
 #include "Utilities.H"
+
+// ODE system
+#include "HomogeneousODE.H"
+#include "HomogeneousODE_Interface.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

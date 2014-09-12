@@ -31,15 +31,25 @@ HomogeneousODE::HomogeneousODE(
 	ChangeDimensions(number_of_gas_species_, &omegaStar_, true);
 	ChangeDimensions(number_of_gas_species_, &xStar_, true);
 	ChangeDimensions(number_of_gas_species_, &cStar_, true);
-	ChangeDimensions(number_of_gas_species_, &RStar_, true);	
+	ChangeDimensions(number_of_gas_species_, &RStar_, true);
+
+	checkMassFractions_ = false;	
 }
 
 int HomogeneousODE::Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y, OpenSMOKE::OpenSMOKEVectorDouble& dy)
 {
-	unsigned int k=1;
-	for(unsigned int i=1;i<=number_of_gas_species_;i++)
-		omegaStar_[i] = y[k++];
-	TStar_ = y[k++];
+	// Recover mass fractions
+	if (checkMassFractions_ == true)
+	{	for(unsigned int i=1;i<=number_of_gas_species_;++i)
+			omegaStar_[i] = max(y[i], 0.);
+	}
+	else
+	{
+		for(unsigned int i=1;i<=number_of_gas_species_;++i)
+			omegaStar_[i] = y[i];
+	}
+	// Recover temperature
+	TStar_ = y[number_of_equations_];
 
 	for(unsigned int i=1;i<=number_of_gas_species_;i++)
 		omegaSurr_[i] = (omegaMean_[i] - omegaStar_[i]*gammaStar_*chi_)/(1.-gammaStar_*chi_);
@@ -64,7 +74,7 @@ int HomogeneousODE::Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDo
 	kineticsMapXML_.SetTemperature(TStar_);
 	kineticsMapXML_.SetPressure(P_Pa_);
 	kineticsMapXML_.ReactionEnthalpiesAndEntropies();
-	kineticsMapXML_.ArrheniusKineticConstants();
+	kineticsMapXML_.KineticConstants();
 	kineticsMapXML_.ReactionRates(cStar_);
 	kineticsMapXML_.FormationRates(&RStar_);
 
@@ -80,7 +90,7 @@ int HomogeneousODE::Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDo
 
 int HomogeneousODE::Print(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y)
 {
-	std::cout << t << std::endl;
+	//std::cout << t << std::endl;
 	return 0;
 }
 

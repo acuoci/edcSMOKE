@@ -18,7 +18,32 @@
 
 	const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
 
-	uTau_ = turbulence->epsilon()/(turbulence->k()+ksmall_);
+	if (iLES == true)
+	{
+		volSymmTensorField D(symm(fvc::grad(U)));
+		uTau_ = sqrt(2*(dev(D) && D));
+	}
+	else
+	{
+		if ( turbulence->db().objectRegistry::foundObject<volScalarField>("epsilon") )
+		{
+			const volScalarField& epsilonConst = turbulence->db().objectRegistry::lookupObject<volScalarField>("epsilon");
+			eps_ = epsilonConst;
+		}
+		else if ( turbulence->db().objectRegistry::foundObject<volScalarField>("omega") )
+		{
+			const scalar Cmu = 0.09;
+			const volScalarField& om = turbulence->db().objectRegistry::lookupObject<volScalarField>("omega");
+
+			eps_ = Cmu*om*turbulence->k();
+		}
+		else
+		{
+			FatalError << "No epsilon or omega from turbulence model!" << exit(FatalError);
+		}
+
+		uTau_ = eps_/(turbulence->k()+ksmall_);
+	}
 
 	forAll(TCells, celli)
 	{	

@@ -35,6 +35,41 @@ IOdictionary combustionOptionsDictionary
 
 // Selecting combustion model
 Switch homogeneousReactions(combustionOptionsDictionary.lookup("homogeneousReactions"));
+
+// RAS or LES
+Switch iLES = false;
+{
+	Info<< "Reading turbulenceProperties dictionary\n" << endl;
+	IOdictionary turbulencePropertiesDictionary
+	(
+		IOobject
+		(
+			"turbulenceProperties",
+			U.time().constant(),
+			U.db(),
+			IOobject::MUST_READ,
+			IOobject::NO_WRITE
+		)
+	);
+
+
+	word simulationType(turbulencePropertiesDictionary.lookup("simulationType"));
+	if (simulationType == "RASModel")
+	{
+		iLES = false;
+		Info << "This is a RANS simulation..." << endl;
+	}
+	else if (simulationType == "LESModel")
+	{
+		iLES = true;
+		Info << "This is a Large Eddy Simulation (LES)..." << endl;
+	}
+	else
+	{
+		FatalError << "The ED models require turbulent conditions (i.e. LESModel or RASModel)" << exit(FatalError);
+	}
+}
+
 word combustionModel(combustionOptionsDictionary.lookup("combustionModel"));
 const scalar maxT = readScalar(combustionOptionsDictionary.lookup("maxT"));
 const scalar minT = readScalar(combustionOptionsDictionary.lookup("minT"));
@@ -427,6 +462,20 @@ volScalarField uTau_
     ),
     mesh,
     dimensionedScalar("uTau", dimensionSet(0,0,-1,0,0,0,0), 0.0)
+);
+
+volScalarField eps_
+(
+    IOobject
+    (
+        "eps",
+        runTime.timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::AUTO_WRITE
+    ),
+    mesh,
+    dimensionedScalar("eps", dimensionSet(0,2,-3,0,0,0,0), 0.0)
 );
 
 // Normalize the mass fractions (mean fields)

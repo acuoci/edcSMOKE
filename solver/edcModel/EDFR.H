@@ -20,21 +20,32 @@
 
 	if (iLES == true)
 	{
-		volSymmTensorField D(symm(fvc::grad(U)));
-		uTau_ = sqrt(2*(dev(D) && D));
+		//volSymmTensorField D(symm(fvc::grad(U)));
+		//uTau_ = sqrt(2*(dev(D) && D));
+
+		const double ksmall = 1e-5;
+		const volScalarField& epsConst = turbulence->epsilon();
+		const volScalarField& kConst   = turbulence->k();
+		const scalarField& kCells      = kConst.internalField();
+		const scalarField& epsCells    = epsConst.internalField();
+		      scalarField& uTauCells   = uTau_.internalField();
+
+		forAll(TCells, celli)
+			uTauCells[celli] = epsCells[celli]/(kCells[celli]+ksmall);
 	}
 	else
 	{
 		if ( turbulence->db().objectRegistry::foundObject<volScalarField>("epsilon") )
 		{
 			const volScalarField& epsilonConst = turbulence->db().objectRegistry::lookupObject<volScalarField>("epsilon");
+			//const volScalarField& epsilonConst = turbulence->epsilon();			
 			eps_ = epsilonConst;
 		}
 		else if ( turbulence->db().objectRegistry::foundObject<volScalarField>("omega") )
 		{
 			const scalar Cmu = 0.09;
 			const volScalarField& om = turbulence->db().objectRegistry::lookupObject<volScalarField>("omega");
-
+		
 			eps_ = Cmu*om*turbulence->k();
 		}
 		else

@@ -70,13 +70,30 @@ Switch iLES = false;
 	}
 }
 
+// Check if epsilon can be found (only for RAS)
+if (iLES == false)
+{
+	if ( turbulence->db().objectRegistry::foundObject<volScalarField>("epsilon") )
+	{
+		Info << "Found epsilon from turbulence model!" << endl;
+	}
+	else
+	{
+		FatalError << "No epsilon from turbulence model!" << exit(FatalError);
+	}
+}
+
+// Models
 word combustionModel(combustionOptionsDictionary.lookup("combustionModel"));
 const scalar maxT = readScalar(combustionOptionsDictionary.lookup("maxT"));
 const scalar minT = readScalar(combustionOptionsDictionary.lookup("minT"));
 
 // Numerical parameters for EDC
-scalar Ccsi = 2.1377;
-scalar Ctau = 0.40825;
+// scalar CD1 = 0.134;
+// scalar CD2 = 0.5;
+scalar Ccsi = 2.1377; 	// Ccsi = pow(3.*CD2/4/CD1/CD1, 0.25);
+scalar Ctau = 0.40825;	// Ctau = sqrt(CD2/3.);
+
 scalar maxGammaSquared = 0.75487766248;
 scalar numberOfResidenceTimes = 100.;
 label  numberIterationsToUpdateChemistry = 1;
@@ -464,18 +481,18 @@ volScalarField uTau_
     dimensionedScalar("uTau", dimensionSet(0,0,-1,0,0,0,0), 0.0)
 );
 
-volScalarField eps_
+volScalarField epsilonSGS
 (
     IOobject
     (
-        "eps",
+        "epsilonSGS",
         runTime.timeName(),
         mesh,
         IOobject::NO_READ,
         IOobject::AUTO_WRITE
     ),
     mesh,
-    dimensionedScalar("eps", dimensionSet(0,2,-3,0,0,0,0), 0.0)
+    dimensionedScalar("epsilonSGS", dimensionSet(0,2,-3,0,0,0,0), 0.0)
 );
 
 // Normalize the mass fractions (mean fields)

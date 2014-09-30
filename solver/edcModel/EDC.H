@@ -9,51 +9,43 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 	Info << "Fine structure properties..." << endl;
 	if (iLES == true)
 	{
-		const volScalarField& epsilonConst = turbulence->epsilon();
+		const Foam::compressible::LESModel& lesModel = U.db().lookupObject<Foam::compressible::LESModel>("LESProperties");
 
+		epsilonSGS = 1.048*pow(turbulence->k(), 1.5)/lesModel.delta();
 		scalarField nu = thermo.mu().internalField()/rho;
-			
-		scalarField gammaL = Ccsi * pow(thermo.mu().internalField()/turbulence->mut(), 0.25);	
+		scalar Cnusgs = 0.05;
+		scalar Cnusgs_025 = 0.472871;
+		scalarField gammaL = (Ccsi*Cnusgs_025) * pow(thermo.mu().internalField()/turbulence->mut(), 0.25);	
 		gammaStar = pow(gammaL, 2.);
 		gammaStar = min(maxGammaSquared,gammaStar);
-
-		mDotStar  = 1./Ctau*sqrt(epsilonConst/nu);
-
+		mDotStar  = 1./Ctau*sqrt(epsilonSGS/nu);
 		edc_coefficient = rho*gammaStar*mDotStar*chi/(1.-gammaStar*chi);
+
+		Info<< "min/max(sgs_epsilon) = " << min(epsilonSGS).value() << ", " << max(epsilonSGS).value() << endl;
+		Info<< "min/max(les_epsilon) = " << min(lesModel.epsilon()).value() << ", " << max(lesModel.epsilon()).value() << endl;
+		Info<< "min/max(t_k) =         " << min(turbulence->k()).value() << ", " << max(turbulence->k()).value() << endl;
+		Info<< "min/max(les_k) =       " << min(lesModel.k()).value() << ", " << max(lesModel.k()).value() << endl;
+		Info<< "min/max(delta) =       " << min(lesModel.delta()).value() << ", " << max(lesModel.delta()).value() << endl;
+		Info<< "min/max(mu) =          " << min(thermo.mu()).value() << ", " << max(thermo.mu()).value() << endl;
+		Info<< "min/max(mut) =         " << min(turbulence->mut()).value() << ", " << max(turbulence->mut()).value() << endl;
+		Info<< "min/max(gammaStar) =   " << min(gammaStar) << ", " << max(gammaStar) << endl;
+		Info<< "min/max(mDotStar) =    " << min(mDotStar) << ", " << max(mDotStar) << endl;
 	}
 	else
 	{
-		//if ( turbulence->db().objectRegistry::foundObject<volScalarField>("epsilon") )
-		{
-			//const volScalarField& epsilonConst = turbulence->db().objectRegistry::lookupObject<volScalarField>("epsilon");
-			const volScalarField& epsilonConst = turbulence->epsilon();			
-			eps_ = epsilonConst;
-		}
-		//else if ( turbulence->db().objectRegistry::foundObject<volScalarField>("omega") )
-		//{
-		//	const scalar Cmu = 0.09;
-		//	const volScalarField& om = turbulence->db().objectRegistry::lookupObject<volScalarField>("omega");
-		//
-		//	eps_ = Cmu*om*turbulence->k();
-		//}
-		//else
-		//{
-		//	FatalError << "No epsilon or omega from turbulence model!" << exit(FatalError);
-		//}
+		const volScalarField& epsilonConst = turbulence->epsilon();
 
-		// Fine structures
-		{
-			scalarField nu = thermo.mu().internalField()/rho;
-			scalarField gammaL = Ccsi * pow(nu*eps_/pow(turbulence->k()+ksmall_,2.),0.25);	
-			gammaStar = pow(gammaL, 2.);
-			gammaStar = min(maxGammaSquared,gammaStar);
-			mDotStar  = 1./Ctau*sqrt(eps_/nu);
-			edc_coefficient = rho*gammaStar*mDotStar*chi/(1.-gammaStar*chi);
-		}
+		scalarField nu = thermo.mu().internalField()/rho;
+		scalarField gammaL = Ccsi * pow(nu*turbulence->epsilon()/pow(turbulence->k()+ksmall_,2.),0.25);	
+		gammaStar = pow(gammaL, 2.);
+		gammaStar = min(maxGammaSquared,gammaStar);
+		mDotStar  = 1./Ctau*sqrt(turbulence->epsilon()/nu);
+		edc_coefficient = rho*gammaStar*mDotStar*chi/(1.-gammaStar*chi);
+
+		Info<< "min/max(epsilon) = " << min(epsilonConst).value() << ", " << max(epsilonConst).value() << endl;
+		Info<< "min/max(gammaStar) = " << min(gammaStar) << ", " << max(gammaStar) << endl;
+		Info<< "min/max(mDotStar) = " << min(mDotStar) << ", " << max(mDotStar) << endl;
 	}
-
-
-	
 
 	Info << "ODE Integration..." << endl;
 	const int unsigned ns = Y.size();

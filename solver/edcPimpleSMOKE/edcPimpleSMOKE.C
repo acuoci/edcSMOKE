@@ -50,6 +50,7 @@ Description
 #include "pimpleControl.H"
 #include "fvIOoptionList.H"
 #include "radiationModel.H"
+#include "compressible/LES/LESModel/LESModel.H"
 
 // Utilities
 #include "Utilities.H"

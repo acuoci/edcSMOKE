@@ -61,8 +61,12 @@ Switch iLES = false;
 	}
 	else if (simulationType == "LESModel")
 	{
+		#if STEADYSTATE == 1
+		FatalError << "LES is available only for unsteady solvers!" << exit(FatalError);
+		#else
 		iLES = true;
 		Info << "This is a Large Eddy Simulation (LES)..." << endl;
+		#endif
 	}
 	else
 	{
@@ -71,6 +75,7 @@ Switch iLES = false;
 }
 
 // Check if epsilon can be found (only for RAS)
+#if STEADYSTATE == 0
 if (iLES == false)
 {
 	if ( turbulence->db().objectRegistry::foundObject<volScalarField>("epsilon") )
@@ -82,6 +87,7 @@ if (iLES == false)
 		FatalError << "No epsilon from turbulence model!" << exit(FatalError);
 	}
 }
+#endif
 
 // Models
 word combustionModel(combustionOptionsDictionary.lookup("combustionModel"));
@@ -108,6 +114,9 @@ std::vector< std::vector<double> > ed_reactant_nu_;
 std::vector< std::vector<double> > ed_product_nu_;
 std::vector< std::vector<double> > ed_denominator_reactants_;
 std::vector<double> ed_denominator_products_;
+
+// Reactor type: PSR or PFR
+enum { REACTORTYPE_PSR, REACTORTYPE_PFR} reactorType;
 
 // Reading constants from file
 {
@@ -138,6 +147,20 @@ else if (combustionModel == "EDC")
 	numberOfResidenceTimes = readScalar(edcSubDictionary.lookup("numberOfResidenceTimes"));		// default: 100.
 	numberIterationsToUpdateChemistry = readLabel(edcSubDictionary.lookup("numberIterationsToUpdateChemistry")); // default 1
 	edcCounter = numberIterationsToUpdateChemistry;
+
+	// Type
+	word reactorTypeString(edcSubDictionary.lookup("reactorType"));
+	
+	if ( reactorTypeString == "PSR")
+	     reactorType = REACTORTYPE_PSR;
+	else if ( reactorTypeString == "PFR")
+		  reactorType = REACTORTYPE_PFR;
+	else
+	{
+		Info << "Wrong reactor type: PSR || PFR" << endl;
+		abort();
+	}
+
 }
 // Error Message
 else
@@ -185,6 +208,7 @@ if (combustionModel == "ED" || combustionModel == "EDFR")
 
 // Ode parameters
 OpenSMOKE::ODE_Parameters odeParametersFineStructures;
+
 if (combustionModel == "EDC")
 {
 	const dictionary& odeParametersFineStructuresDictionary = combustionOptionsDictionary.subDict("Ode");
@@ -563,124 +587,254 @@ if (combustionModel == "EDC")
 // Spark (to ignite the mixture)
 #include "spark.H"
 
+// --------------------------------------------------------------------------------------------------------
+// Fine structure as a PSR
+// --------------------------------------------------------------------------------------------------------
+
 // Fine Structure (reactor)
-HomogeneousODE fine_structure_ode(*thermodynamicsMapXML, *kineticsMapXML);
+ODE_PSR fine_structure_ode_psr(*thermodynamicsMapXML, *kineticsMapXML);
 if (odeParametersFineStructures.type() != OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_OPENSMOKE)
-	fine_structure_ode.SetCheckMassFractions(true);
+	fine_structure_ode_psr.SetCheckMassFractions(true);
 
 // ODE Solvers
-typedef OdeSMOKE::KernelDense<OpenSMOKE::HomogeneousODE_OpenSMOKE> denseOde;
-typedef OdeSMOKE::MethodGear<denseOde> methodGear;
-OdeSMOKE::MultiValueSolver<methodGear> odeSolver;
-odeSolver.SetReactor(&fine_structure_ode);
+typedef OdeSMOKE::KernelDense<OpenSMOKE::ODE_PSR_OpenSMOKE> denseOdePSR;
+typedef OdeSMOKE::MethodGear<denseOdePSR> methodGearPSR;
+OdeSMOKE::MultiValueSolver<methodGearPSR> odeSolverPSR;
+odeSolverPSR.SetReactor(&fine_structure_ode_psr);
 
 // External ODE solvers (requires third-party libraries)
 #if OPENSMOKE_USE_DVODE == 1
-OpenSMOKE::HomogeneousODE_DVODE *dvodeSolver;
-OpenSMOKE::OpenSMOKE_DVODE<OpenSMOKE::HomogeneousODE_DVODE> *SolverDVODE;
+OpenSMOKE::ODE_PSR_DVODE *dvodeSolverPSR;
+OpenSMOKE::OpenSMOKE_DVODE<OpenSMOKE::ODE_PSR_DVODE> *SolverDVODEPSR;
 if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_DVODE)
 {
-	dvodeSolver = OpenSMOKE::HomogeneousODE_DVODE::GetInstance();
-	dvodeSolver->SetReactor(&fine_structure_ode);
+	dvodeSolverPSR = OpenSMOKE::ODE_PSR_DVODE::GetInstance();
+	dvodeSolverPSR->SetReactor(&fine_structure_ode_psr);
 
-	SolverDVODE = new OpenSMOKE::OpenSMOKE_DVODE<OpenSMOKE::HomogeneousODE_DVODE>(dvodeSolver);
-	SolverDVODE->SetDimensions(fine_structure_ode.NumberOfEquations());
-	SolverDVODE->SetAbsoluteTolerance(odeParametersFineStructures.absolute_tolerance());
-	SolverDVODE->SetRelativeTolerance(odeParametersFineStructures.relative_tolerance());
-	SolverDVODE->SetAnalyticalJacobian(false);
+	SolverDVODEPSR = new OpenSMOKE::OpenSMOKE_DVODE<OpenSMOKE::ODE_PSR_DVODE>(dvodeSolverPSR);
+	SolverDVODEPSR->SetDimensions(fine_structure_ode_psr.NumberOfEquations());
+	SolverDVODEPSR->SetAbsoluteTolerance(odeParametersFineStructures.absolute_tolerance());
+	SolverDVODEPSR->SetRelativeTolerance(odeParametersFineStructures.relative_tolerance());
+	SolverDVODEPSR->SetAnalyticalJacobian(false);
 }
 #endif
 
 #if OPENSMOKE_USE_ODEPACK == 1
-OpenSMOKE::HomogeneousODE_DLSODE *dlsodeSolver;
-OpenSMOKE::OpenSMOKE_DLSODE<OpenSMOKE::HomogeneousODE_DLSODE> *SolverDLSODE;
+OpenSMOKE::ODE_PSR_DLSODE *dlsodeSolverPSR;
+OpenSMOKE::OpenSMOKE_DLSODE<OpenSMOKE::ODE_PSR_DLSODE> *SolverDLSODEPSR;
 if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_DLSODE)
 {
-	dlsodeSolver = OpenSMOKE::HomogeneousODE_DLSODE::GetInstance();
-	dlsodeSolver->SetReactor(&fine_structure_ode);
+	dlsodeSolverPSR = OpenSMOKE::ODE_PSR_DLSODE::GetInstance();
+	dlsodeSolverPSR->SetReactor(&fine_structure_ode_psr);
 
-	SolverDLSODE = new OpenSMOKE::OpenSMOKE_DLSODE<OpenSMOKE::HomogeneousODE_DLSODE>(dlsodeSolver);
-	SolverDLSODE->SetDimensions(fine_structure_ode.NumberOfEquations());
-	SolverDLSODE->SetAbsoluteTolerance(odeParametersFineStructures.absolute_tolerance());
-	SolverDLSODE->SetRelativeTolerance(odeParametersFineStructures.relative_tolerance());
-	SolverDLSODE->SetAnalyticalJacobian(false);
+	SolverDLSODEPSR = new OpenSMOKE::OpenSMOKE_DLSODE<OpenSMOKE::ODE_PSR_DLSODE>(dlsodeSolverPSR);
+	SolverDLSODEPSR->SetDimensions(fine_structure_ode_psr.NumberOfEquations());
+	SolverDLSODEPSR->SetAbsoluteTolerance(odeParametersFineStructures.absolute_tolerance());
+	SolverDLSODEPSR->SetRelativeTolerance(odeParametersFineStructures.relative_tolerance());
+	SolverDLSODEPSR->SetAnalyticalJacobian(false);
 }
-OpenSMOKE::HomogeneousODE_DLSODA *dlsodaSolver;
-OpenSMOKE::OpenSMOKE_DLSODA<OpenSMOKE::HomogeneousODE_DLSODA> *SolverDLSODA;
+OpenSMOKE::ODE_PSR_DLSODA *dlsodaSolverPSR;
+OpenSMOKE::OpenSMOKE_DLSODA<OpenSMOKE::ODE_PSR_DLSODA> *SolverDLSODAPSR;
 if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_DLSODE)
 {
-	dlsodaSolver = OpenSMOKE::HomogeneousODE_DLSODA::GetInstance();
-	dlsodaSolver->SetReactor(&fine_structure_ode);
+	dlsodaSolverPSR = OpenSMOKE::ODE_PSR_DLSODA::GetInstance();
+	dlsodaSolverPSR->SetReactor(&fine_structure_ode_psr);
 
-	SolverDLSODA = new OpenSMOKE::OpenSMOKE_DLSODA<OpenSMOKE::HomogeneousODE_DLSODA>(dlsodaSolver);
-	SolverDLSODA->SetDimensions(fine_structure_ode.NumberOfEquations());
-	SolverDLSODA->SetAbsoluteTolerance(odeParametersFineStructures.absolute_tolerance());
-	SolverDLSODA->SetRelativeTolerance(odeParametersFineStructures.relative_tolerance());
-	SolverDLSODA->SetAnalyticalJacobian(false);
+	SolverDLSODAPSR = new OpenSMOKE::OpenSMOKE_DLSODA<OpenSMOKE::ODE_PSR_DLSODA>(dlsodaSolverPSR);
+	SolverDLSODAPSR->SetDimensions(fine_structure_ode_psr.NumberOfEquations());
+	SolverDLSODAPSR->SetAbsoluteTolerance(odeParametersFineStructures.absolute_tolerance());
+	SolverDLSODAPSR->SetRelativeTolerance(odeParametersFineStructures.relative_tolerance());
+	SolverDLSODAPSR->SetAnalyticalJacobian(false);
 }
 #endif
 
 #if OPENSMOKE_USE_SUNDIALS == 1
-OpenSMOKE::HomogeneousODE_CVODE *cvodeSolver;
-OpenSMOKE::OpenSMOKE_CVODE_Sundials<OpenSMOKE::HomogeneousODE_CVODE> *SolverCVODE;
+OpenSMOKE::ODE_PSR_CVODE *cvodeSolverPSR;
+OpenSMOKE::OpenSMOKE_CVODE_Sundials<OpenSMOKE::ODE_PSR_CVODE> *SolverCVODEPSR;
 if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_CVODE)
 {
-	cvodeSolver = OpenSMOKE::HomogeneousODE_CVODE::GetInstance();
-	cvodeSolver->SetReactor(&fine_structure_ode);
+	cvodeSolverPSR = OpenSMOKE::ODE_PSR_CVODE::GetInstance();
+	cvodeSolverPSR->SetReactor(&fine_structure_ode_psr);
 
-	SolverCVODE = new OpenSMOKE::OpenSMOKE_CVODE_Sundials<OpenSMOKE::HomogeneousODE_CVODE>(cvodeSolver);
-	SolverCVODE->SetDimensions(fine_structure_ode.NumberOfEquations());
-	SolverCVODE->SetAbsoluteTolerance(odeParametersFineStructures.absolute_tolerance());
-	SolverCVODE->SetRelativeTolerance(odeParametersFineStructures.relative_tolerance());
-	SolverCVODE->SetAnalyticalJacobian(false);
+	SolverCVODEPSR = new OpenSMOKE::OpenSMOKE_CVODE_Sundials<OpenSMOKE::ODE_PSR_CVODE>(cvodeSolverPSR);
+	SolverCVODEPSR->SetDimensions(fine_structure_ode_psr.NumberOfEquations());
+	SolverCVODEPSR->SetAbsoluteTolerance(odeParametersFineStructures.absolute_tolerance());
+	SolverCVODEPSR->SetRelativeTolerance(odeParametersFineStructures.relative_tolerance());
+	SolverCVODEPSR->SetAnalyticalJacobian(false);
 }
 #endif
 
 #if OPENSMOKE_USE_DASPK == 1
-OpenSMOKE::HomogeneousODE_DASPK *daspkSolver;
-OpenSMOKE::OpenSMOKE_DASPK<OpenSMOKE::HomogeneousODE_DASPK> *SolverDASPK;
+OpenSMOKE::ODE_PSR_DASPK *daspkSolverPSR;
+OpenSMOKE::OpenSMOKE_DASPK<OpenSMOKE::ODE_PSR_DASPK> *SolverDASPKPSR;
 if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_DASPK)
 {
-	daspkSolver = OpenSMOKE::HomogeneousODE_DASPK::GetInstance(thermodynamicsMapXML->NumberOfSpecies()+1);
-	daspkSolver->SetReactor(&fine_structure_ode);
+	daspkSolverPSR = OpenSMOKE::ODE_PSR_DASPK::GetInstance(thermodynamicsMapXML->NumberOfSpecies()+1);
+	daspkSolverPSR->SetReactor(&fine_structure_ode_psr);
 
-	SolverDASPK = new OpenSMOKE::OpenSMOKE_DASPK<OpenSMOKE::HomogeneousODE_DASPK>(daspkSolver);
-	SolverDASPK->SetDimensions(fine_structure_ode.NumberOfEquations());
-	SolverDASPK->SetAbsoluteTolerance(odeParametersFineStructures.absolute_tolerance());
-	SolverDASPK->SetRelativeTolerance(odeParametersFineStructures.relative_tolerance());
-	SolverDASPK->SetAnalyticalJacobian(false);
+	SolverDASPKPSR = new OpenSMOKE::OpenSMOKE_DASPK<OpenSMOKE::ODE_PSR_DASPK>(daspkSolverPSR);
+	SolverDASPKPSR->SetDimensions(fine_structure_ode_psr.NumberOfEquations());
+	SolverDASPKPSR->SetAbsoluteTolerance(odeParametersFineStructures.absolute_tolerance());
+	SolverDASPKPSR->SetRelativeTolerance(odeParametersFineStructures.relative_tolerance());
+	SolverDASPKPSR->SetAnalyticalJacobian(false);
 }
 #endif
 
 #if OPENSMOKE_USE_RADAU == 1
-OpenSMOKE::HomogeneousODE_RADAU5 *radau5Solver;
-OpenSMOKE::OpenSMOKE_RADAU<OpenSMOKE::HomogeneousODE_RADAU5> *SolverRADAU5;
+OpenSMOKE::ODE_PSR_RADAU5 *radau5SolverPSR;
+OpenSMOKE::OpenSMOKE_RADAU<OpenSMOKE::ODE_PSR_RADAU5> *SolverRADAU5PSR;
 if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_RADAU5)
 {
-	radau5Solver = OpenSMOKE::HomogeneousODE_RADAU5::GetInstance();
-	radau5Solver->SetReactor(&fine_structure_ode);
+	radau5SolverPSR = OpenSMOKE::ODE_PSR_RADAU5::GetInstance();
+	radau5SolverPSR->SetReactor(&fine_structure_ode_psr);
 
-	SolverRADAU5 = new OpenSMOKE::OpenSMOKE_RADAU<OpenSMOKE::HomogeneousODE_RADAU5>(radau5Solver);
-	SolverRADAU5->SetDimensions(fine_structure_ode.NumberOfEquations());
-	SolverRADAU5->SetAbsoluteTolerance(odeParametersFineStructures.absolute_tolerance());
-	SolverRADAU5->SetRelativeTolerance(odeParametersFineStructures.relative_tolerance());
-	SolverRADAU5->SetAnalyticalJacobian(false);
+	SolverRADAU5PSR = new OpenSMOKE::OpenSMOKE_RADAU<OpenSMOKE::ODE_PSR_RADAU5>(radau5SolverPSR);
+	SolverRADAU5PSR->SetDimensions(fine_structure_ode_psr.NumberOfEquations());
+	SolverRADAU5PSR->SetAbsoluteTolerance(odeParametersFineStructures.absolute_tolerance());
+	SolverRADAU5PSR->SetRelativeTolerance(odeParametersFineStructures.relative_tolerance());
+	SolverRADAU5PSR->SetAnalyticalJacobian(false);
 }
 #endif
 
 #if OPENSMOKE_USE_MEBDF == 1
-OpenSMOKE::HomogeneousODE_MEBDF *mebdfSolver;
-OpenSMOKE::OpenSMOKE_MEBDF<OpenSMOKE::HomogeneousODE_MEBDF> *SolverMEBDF;
+OpenSMOKE::ODE_PSR_MEBDF *mebdfSolverPSR;
+OpenSMOKE::OpenSMOKE_MEBDF<OpenSMOKE::ODE_PSR_MEBDF> *SolverMEBDFPSR;
 if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_MEBDF)
 {
-	mebdfSolver = OpenSMOKE::HomogeneousODE_MEBDF::GetInstance();
-	mebdfSolver->SetReactor(&fine_structure_ode);
+	mebdfSolverPSR = OpenSMOKE::ODE_PSR_MEBDF::GetInstance();
+	mebdfSolverPSR->SetReactor(&fine_structure_ode_psr);
 
-	SolverMEBDF = new OpenSMOKE::OpenSMOKE_MEBDF<OpenSMOKE::HomogeneousODE_MEBDF>(mebdfSolver);
-	SolverMEBDF->SetDimensions(fine_structure_ode.NumberOfEquations());
-	SolverMEBDF->SetAbsoluteTolerance(odeParametersFineStructures.absolute_tolerance());
-	SolverMEBDF->SetRelativeTolerance(odeParametersFineStructures.relative_tolerance());
-	SolverMEBDF->SetAnalyticalJacobian(false);
+	SolverMEBDFPSR = new OpenSMOKE::OpenSMOKE_MEBDF<OpenSMOKE::ODE_PSR_MEBDF>(mebdfSolverPSR);
+	SolverMEBDFPSR->SetDimensions(fine_structure_ode_psr.NumberOfEquations());
+	SolverMEBDFPSR->SetAbsoluteTolerance(odeParametersFineStructures.absolute_tolerance());
+	SolverMEBDFPSR->SetRelativeTolerance(odeParametersFineStructures.relative_tolerance());
+	SolverMEBDFPSR->SetAnalyticalJacobian(false);
+}
+#endif
+
+
+// --------------------------------------------------------------------------------------------------------
+// Fine structure as a PFR
+// --------------------------------------------------------------------------------------------------------
+
+// Fine Structure (reactor)
+ODE_PFR fine_structure_ode_pfr(*thermodynamicsMapXML, *kineticsMapXML);
+if (odeParametersFineStructures.type() != OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_OPENSMOKE)
+	fine_structure_ode_pfr.SetCheckMassFractions(true);
+
+// ODE Solvers
+typedef OdeSMOKE::KernelDense<OpenSMOKE::ODE_PFR_OpenSMOKE> denseOdePFR;
+typedef OdeSMOKE::MethodGear<denseOdePFR> methodGearPFR;
+OdeSMOKE::MultiValueSolver<methodGearPFR> odeSolverPFR;
+odeSolverPFR.SetReactor(&fine_structure_ode_pfr);
+
+// External ODE solvers (requires third-party libraries)
+#if OPENSMOKE_USE_DVODE == 1
+OpenSMOKE::ODE_PFR_DVODE *dvodeSolverPFR;
+OpenSMOKE::OpenSMOKE_DVODE<OpenSMOKE::ODE_PFR_DVODE> *SolverDVODEPFR;
+if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_DVODE)
+{
+	dvodeSolverPFR = OpenSMOKE::ODE_PFR_DVODE::GetInstance();
+	dvodeSolverPFR->SetReactor(&fine_structure_ode_pfr);
+
+	SolverDVODEPFR = new OpenSMOKE::OpenSMOKE_DVODE<OpenSMOKE::ODE_PFR_DVODE>(dvodeSolverPFR);
+	SolverDVODEPFR->SetDimensions(fine_structure_ode_pfr.NumberOfEquations());
+	SolverDVODEPFR->SetAbsoluteTolerance(odeParametersFineStructures.absolute_tolerance());
+	SolverDVODEPFR->SetRelativeTolerance(odeParametersFineStructures.relative_tolerance());
+	SolverDVODEPFR->SetAnalyticalJacobian(false);
+}
+#endif
+
+#if OPENSMOKE_USE_ODEPACK == 1
+OpenSMOKE::ODE_PFR_DLSODE *dlsodeSolverPFR;
+OpenSMOKE::OpenSMOKE_DLSODE<OpenSMOKE::ODE_PFR_DLSODE> *SolverDLSODEPFR;
+if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_DLSODE)
+{
+	dlsodeSolverPFR = OpenSMOKE::ODE_PFR_DLSODE::GetInstance();
+	dlsodeSolverPFR->SetReactor(&fine_structure_ode_pfr);
+
+	SolverDLSODEPFR = new OpenSMOKE::OpenSMOKE_DLSODE<OpenSMOKE::ODE_PFR_DLSODE>(dlsodeSolverPFR);
+	SolverDLSODEPFR->SetDimensions(fine_structure_ode_pfr.NumberOfEquations());
+	SolverDLSODEPFR->SetAbsoluteTolerance(odeParametersFineStructures.absolute_tolerance());
+	SolverDLSODEPFR->SetRelativeTolerance(odeParametersFineStructures.relative_tolerance());
+	SolverDLSODEPFR->SetAnalyticalJacobian(false);
+}
+OpenSMOKE::ODE_PFR_DLSODA *dlsodaSolverPFR;
+OpenSMOKE::OpenSMOKE_DLSODA<OpenSMOKE::ODE_PFR_DLSODA> *SolverDLSODAPFR;
+if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_DLSODE)
+{
+	dlsodaSolverPFR = OpenSMOKE::ODE_PFR_DLSODA::GetInstance();
+	dlsodaSolverPFR->SetReactor(&fine_structure_ode_pfr);
+
+	SolverDLSODAPFR = new OpenSMOKE::OpenSMOKE_DLSODA<OpenSMOKE::ODE_PFR_DLSODA>(dlsodaSolverPFR);
+	SolverDLSODAPFR->SetDimensions(fine_structure_ode_pfr.NumberOfEquations());
+	SolverDLSODAPFR->SetAbsoluteTolerance(odeParametersFineStructures.absolute_tolerance());
+	SolverDLSODAPFR->SetRelativeTolerance(odeParametersFineStructures.relative_tolerance());
+	SolverDLSODAPFR->SetAnalyticalJacobian(false);
+}
+#endif
+
+#if OPENSMOKE_USE_SUNDIALS == 1
+OpenSMOKE::ODE_PFR_CVODE *cvodeSolverPFR;
+OpenSMOKE::OpenSMOKE_CVODE_Sundials<OpenSMOKE::ODE_PFR_CVODE> *SolverCVODEPFR;
+if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_CVODE)
+{
+	cvodeSolverPFR = OpenSMOKE::ODE_PFR_CVODE::GetInstance();
+	cvodeSolverPFR->SetReactor(&fine_structure_ode_pfr);
+
+	SolverCVODEPFR = new OpenSMOKE::OpenSMOKE_CVODE_Sundials<OpenSMOKE::ODE_PFR_CVODE>(cvodeSolverPFR);
+	SolverCVODEPFR->SetDimensions(fine_structure_ode_pfr.NumberOfEquations());
+	SolverCVODEPFR->SetAbsoluteTolerance(odeParametersFineStructures.absolute_tolerance());
+	SolverCVODEPFR->SetRelativeTolerance(odeParametersFineStructures.relative_tolerance());
+	SolverCVODEPFR->SetAnalyticalJacobian(false);
+}
+#endif
+
+#if OPENSMOKE_USE_DASPK == 1
+OpenSMOKE::ODE_PFR_DASPK *daspkSolverPFR;
+OpenSMOKE::OpenSMOKE_DASPK<OpenSMOKE::ODE_PFR_DASPK> *SolverDASPKPFR;
+if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_DASPK)
+{
+	daspkSolverPFR = OpenSMOKE::ODE_PFR_DASPK::GetInstance(thermodynamicsMapXML->NumberOfSpecies()+1);
+	daspkSolverPFR->SetReactor(&fine_structure_ode_pfr);
+
+	SolverDASPKPFR = new OpenSMOKE::OpenSMOKE_DASPK<OpenSMOKE::ODE_PFR_DASPK>(daspkSolverPFR);
+	SolverDASPKPFR->SetDimensions(fine_structure_ode_pfr.NumberOfEquations());
+	SolverDASPKPFR->SetAbsoluteTolerance(odeParametersFineStructures.absolute_tolerance());
+	SolverDASPKPFR->SetRelativeTolerance(odeParametersFineStructures.relative_tolerance());
+	SolverDASPKPFR->SetAnalyticalJacobian(false);
+}
+#endif
+
+#if OPENSMOKE_USE_RADAU == 1
+OpenSMOKE::ODE_PFR_RADAU5 *radau5SolverPFR;
+OpenSMOKE::OpenSMOKE_RADAU<OpenSMOKE::ODE_PFR_RADAU5> *SolverRADAU5PFR;
+if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_RADAU5)
+{
+	radau5SolverPFR = OpenSMOKE::ODE_PFR_RADAU5::GetInstance();
+	radau5SolverPFR->SetReactor(&fine_structure_ode_pfr);
+
+	SolverRADAU5PFR = new OpenSMOKE::OpenSMOKE_RADAU<OpenSMOKE::ODE_PFR_RADAU5>(radau5SolverPFR);
+	SolverRADAU5PFR->SetDimensions(fine_structure_ode_pfr.NumberOfEquations());
+	SolverRADAU5PFR->SetAbsoluteTolerance(odeParametersFineStructures.absolute_tolerance());
+	SolverRADAU5PFR->SetRelativeTolerance(odeParametersFineStructures.relative_tolerance());
+	SolverRADAU5PFR->SetAnalyticalJacobian(false);
+}
+#endif
+
+#if OPENSMOKE_USE_MEBDF == 1
+OpenSMOKE::ODE_PFR_MEBDF *mebdfSolverPFR;
+OpenSMOKE::OpenSMOKE_MEBDF<OpenSMOKE::ODE_PFR_MEBDF> *SolverMEBDFPFR;
+if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_MEBDF)
+{
+	mebdfSolverPFR = OpenSMOKE::ODE_PFR_MEBDF::GetInstance();
+	mebdfSolverPFR->SetReactor(&fine_structure_ode_pfr);
+
+	SolverMEBDFPFR = new OpenSMOKE::OpenSMOKE_MEBDF<OpenSMOKE::ODE_PFR_MEBDF>(mebdfSolverPFR);
+	SolverMEBDFPFR->SetDimensions(fine_structure_ode_pfr.NumberOfEquations());
+	SolverMEBDFPFR->SetAbsoluteTolerance(odeParametersFineStructures.absolute_tolerance());
+	SolverMEBDFPFR->SetRelativeTolerance(odeParametersFineStructures.relative_tolerance());
+	SolverMEBDFPFR->SetAnalyticalJacobian(false);
 }
 #endif
 

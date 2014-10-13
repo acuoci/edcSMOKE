@@ -19,7 +19,7 @@ homogeneousReactions on;	// chemistry on/off
 minT  280.;			// minimum temperature in K (useful for steady-state)
 maxT 3500.;			// maximum temperature in K (useful for steady-state)
 
-combustionModel "ED";
+combustionModel "EDC";
 
 ED
 {
@@ -35,11 +35,12 @@ EDFR
 
 EDC
 {
+	reactorType				"PSR";			// Reactor type: PSR || PFR
 	Ccsi 					2.1377;			// EDC parameter
 	Ctau 					0.40825;		// EDC parameter
 	maxGammaSquared 			0.75487766248;		// EDC parameter
 	numberOfResidenceTimes			100.;			// ODE total integration time
-	numberIterationsToUpdateChemistry	5;			// number of CFD iteration to solve the ODE system
+	numberIterationsToUpdateChemistry	1;			// number of CFD iteration to solve the ODE system
 }
 
 Ode

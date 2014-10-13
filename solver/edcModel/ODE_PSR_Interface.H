@@ -36,20 +36,20 @@
 #include "ode/OpenSMOKE_OdeSystemObject.h"
 #include "ODESystemVirtualClassWithOpenSMOKEVectors.H"
 
-#include "HomogeneousODE.H"
+#include "ODE_PSR.H"
 
-#ifndef HomogeneousODE_Interface_H
-#define HomogeneousODE_Interface_H
+#ifndef ODE_PSR_Interface_H
+#define ODE_PSR_Interface_H
 
 namespace OpenSMOKE
 {
-	class HomogeneousODE_OpenSMOKE : public ODESystemVirtualClassWithOpenSMOKEVectors
+	class ODE_PSR_OpenSMOKE : public ODESystemVirtualClassWithOpenSMOKEVectors
 	{
 	public:
 
-		HomogeneousODE_OpenSMOKE() {};
+		ODE_PSR_OpenSMOKE() {};
 
-		void SetReactor(HomogeneousODE* reactor) { reactor_ = reactor; }
+		void SetReactor(ODE_PSR* reactor) { reactor_ = reactor; }
 
 		virtual void GetEquations(const OpenSMOKE::OpenSMOKEVectorDouble& y, const double t, OpenSMOKE::OpenSMOKEVectorDouble& dy)
 		{
@@ -62,21 +62,21 @@ namespace OpenSMOKE
 
 	private:
 
-		HomogeneousODE* reactor_;
+		ODE_PSR* reactor_;
 	};
 
 	#if OPENSMOKE_USE_DVODE == 1
-	class HomogeneousODE_DVODE : public OpenSMOKE::OpenSMOKE_OdeSystemObject
+	class ODE_PSR_DVODE : public OpenSMOKE::OpenSMOKE_OdeSystemObject
 	{
-		DEFINE_ODESOLVERINTERFACE_DVODE(HomogeneousODE_DVODE)
+		DEFINE_ODESOLVERINTERFACE_DVODE(ODE_PSR_DVODE)
 
-		HomogeneousODE* reactor_;
+		ODE_PSR* reactor_;
 		OpenSMOKE::OpenSMOKEVectorDouble y_;
 		OpenSMOKE::OpenSMOKEVectorDouble dy_;
 	
 	public:
 
-		void SetReactor(HomogeneousODE* reactor)
+		void SetReactor(ODE_PSR* reactor)
 		{
 			reactor_ = reactor;
 			ChangeDimensions(reactor_->NumberOfEquations(), &y_, true);
@@ -103,21 +103,21 @@ namespace OpenSMOKE
 			return 0;
  		}
 	}; 
-	COMPLETE_ODESOLVERINTERFACE_DVODE(HomogeneousODE_DVODE)
+	COMPLETE_ODESOLVERINTERFACE_DVODE(ODE_PSR_DVODE)
 	#endif
 
 	#if OPENSMOKE_USE_ODEPACK == 1
-	class HomogeneousODE_DLSODE : public OpenSMOKE::OpenSMOKE_OdeSystemObject
+	class ODE_PSR_DLSODE : public OpenSMOKE::OpenSMOKE_OdeSystemObject
 	{
-		DEFINE_ODESOLVERINTERFACE_DLSODE(HomogeneousODE_DLSODE)
+		DEFINE_ODESOLVERINTERFACE_DLSODE(ODE_PSR_DLSODE)
 
-		HomogeneousODE* reactor_;
+		ODE_PSR* reactor_;
 		OpenSMOKE::OpenSMOKEVectorDouble y_;
 		OpenSMOKE::OpenSMOKEVectorDouble dy_;
 	
 	public:
 
-		void SetReactor(HomogeneousODE* reactor)
+		void SetReactor(ODE_PSR* reactor)
 		{
 			reactor_ = reactor;
 			ChangeDimensions(reactor_->NumberOfEquations(), &y_, true);
@@ -144,19 +144,19 @@ namespace OpenSMOKE
 			return 0;
  		}
 	}; 
-	COMPLETE_ODESOLVERINTERFACE_DLSODE(HomogeneousODE_DLSODE)
+	COMPLETE_ODESOLVERINTERFACE_DLSODE(ODE_PSR_DLSODE)
 
-	class HomogeneousODE_DLSODA : public OpenSMOKE::OpenSMOKE_OdeSystemObject
+	class ODE_PSR_DLSODA : public OpenSMOKE::OpenSMOKE_OdeSystemObject
 	{
-		DEFINE_ODESOLVERINTERFACE_DLSODA(HomogeneousODE_DLSODA)
+		DEFINE_ODESOLVERINTERFACE_DLSODA(ODE_PSR_DLSODA)
 
-		HomogeneousODE* reactor_;
+		ODE_PSR* reactor_;
 		OpenSMOKE::OpenSMOKEVectorDouble y_;
 		OpenSMOKE::OpenSMOKEVectorDouble dy_;
 	
 	public:
 
-		void SetReactor(HomogeneousODE* reactor)
+		void SetReactor(ODE_PSR* reactor)
 		{
 			reactor_ = reactor;
 			ChangeDimensions(reactor_->NumberOfEquations(), &y_, true);
@@ -183,22 +183,22 @@ namespace OpenSMOKE
 			return 0;
  		}
 	}; 
-	COMPLETE_ODESOLVERINTERFACE_DLSODA(HomogeneousODE_DLSODA)
+	COMPLETE_ODESOLVERINTERFACE_DLSODA(ODE_PSR_DLSODA)
 	#endif
 
 	#if OPENSMOKE_USE_DASPK == 1
-	class HomogeneousODE_DASPK : public OpenSMOKE::OpenSMOKE_OdeSystemObject
+	class ODE_PSR_DASPK : public OpenSMOKE::OpenSMOKE_OdeSystemObject
 	{
-		HomogeneousODE* reactor_;
+		ODE_PSR* reactor_;
 
-		DEFINE_ODESOLVERINTERFACE_DASPK(HomogeneousODE_DASPK)
+		DEFINE_ODESOLVERINTERFACE_DASPK(ODE_PSR_DASPK)
 
 		OpenSMOKE::OpenSMOKEVectorDouble y_;
 		OpenSMOKE::OpenSMOKEVectorDouble dy_;
 	
 	public:
 
-		void SetReactor(HomogeneousODE* reactor)
+		void SetReactor(ODE_PSR* reactor)
 		{
 			reactor_ = reactor;
 			ChangeDimensions(reactor_->NumberOfEquations(), &y_, true);
@@ -225,21 +225,21 @@ namespace OpenSMOKE
 			return 0;
  		}
 	}; 
-	COMPLETE_ODESOLVERINTERFACE_DASPK(HomogeneousODE_DASPK)
+	COMPLETE_ODESOLVERINTERFACE_DASPK(ODE_PSR_DASPK)
 	#endif
 
 	#if OPENSMOKE_USE_RADAU == 1
-	class HomogeneousODE_RADAU5 : public OpenSMOKE::OpenSMOKE_OdeSystemObject
+	class ODE_PSR_RADAU5 : public OpenSMOKE::OpenSMOKE_OdeSystemObject
 	{
-		DEFINE_ODESOLVERINTERFACE_RADAU(HomogeneousODE_RADAU5)
+		DEFINE_ODESOLVERINTERFACE_RADAU(ODE_PSR_RADAU5)
 
-		HomogeneousODE* reactor_;
+		ODE_PSR* reactor_;
 		OpenSMOKE::OpenSMOKEVectorDouble y_;
 		OpenSMOKE::OpenSMOKEVectorDouble dy_;
 	
 	public:
 
-		void SetReactor(HomogeneousODE* reactor)
+		void SetReactor(ODE_PSR* reactor)
 		{
 			reactor_ = reactor;
 			ChangeDimensions(reactor_->NumberOfEquations(), &y_, true);
@@ -266,21 +266,21 @@ namespace OpenSMOKE
 			return 0;
  		}
 	}; 
-	COMPLETE_ODESOLVERINTERFACE_RADAU(HomogeneousODE_RADAU5)
+	COMPLETE_ODESOLVERINTERFACE_RADAU(ODE_PSR_RADAU5)
 	#endif
 
 	#if OPENSMOKE_USE_SUNDIALS == 1
-	class HomogeneousODE_CVODE : public OpenSMOKE::OpenSMOKE_OdeSystemObject
+	class ODE_PSR_CVODE : public OpenSMOKE::OpenSMOKE_OdeSystemObject
 	{
-		DEFINE_ODESOLVERINTERFACE_CVODE_Sundials(HomogeneousODE_CVODE)
+		DEFINE_ODESOLVERINTERFACE_CVODE_Sundials(ODE_PSR_CVODE)
 
-		HomogeneousODE* reactor_;
+		ODE_PSR* reactor_;
 		OpenSMOKE::OpenSMOKEVectorDouble y_;
 		OpenSMOKE::OpenSMOKEVectorDouble dy_;
 	
 	public:
 
-		void SetReactor(HomogeneousODE* reactor)
+		void SetReactor(ODE_PSR* reactor)
 		{
 			reactor_ = reactor;
 			ChangeDimensions(reactor_->NumberOfEquations(), &y_, true);
@@ -307,21 +307,21 @@ namespace OpenSMOKE
 			return 0;
  		}
 	}; 
-	COMPLETE_ODESOLVERINTERFACE_CVODE_Sundials(HomogeneousODE_CVODE)
+	COMPLETE_ODESOLVERINTERFACE_CVODE_Sundials(ODE_PSR_CVODE)
 	#endif
 
 	#if OPENSMOKE_USE_MEBDF == 1
-	class HomogeneousODE_MEBDF : public OpenSMOKE::OpenSMOKE_OdeSystemObject
+	class ODE_PSR_MEBDF : public OpenSMOKE::OpenSMOKE_OdeSystemObject
 	{
-		DEFINE_ODESOLVERINTERFACE_MEBDF(HomogeneousODE_MEBDF)
+		DEFINE_ODESOLVERINTERFACE_MEBDF(ODE_PSR_MEBDF)
 
-		HomogeneousODE* reactor_;
+		ODE_PSR* reactor_;
 		OpenSMOKE::OpenSMOKEVectorDouble y_;
 		OpenSMOKE::OpenSMOKEVectorDouble dy_;
 	
 	public:
 
-		void SetReactor(HomogeneousODE* reactor)
+		void SetReactor(ODE_PSR* reactor)
 		{
 			reactor_ = reactor;
 			ChangeDimensions(reactor_->NumberOfEquations(), &y_, true);
@@ -348,9 +348,9 @@ namespace OpenSMOKE
 			return 0;
  		}
 	}; 
-	COMPLETE_ODESOLVERINTERFACE_MEBDF(HomogeneousODE_MEBDF)
+	COMPLETE_ODESOLVERINTERFACE_MEBDF(ODE_PSR_MEBDF)
 	#endif
 }
 
-#endif // HomogeneousODE_Interface_H
+#endif // ODE_PSR_Interface_H
 

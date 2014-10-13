@@ -1,3 +1,6 @@
+#OpenFOAM VERSION (22 or 23)
+export OPENFOAM_VERSION='-DOPENFOAM_VERSION=22'
+
 #Compulsory path
 export EIGEN_LIBRARY_PATH=$HOME/NumericalLibraries/Eigen/eigen-3.2
 export BOOST_LIBRARY_PATH=$HOME/NumericalLibraries/Boost/boost_1_55_0 

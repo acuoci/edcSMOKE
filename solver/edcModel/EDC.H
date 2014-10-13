@@ -7,6 +7,7 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 	const double relaxationFactorFineStructures = 1.;
 
 	Info << "Fine structure properties..." << endl;
+	#if STEADYSTATE == 0
 	if (iLES == true)
 	{
 		const Foam::compressible::LESModel& lesModel = U.db().lookupObject<Foam::compressible::LESModel>("LESProperties");
@@ -32,6 +33,7 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 		Info<< "min/max(mDotStar) =    " << min(mDotStar) << ", " << max(mDotStar) << endl;
 	}
 	else
+	#endif
 	{
 		const volScalarField& epsilonConst = turbulence->epsilon();
 
@@ -73,6 +75,10 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 	const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
 	forAll(TCells, celli)
 	{	
+		// Integration time
+		const double t0 = 0.;
+		double tf = 0.;
+
 		// Extract the mean mass fractions
 		for(unsigned int i=0;i<ns;i++)
 			yMean[i+1] = Y[i].internalField()[celli];
@@ -81,101 +87,206 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 		thermodynamicsMapXML->MoleFractions_From_MassFractions(xMean, MWMean, yMean);
 
 		// Extract the fine strucutres mass fractions
-		for(unsigned int i=0;i<ns;i++)
-			yStar0(i) = YStar_[i].internalField()[celli];
-		yStar0(ne-1) = TStar_[0].internalField()[celli];
+		if (reactorType == REACTORTYPE_PSR)
+		{
+			for(unsigned int i=0;i<ns;i++)
+				yStar0(i) = YStar_[i].internalField()[celli];
+			yStar0(ne-1) = TStar_[0].internalField()[celli];
 
-		// Initialize the fine structure
-		thermodynamicsMapXML->SetTemperature(TCells[celli]);
-		thermodynamicsMapXML->SetPressure(pCells[celli]);
-		thermodynamicsMapXML->hMolar_Mixture_From_MoleFractions(hMean, xMean);
-		hMean/=MWMean;	
-		fine_structure_ode.Set(TCells[celli], pCells[celli], yMean, hMean, gammaStar[celli], mDotStar[celli], chi);
+			// Initialize the fine structure
+			thermodynamicsMapXML->SetTemperature(TCells[celli]);
+			thermodynamicsMapXML->SetPressure(pCells[celli]);
+			thermodynamicsMapXML->hMolar_Mixture_From_MoleFractions(hMean, xMean);
+			hMean/=MWMean;	
+			
+			fine_structure_ode_psr.Set(TCells[celli], pCells[celli], yMean, hMean, gammaStar[celli], mDotStar[celli], chi);
 
-		// Final solution
-		const double t0 = 0.;
-		const double tf = numberOfResidenceTimes/max(mDotStar[celli], SMALL);
+			tf = numberOfResidenceTimes/max(mDotStar[celli], SMALL);
+		}
+		else if (reactorType == REACTORTYPE_PFR)
+		{
+			for(unsigned int i=0;i<ns;i++)
+				yStar0(i) = yMean[i+1];
+			yStar0(ne-1) = TCells[celli];
+
+			fine_structure_ode_pfr.Set(pCells[celli], gammaStar[celli], mDotStar[celli], chi);
+
+
+			tf = (1.-gammaStar[celli]*chi)/max(mDotStar[celli], SMALL);
+		}			
 
 		// Solve the ODE system
 		if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_OPENSMOKE)
 		{
-			// Set initial conditions
-			odeSolver.SetInitialConditions(t0, yStar0);
-
-			// Additional ODE solver options
-			if (celli == 0)
+			if (reactorType == REACTORTYPE_PSR)
 			{
-				// Set linear algebra options
-				odeSolver.SetLinearAlgebraSolver(odeParametersFineStructures.linear_algebra());
-				odeSolver.SetFullPivoting(odeParametersFineStructures.full_pivoting());
+				// Set initial conditions
+				odeSolverPSR.SetInitialConditions(t0, yStar0);
 
-				// Set relative and absolute tolerances
-				odeSolver.SetAbsoluteTolerances(odeParametersFineStructures.absolute_tolerance());
-				odeSolver.SetRelativeTolerances(odeParametersFineStructures.relative_tolerance());
+				// Additional ODE solver options
+				if (celli == 0)
+				{
+					// Set linear algebra options
+					odeSolverPSR.SetLinearAlgebraSolver(odeParametersFineStructures.linear_algebra());
+					odeSolverPSR.SetFullPivoting(odeParametersFineStructures.full_pivoting());
 
-				// Set minimum and maximum values
-				odeSolver.SetMinimumValues(yMin);
-				odeSolver.SetMaximumValues(yMax);
-			}
+					// Set relative and absolute tolerances
+					odeSolverPSR.SetAbsoluteTolerances(odeParametersFineStructures.absolute_tolerance());
+					odeSolverPSR.SetRelativeTolerances(odeParametersFineStructures.relative_tolerance());
+
+					// Set minimum and maximum values
+					odeSolverPSR.SetMinimumValues(yMin);
+					odeSolverPSR.SetMaximumValues(yMax);
+				}
 						
-			// Solve
-			OdeSMOKE::OdeStatus status = odeSolver.Solve(tf);
-			odeSolver.Solution(yStarf);
+				// Solve
+				OdeSMOKE::OdeStatus status = odeSolverPSR.Solve(tf);
+				odeSolverPSR.Solution(yStarf);
+			}
+			else if (reactorType == REACTORTYPE_PFR)
+			{
+				// Set initial conditions
+				odeSolverPFR.SetInitialConditions(t0, yStar0);
+
+				// Additional ODE solver options
+				if (celli == 0)
+				{
+					// Set linear algebra options
+					odeSolverPFR.SetLinearAlgebraSolver(odeParametersFineStructures.linear_algebra());
+					odeSolverPFR.SetFullPivoting(odeParametersFineStructures.full_pivoting());
+
+					// Set relative and absolute tolerances
+					odeSolverPFR.SetAbsoluteTolerances(odeParametersFineStructures.absolute_tolerance());
+					odeSolverPFR.SetRelativeTolerances(odeParametersFineStructures.relative_tolerance());
+
+					// Set minimum and maximum values
+					odeSolverPFR.SetMinimumValues(yMin);
+					odeSolverPFR.SetMaximumValues(yMax);
+				}
+						
+				// Solve
+				OdeSMOKE::OdeStatus status = odeSolverPFR.Solve(tf);
+				odeSolverPFR.Solution(yStarf);
+			}
+
 		}
 		#if OPENSMOKE_USE_DVODE == 1
 		else if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_DVODE)
 		{
-			SolverDVODE->SetInitialValues(t0, yStar0.data());
-			SolverDVODE->Solve(tf);
-			SolverDVODE->Solution(yStarf.data());
+			if (reactorType == REACTORTYPE_PSR)
+			{
+				SolverDVODEPSR->SetInitialValues(t0, yStar0.data());
+				SolverDVODEPSR->Solve(tf);
+				SolverDVODEPSR->Solution(yStarf.data());
+			}
+			else if (reactorType == REACTORTYPE_PFR)
+			{
+				SolverDVODEPFR->SetInitialValues(t0, yStar0.data());
+				SolverDVODEPFR->Solve(tf);
+				SolverDVODEPFR->Solution(yStarf.data());
+			}
 		}
 		#endif
 		#if OPENSMOKE_USE_ODEPACK == 1
 		else if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_DLSODE)
 		{
-			SolverDLSODE->SetInitialValues(t0, yStar0.data());
-			SolverDLSODE->Solve(tf);
-			SolverDLSODE->Solution(yStarf.data());
+			if (reactorType == REACTORTYPE_PSR)
+			{
+				SolverDLSODEPSR->SetInitialValues(t0, yStar0.data());
+				SolverDLSODEPSR->Solve(tf);
+				SolverDLSODEPSR->Solution(yStarf.data());
+			}
+			else if (reactorType == REACTORTYPE_PFR)
+			{
+				SolverDLSODEPFR->SetInitialValues(t0, yStar0.data());
+				SolverDLSODEPFR->Solve(tf);
+				SolverDLSODEPFR->Solution(yStarf.data());
+			}
 		}
 		#endif
 		#if OPENSMOKE_USE_ODEPACK == 1
 		else if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_DLSODA)
 		{
-			SolverDLSODA->SetInitialValues(t0, yStar0.data());
-			SolverDLSODA->Solve(tf);
-			SolverDLSODA->Solution(yStarf.data());
+			if (reactorType == REACTORTYPE_PSR)
+			{
+				SolverDLSODAPSR->SetInitialValues(t0, yStar0.data());
+				SolverDLSODAPSR->Solve(tf);
+				SolverDLSODAPSR->Solution(yStarf.data());
+			}
+			else if (reactorType == REACTORTYPE_PFR)
+			{
+				SolverDLSODAPFR->SetInitialValues(t0, yStar0.data());
+				SolverDLSODAPFR->Solve(tf);
+				SolverDLSODAPFR->Solution(yStarf.data());
+			}
 		}
 		#endif
 		#if OPENSMOKE_USE_DASPK == 1
 		else if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_DASPK)
 		{
-			SolverDASPK->SetInitialValues(t0, yStar0.data());
-			SolverDASPK->Solve(tf);
-			SolverDASPK->Solution(yStarf.data());
+			if (reactorType == REACTORTYPE_PSR)
+			{
+				SolverDASPKPSR->SetInitialValues(t0, yStar0.data());
+				SolverDASPKPSR->Solve(tf);
+				SolverDASPKPSR->Solution(yStarf.data());
+			}
+			else if (reactorType == REACTORTYPE_PFR)
+			{
+				SolverDASPKPFR->SetInitialValues(t0, yStar0.data());
+				SolverDASPKPFR->Solve(tf);
+				SolverDASPKPFR->Solution(yStarf.data());
+			}
 		}
 		#endif
 		#if OPENSMOKE_USE_RADAU == 1
 		else if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_RADAU5)
 		{
-			SolverRADAU5->SetInitialValues(t0, yStar0.data());
-			SolverRADAU5->Solve(tf);
-			SolverRADAU5->Solution(yStarf.data());
+			if (reactorType == REACTORTYPE_PSR)
+			{
+				SolverRADAU5PSR->SetInitialValues(t0, yStar0.data());
+				SolverRADAU5PSR->Solve(tf);
+				SolverRADAU5PSR->Solution(yStarf.data());
+			}
+			else if (reactorType == REACTORTYPE_PFR)
+			{
+				SolverRADAU5PFR->SetInitialValues(t0, yStar0.data());
+				SolverRADAU5PFR->Solve(tf);
+				SolverRADAU5PFR->Solution(yStarf.data());
+			}
 		}
 		#endif
 		#if OPENSMOKE_USE_MEBDF == 1
 		else if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_MEBDF)
 		{
-			SolverMEBDF->SetInitialValues(t0, yStar0.data());
-			SolverMEBDF->Solve(tf);
-			SolverMEBDF->Solution(yStarf.data());
+			if (reactorType == REACTORTYPE_PSR)
+			{
+				SolverMEBDFPSR->SetInitialValues(t0, yStar0.data());
+				SolverMEBDFPSR->Solve(tf);
+				SolverMEBDFPSR->Solution(yStarf.data());
+			}
+			else if (reactorType == REACTORTYPE_PFR)
+			{
+				SolverMEBDFPFR->SetInitialValues(t0, yStar0.data());
+				SolverMEBDFPFR->Solve(tf);
+				SolverMEBDFPFR->Solution(yStarf.data());
+			}
 		}
 		#endif
 		#if OPENSMOKE_USE_SUNDIALS == 1
 		else if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_CVODE)
 		{
-			SolverCVODE->SetInitialValues(t0, yStar0.data());
-			SolverCVODE->Solve(tf);
-			SolverCVODE->Solution(yStarf.data());
+			if (reactorType == REACTORTYPE_PSR)
+			{
+				SolverCVODEPSR->SetInitialValues(t0, yStar0.data());
+				SolverCVODEPSR->Solve(tf);
+				SolverCVODEPSR->Solution(yStarf.data());
+			}
+			else if (reactorType == REACTORTYPE_PFR)
+			{
+				SolverCVODEPFR->SetInitialValues(t0, yStar0.data());
+				SolverCVODEPFR->Solve(tf);
+				SolverCVODEPFR->Solution(yStarf.data());
+			}
 		}
 		#endif
 				

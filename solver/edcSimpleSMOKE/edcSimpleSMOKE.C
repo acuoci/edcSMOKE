@@ -30,6 +30,9 @@ Description
 
 \*---------------------------------------------------------------------------*/
 
+// This is a steady state simulation
+#define STEADYSTATE 1
+
 // OpenSMOKE++ Definitions
 #include "OpenSMOKEpp"
 
@@ -56,9 +59,10 @@ Description
 #include "Utilities.H"
 
 // ODE system
-#include "HomogeneousODE.H"
-#include "HomogeneousODE_Interface.H"
-
+#include "ODE_PSR.H"
+#include "ODE_PSR_Interface.H"
+#include "ODE_PFR.H"
+#include "ODE_PFR_Interface.H"
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

@@ -1,6 +1,6 @@
 
-#ifndef HomogeneousODE_H
-#define HomogeneousODE_H
+#ifndef ODE_PFR_H
+#define ODE_PFR_H
 
 namespace OpenSMOKE
 {
@@ -11,21 +11,18 @@ namespace OpenSMOKE
 	class KineticsMap_CHEMKIN;
 }
 
-class HomogeneousODE
+class ODE_PFR
 {
 public:
 
-	HomogeneousODE(	OpenSMOKE::ThermodynamicsMap_CHEMKIN<double>& 		thermodynamicsMapXML, 
+	ODE_PFR(	OpenSMOKE::ThermodynamicsMap_CHEMKIN<double>& 		thermodynamicsMapXML, 
 			OpenSMOKE::KineticsMap_CHEMKIN<double>& 		kineticsMapXML);
 
-	void Set(const double T0, const double P0_Pa, const OpenSMOKE::OpenSMOKEVectorDouble& omegaMean, const double hMean, const double gammaStar, const double mDotStar, const double chi)
+	void Set(const double P0_Pa, const double gammaStar, const double mDotStar, const double chi)
 	{
-		TStar_ 		= T0;
 		P_Pa_ 		= P0_Pa;
 		gammaStar_ 	= gammaStar;
 		mDotStar_ 	= mDotStar;
-		omegaMean_  = omegaMean;
-		hMean_ 		= hMean;
 		chi_ 		= chi;
 	}
 
@@ -40,7 +37,6 @@ private:
 	unsigned int number_of_equations_;
 	unsigned int number_of_gas_species_;
 
-	double TStar_;
 	double P_Pa_;
 	double MWStar_;
 	double cTotStar_;
@@ -49,17 +45,11 @@ private:
 	double gammaStar_;
 	double cpStar_;
 	double chi_;
-	
-	double hMean_;
-	double hStar_;
-	double hSurr_;
 
 	OpenSMOKE::ThermodynamicsMap_CHEMKIN<double>& 	thermodynamicsMapXML_;
-	OpenSMOKE::KineticsMap_CHEMKIN<double>& 		kineticsMapXML_;
+	OpenSMOKE::KineticsMap_CHEMKIN<double>& 	kineticsMapXML_;
 
-	OpenSMOKE::OpenSMOKEVectorDouble omegaMean_;
 	OpenSMOKE::OpenSMOKEVectorDouble omegaStar_;
-	OpenSMOKE::OpenSMOKEVectorDouble omegaSurr_;
 	OpenSMOKE::OpenSMOKEVectorDouble xStar_;
 	OpenSMOKE::OpenSMOKEVectorDouble cStar_;
 	OpenSMOKE::OpenSMOKEVectorDouble RStar_;
@@ -67,7 +57,7 @@ private:
 	bool checkMassFractions_;
 };
 
-#include "HomogeneousODE.C"
+#include "ODE_PFR.C"
 
-#endif // HomogeneousODE_H
+#endif // ODE_PFR_H
 

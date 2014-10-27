@@ -364,6 +364,7 @@ PtrList<volScalarField> TStar_;
 PtrList<volScalarField> R_;
 scalarField Tau(mesh.nCells(),0.);
 scalarField gammaStar(mesh.nCells(),0.);
+scalarField tfStar(mesh.nCells(),0.);
 scalarField mDotStar(mesh.nCells(),0.);
 scalarField edc_coefficient(mesh.nCells(),0.);
 {
@@ -634,6 +635,10 @@ if (combustionModel == "EDC")
 	Info << "Max error (fine structures):  " << maxError << endl;
 }
 
+#if EDCSMOKE_USE_ISAT == 1
+    #include "readOptions_ISAT.H"
+#endif
+
 // Spark (to ignite the mixture)
 #include "spark.H"
 
@@ -888,3 +893,6 @@ if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRA
 }
 #endif
 
+#if EDCSMOKE_USE_ISAT == 1
+    #include "memoryAllocation_ISAT.H"
+#endif

@@ -74,7 +74,7 @@ ODE_PSR::ODE_PSR(
 	kineticsMapXML_(kineticsMapXML)
 {
 	number_of_gas_species_ = thermodynamicsMapXML_.NumberOfSpecies();
-	number_of_equations_ = number_of_gas_species_ + 1;
+	number_of_equations_ = number_of_gas_species_ + 1 + 1;
 
 	ChangeDimensions(number_of_gas_species_, &omegaSurr_, true);
 	ChangeDimensions(number_of_gas_species_, &omegaStar_, true);
@@ -97,8 +97,12 @@ int ODE_PSR::Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y
 		for(unsigned int i=1;i<=number_of_gas_species_;++i)
 			omegaStar_[i] = y[i];
 	}
+
 	// Recover temperature
-	TStar_ = y[number_of_equations_];
+	const double TStar_ = y[number_of_gas_species_+1];
+
+	// Recover dummy variable
+	const double dummy_ = y[number_of_gas_species_+2];
 
 	for(unsigned int i=1;i<=number_of_gas_species_;i++)
 		omegaSurr_[i] = (omegaMean_[i] - omegaStar_[i]*gammaStar_*chi_)/(1.-gammaStar_*chi_);
@@ -133,6 +137,9 @@ int ODE_PSR::Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y
 	
 	const double Q = 0.; // radiation contribution
 	dy[number_of_gas_species_+1] = mDotStar_/cpStar_*(hSurr_-hStar_) - Q/(rhoStar_*cpStar_);
+
+	// Dummy equation
+	dy[number_of_gas_species_+2] = 0.;
 	
 	return 0;
 }

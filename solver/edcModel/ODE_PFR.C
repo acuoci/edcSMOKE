@@ -74,7 +74,7 @@ ODE_PFR::ODE_PFR(
 	kineticsMapXML_(kineticsMapXML)
 {
 	number_of_gas_species_ = thermodynamicsMapXML_.NumberOfSpecies();
-	number_of_equations_ = number_of_gas_species_ + 1;
+	number_of_equations_ = number_of_gas_species_ + 1 + 1;
 
 	ChangeDimensions(number_of_gas_species_, &omegaStar_, true);
 	ChangeDimensions(number_of_gas_species_, &xStar_, true);
@@ -97,7 +97,10 @@ int ODE_PFR::Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y
 			omegaStar_[i] = y[i];
 	}
 	// Recover temperature
-	const double TStar_ = y[number_of_equations_];
+	const double TStar_ = y[number_of_gas_species_+1];
+
+	// Recover dummy variable
+	const double dummy_ = y[number_of_gas_species_+2];
 	
 	// Calculates the pressure and the concentrations of species
 	thermodynamicsMapXML_.MoleFractions_From_MassFractions(xStar_, MWStar_, omegaStar_);
@@ -126,7 +129,10 @@ int ODE_PFR::Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y
 	
 	const double Q = 0.; // radiation contribution
 	dy[number_of_gas_species_+1] = (QRStar_ - Q)/(rhoStar_*cpStar_);
-	
+
+	// Dummy equation
+	dy[number_of_gas_species_+2] = 0.;
+
 	return 0;
 }
 

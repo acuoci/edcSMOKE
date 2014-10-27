@@ -67,12 +67,9 @@ public:
 	ODE_PFR(	OpenSMOKE::ThermodynamicsMap_CHEMKIN<double>& 		thermodynamicsMapXML, 
 			OpenSMOKE::KineticsMap_CHEMKIN<double>& 		kineticsMapXML);
 
-	void Set(const double P0_Pa, const double gammaStar, const double mDotStar, const double chi)
+	void Set(const double P0_Pa)
 	{
-		P_Pa_ 		= P0_Pa;
-		gammaStar_ 	= gammaStar;
-		mDotStar_ 	= mDotStar;
-		chi_ 		= chi;
+		P_Pa_ = P0_Pa;
 	}
 
 	void SetCheckMassFractions( const bool flag ) { checkMassFractions_ = flag; };
@@ -90,10 +87,7 @@ private:
 	double MWStar_;
 	double cTotStar_;
 	double rhoStar_;
-	double mDotStar_;
-	double gammaStar_;
 	double cpStar_;
-	double chi_;
 
 	OpenSMOKE::ThermodynamicsMap_CHEMKIN<double>& 	thermodynamicsMapXML_;
 	OpenSMOKE::KineticsMap_CHEMKIN<double>& 	kineticsMapXML_;

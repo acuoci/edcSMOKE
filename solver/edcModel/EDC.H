@@ -97,19 +97,22 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 		Info<< "min/max(epsilon) = " << min(epsilonConst).value() << ", " << max(epsilonConst).value() << endl;
 		Info<< "min/max(gammaStar) = " << min(gammaStar) << ", " << max(gammaStar) << endl;
 		Info<< "min/max(mDotStar) = " << min(mDotStar) << ", " << max(mDotStar) << endl;
+
+		tfStar = (1.-gammaStar*chi)/(mDotStar);
+		Info<< "min/max(tfStar) = " << min(tfStar) << ", " << max(tfStar) << endl;
 	}
 
 	Info << "ODE Integration..." << endl;
 	const int unsigned ns = Y.size();
-	const int unsigned ne = ns+1;
+	const int unsigned ne = ns+1+1;
 
 	Eigen::VectorXd yStar0(ne);
 	Eigen::VectorXd yStarf(ne);
 	Eigen::VectorXd yMin(ne);
 	Eigen::VectorXd yMax(ne);
 	
-	for(unsigned int i=0;i<ns;i++)	yMin(i) = 0.; yMin(ne-1) = 200.;
-	for(unsigned int i=0;i<ns;i++)	yMax(i) = 1.; yMax(ne-1) = 5000.;
+	for(unsigned int i=0;i<ns;i++)	yMin(i) = 0.; yMin(ne-2) = 200.;	yMin(ne-1) = 0.;
+	for(unsigned int i=0;i<ns;i++)	yMax(i) = 1.; yMax(ne-2) = 5000.;	yMax(ne-1) = 1.e16;
 
 	OpenSMOKE::OpenSMOKEVectorDouble yMean(ns);
 	OpenSMOKE::OpenSMOKEVectorDouble xMean(ns);
@@ -120,6 +123,17 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 	const scalarField& TCells = thermo.T().internalField();
 	//const scalarField& hCells = thermo.he().internalField();
 	scalarField& ShCells = Sh_.internalField();
+
+	// ISAT Statistics
+	#if EDCSMOKE_USE_ISAT == 1
+		unsigned int nAddHOM   = 0;
+		unsigned int nGrowHOM  = 0;
+		unsigned int nRetHOM   = 0;
+		double cpuTimeRet      = 0.;
+		double cpuTimeDI       = 0.;
+		double cpuTimeGrowth   = 0.;
+		double cpuTimeAddition = 0.;
+	#endif
 
 	unsigned int counter = 0;
 	const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
@@ -141,7 +155,8 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 		{
 			for(unsigned int i=0;i<ns;i++)
 				yStar0(i) = YStar_[i].internalField()[celli];
-			yStar0(ne-1) = TStar_[0].internalField()[celli];
+			yStar0(ne-2) = TStar_[0].internalField()[celli];
+			yStar0(ne-1) = 0.;
 
 			// Initialize the fine structure
 			thermodynamicsMapXML->SetTemperature(TCells[celli]);
@@ -155,14 +170,14 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 		}
 		else if (reactorType == REACTORTYPE_PFR)
 		{
+			tf = (1.-gammaStar[celli]*chi)/max(mDotStar[celli], SMALL);
+
 			for(unsigned int i=0;i<ns;i++)
 				yStar0(i) = yMean[i+1];
-			yStar0(ne-1) = TCells[celli];
+			yStar0(ne-2) = TCells[celli];
+			yStar0(ne-1) = tf;
 
-			fine_structure_ode_pfr.Set(pCells[celli], gammaStar[celli], mDotStar[celli], chi);
-
-
-			tf = (1.-gammaStar[celli]*chi)/max(mDotStar[celli], SMALL);
+			fine_structure_ode_pfr.Set(pCells[celli]);
 		}			
 
 		// Solve the ODE system
@@ -195,28 +210,18 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 			}
 			else if (reactorType == REACTORTYPE_PFR)
 			{
-				// Set initial conditions
-				odeSolverPFR.SetInitialConditions(t0, yStar0);
-
-				// Additional ODE solver options
-				if (celli == 0)
-				{
-					// Set linear algebra options
-					odeSolverPFR.SetLinearAlgebraSolver(odeParametersFineStructures.linear_algebra());
-					odeSolverPFR.SetFullPivoting(odeParametersFineStructures.full_pivoting());
-
-					// Set relative and absolute tolerances
-					odeSolverPFR.SetAbsoluteTolerances(odeParametersFineStructures.absolute_tolerance());
-					odeSolverPFR.SetRelativeTolerances(odeParametersFineStructures.relative_tolerance());
-
-					// Set minimum and maximum values
-					odeSolverPFR.SetMinimumValues(yMin);
-					odeSolverPFR.SetMaximumValues(yMax);
-				}
-						
-				// Solve
-				OdeSMOKE::OdeStatus status = odeSolverPFR.Solve(tf);
-				odeSolverPFR.Solution(yStarf);
+				#if EDCSMOKE_USE_ISAT == 1
+					if(isatCheck == true)
+					{
+						#include "solvePFR_ISAT.H"
+					}
+					else
+					{
+						#include "solvePFR_DI.H"
+					}
+				#else
+					#include "solvePFR_DI.H"
+				#endif
 			}
 
 		}
@@ -342,7 +347,7 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 				
 		for(unsigned int i=0;i<ns;i++)
 			YStar_[i].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0(i) + relaxationFactorFineStructures*yStarf(i);
-		TStar_[0].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0(ne-1) + relaxationFactorFineStructures*yStarf(ne-1);
+		TStar_[0].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0(ne-2) + relaxationFactorFineStructures*yStarf(ne-2);
  
 		for(unsigned int i=0;i<ns;i++)
 			R_[i].internalField()[celli] = edc_coefficient[celli]*(YStar_[i].internalField()[celli]-Y[i].internalField()[celli]);
@@ -374,9 +379,43 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 	const double tEnd = OpenSMOKE::OpenSMOKEGetCpuTime();
 			
 	Info << tEnd - tStart << " s " << "(" << (tEnd - tStart)/double(TCells.size())*1e3 << " ms per cell)" << endl;
+
+	#if EDCSMOKE_USE_ISAT == 1
+	if(isatCheck == true) 
+	{
+		// stats
+		counterISATHOM += counter;
+		if(printStats == true)	
+			fprintf(fleHOM,"%d\t%e\t%d\t%d\t%d\n",counterISATHOM,runTime.value(),isat_HOM->nAdd(),isat_HOM->nGrow(),isat_HOM->nUse());
+
+		// stats
+		Info << endl;
+		Info << " ********* ISAT HOM stats **********" << endl;
+		
+		Info << "   Direct Integration : " << isat_HOM->nAdd()+isat_HOM->nGrow()  << " (" << nAddHOM+nGrowHOM << ")" << " (" << (nAddHOM+nGrowHOM)/double(mesh.nCells())*100. << "%)" << endl;
+		Info << "      Add             : " << isat_HOM->nAdd()  << " (" << nAddHOM  << ")" << " (" << nAddHOM/double(mesh.nCells())*100. << "%)" << endl;
+		Info << "      Grow            : " << isat_HOM->nGrow() << " (" << nGrowHOM << ")" << " (" << nGrowHOM/double(mesh.nCells())*100. << "%)" << endl;
+		Info << "   Retrieve           : " << isat_HOM->nUse()  << " (" << nRetHOM  << ")" << " (" << nRetHOM/double(mesh.nCells())*100. << "%)" << endl;
+		Info << endl;				
+
+		const double cpuTimeIntegration = cpuTimeDI + cpuTimeGrowth + cpuTimeAddition;
+		Info << "   CPU Integration  : " << cpuTimeIntegration  << " (" << cpuTimeIntegration/(tEnd-tStart)*100. << "%)" << endl;
+		Info << "     CPU DI         : " << cpuTimeDI           << " (" << cpuTimeDI/(tEnd-tStart)*100.          << "%)" << endl;				
+		Info << "     CPU Growth     : " << cpuTimeGrowth       << " (" << cpuTimeGrowth/(tEnd-tStart)*100.         << "%)" << endl;
+		Info << "     CPU Addition   : " << cpuTimeAddition     << " (" << cpuTimeAddition/(tEnd-tStart)*100.    << "%)" << endl;
+		Info << "   CPU Retrieve     : " << cpuTimeRet          << " (" << cpuTimeRet/(tEnd-tStart)*100.         << "%)" << endl;
+		Info << endl;
+
+		Info << "      BTS  : " << isat_HOM->nBTS()  << endl;
+		Info << "      MRU  : " << isat_HOM->nMRU()  << endl;
+		Info << "      MFU  : " << isat_HOM->nMFU()  << endl << endl;
+		Info << endl;
+	}
+	#endif
 	
 	WriteScalarField(mesh, mDotStar,  "edc::mDotStar");
 	WriteScalarField(mesh, gammaStar, "edc::gammaStar");
+	WriteScalarField(mesh, tfStar, 	  "edc::tfStar");
 }
 
 edcCounter++;

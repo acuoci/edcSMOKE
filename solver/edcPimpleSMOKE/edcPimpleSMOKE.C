@@ -83,6 +83,14 @@
 #include "ODE_PFR.H"
 #include "ODE_PFR_Interface.H"
 
+// ISAT
+#if EDCSMOKE_USE_ISAT == 1
+    #include "ISAT.h"
+    #include "mappingGradient.h"
+    #include "numericalJacobian4ISAT.H"
+#endif
+
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 int main(int argc, char *argv[])

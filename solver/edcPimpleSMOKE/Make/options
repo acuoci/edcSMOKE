@@ -3,6 +3,7 @@ EXE_INC = \
     -w \
     -I../edcModel \
     $(MKL_SUPPORT) \
+    $(ISAT_SUPPORT) \
     $(EXTERNAL_ODE_SOLVERS) \
     -I$(OPENSMOKE_LIBRARY_PATH) \
     -I$(BOOST_LIBRARY_PATH)/include \
@@ -10,6 +11,7 @@ EXE_INC = \
     -I$(RAPIDXML_LIBRARY_PATH) \
     -I$(SUNDIALS_PATH)/include \
     -I$(MKL_INCLUDE) \
+    -I$(ISAT_INCLUDE) \
     -I$(LIB_SRC)/finiteVolume/lnInclude \
     -I$(LIB_SRC)/fvOptions/lnInclude \
     -I$(LIB_SRC)/meshTools/lnInclude \
@@ -51,6 +53,7 @@ EXE_LIBS = \
     $(ODEPACK_LIBS) \
     $(DVODE_LIBS)     \
     $(LINPACK_LIBS) \
+    $(ISAT_LIBS) \
     -lgfortran \
     $(MKL_LIBS) \
     -lboost_date_time \

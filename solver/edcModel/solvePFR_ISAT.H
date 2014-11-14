@@ -7,12 +7,12 @@
 	chemComp *phi0base = NULL;
 	
 	// Check if retrieval is possible
-	if(isat_HOM->retrieve(phiISAT_HOM, phi0base)) 
+	if(isatTable->retrieve(phiISAT_HOM, phi0base)) 
 	{					
 		double t1 = OpenSMOKE::OpenSMOKEGetCpuTime();
 		
 		// makes interpolation
-		isat_HOM->interpol(phiISAT_HOM, RphiISAT_HOM, phi0base);
+		isatTable->interpol(phiISAT_HOM, RphiISAT_HOM, phi0base);
 
 		//check negative value
 		for(unsigned int i=0;i<ne;i++)
@@ -62,7 +62,7 @@
 		}
 
 		// Growth
-		if(isat_HOM->grow(phiISAT_HOM, RphiISAT_HOM, phi0base)) 
+		if(isatTable->grow(phiISAT_HOM, RphiISAT_HOM, phi0base)) 
 		{
 			double t1 = OpenSMOKE::OpenSMOKEGetCpuTime();
 
@@ -83,7 +83,7 @@
 						luSolver_ISAT, (tf-t0), numberSubSteps_ISAT, &odeSolverPFR);
 	
 			// add a new leaf 
-			bool flag = isat_HOM->add(phiISAT_HOM, RphiISAT_HOM, mapGrad_HOM, qrSolver_ISAT, phi0base); 
+			bool flag = isatTable->add(phiISAT_HOM, RphiISAT_HOM, mapGrad_HOM, phi0base); 
 
 			if(flag == false)	
 				Info << "ISAT Error - Addition process failed..." << endl;
@@ -96,7 +96,7 @@
 		}
 
 		// check if is necessary to balance
-		isat_HOM->cleanAndBalance();
+		isatTable->cleanAndBalance();
 	}
 }
 

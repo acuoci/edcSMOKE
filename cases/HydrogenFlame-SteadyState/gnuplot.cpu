@@ -1,0 +1,12 @@
+
+unset logscale y
+
+set title "CPU Time"
+
+set ylabel 'CPU time [s]'
+set xlabel 'Iteration'
+
+plot "< cat log | grep 'CPU time for chemistry' | cut -d ':' -f2 | cut -d 's' -f1 | tr -d ' '" title 'Chemistry'  with lines,\
+     "< cat log | grep 'CPU time for species transport' | cut -d ':' -f2 | cut -d 's' -f1 | tr -d ' '" title 'Transport'  with lines
+
+pause(-1)

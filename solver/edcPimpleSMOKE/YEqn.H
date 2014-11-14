@@ -59,6 +59,7 @@ tmp<fv::convectionScheme<scalar> > mvConvection
     )
 );
 
+
 {
     reaction->correct();
     #include "chemistry.H"
@@ -66,6 +67,7 @@ tmp<fv::convectionScheme<scalar> > mvConvection
     label inertIndex = -1;
     volScalarField Yt(0.0*Y[0]);
 
+    const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
     forAll(Y, i)
     {
         if (Y[i].name() != inertSpecie)
@@ -98,7 +100,15 @@ tmp<fv::convectionScheme<scalar> > mvConvection
             inertIndex = i;
         }
     }
+    
 
     Y[inertIndex] = scalar(1.0) - Yt;
     Y[inertIndex].max(0.0);
+
+    const double tEnd = OpenSMOKE::OpenSMOKEGetCpuTime();
+
+    Info << "CPU time for species transport : " << tEnd - tStart << " s " << "(" << (tEnd - tStart)/double(mesh.C().size())*1e3 << " ms per cell)" << endl;
 }
+
+
+

@@ -48,7 +48,7 @@ laplacianSchemes
 interpolationSchemes
 {
 	default         	none;
-	interpolate(HbyA)	linear;
+	interpolate((rho*HbyA))	linear;
 	interpolate(rho)	linear;
 }
 

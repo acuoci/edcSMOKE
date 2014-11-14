@@ -378,24 +378,18 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 	}
 	const double tEnd = OpenSMOKE::OpenSMOKEGetCpuTime();
 			
-	Info << tEnd - tStart << " s " << "(" << (tEnd - tStart)/double(TCells.size())*1e3 << " ms per cell)" << endl;
+	Info << "CPU time for chemistry (EDC) : " << tEnd - tStart << " s " << "(" << (tEnd - tStart)/double(TCells.size())*1e3 << " ms per cell)" << endl;
 
 	#if EDCSMOKE_USE_ISAT == 1
 	if(isatCheck == true) 
 	{
-		// stats
-		counterISATHOM += counter;
-		if(printStats == true)	
-			fprintf(fleHOM,"%d\t%e\t%d\t%d\t%d\n",counterISATHOM,runTime.value(),isat_HOM->nAdd(),isat_HOM->nGrow(),isat_HOM->nUse());
-
-		// stats
 		Info << endl;
 		Info << " ********* ISAT HOM stats **********" << endl;
 		
-		Info << "   Direct Integration : " << isat_HOM->nAdd()+isat_HOM->nGrow()  << " (" << nAddHOM+nGrowHOM << ")" << " (" << (nAddHOM+nGrowHOM)/double(mesh.nCells())*100. << "%)" << endl;
-		Info << "      Add             : " << isat_HOM->nAdd()  << " (" << nAddHOM  << ")" << " (" << nAddHOM/double(mesh.nCells())*100. << "%)" << endl;
-		Info << "      Grow            : " << isat_HOM->nGrow() << " (" << nGrowHOM << ")" << " (" << nGrowHOM/double(mesh.nCells())*100. << "%)" << endl;
-		Info << "   Retrieve           : " << isat_HOM->nUse()  << " (" << nRetHOM  << ")" << " (" << nRetHOM/double(mesh.nCells())*100. << "%)" << endl;
+		Info << "   Direct Integration : " << isatTable->nAdd()+isatTable->nGrow()  << " (" << nAddHOM+nGrowHOM << ")" << " (" << (nAddHOM+nGrowHOM)/double(mesh.nCells())*100. << "%)" << endl;
+		Info << "      Add             : " << isatTable->nAdd()  << " (" << nAddHOM  << ")" << " (" << nAddHOM/double(mesh.nCells())*100. << "%)" << endl;
+		Info << "      Grow            : " << isatTable->nGrow() << " (" << nGrowHOM << ")" << " (" << nGrowHOM/double(mesh.nCells())*100. << "%)" << endl;
+		Info << "   Retrieve           : " << isatTable->nUse()  << " (" << nRetHOM  << ")" << " (" << nRetHOM/double(mesh.nCells())*100. << "%)" << endl;
 		Info << endl;				
 
 		const double cpuTimeIntegration = cpuTimeDI + cpuTimeGrowth + cpuTimeAddition;
@@ -406,9 +400,9 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 		Info << "   CPU Retrieve     : " << cpuTimeRet          << " (" << cpuTimeRet/(tEnd-tStart)*100.         << "%)" << endl;
 		Info << endl;
 
-		Info << "      BTS  : " << isat_HOM->nBTS()  << endl;
-		Info << "      MRU  : " << isat_HOM->nMRU()  << endl;
-		Info << "      MFU  : " << isat_HOM->nMFU()  << endl << endl;
+		Info << "      BTS  : " << isatTable->nBTS()  << endl;
+		Info << "      MRU  : " << isatTable->nMRU()  << endl;
+		Info << "      MFU  : " << isatTable->nMFU()  << endl << endl;
 		Info << endl;
 	}
 	#endif

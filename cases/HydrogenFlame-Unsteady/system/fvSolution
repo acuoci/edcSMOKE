@@ -17,25 +17,32 @@ FoamFile
 
 solvers
 {
-    "rho.*"
+"(rho|rhoFinal)"
     {
-        solver          diagonal;
-    }
+        solver              PCG;
+        preconditioner      DIC;
+        tolerance           1e-6;
+        relTol              0;
+    };
 
     p
     {
-        solver           PCG;
-        preconditioner   DIC;
-        tolerance        1e-6;
-        relTol           0.1;
-    }
+        solver              	GAMG;
+        tolerance           	1e-6;
+        relTol              	0.1;
+        smoother            	GaussSeidel;
+        cacheAgglomeration  	true;
+        nCellsInCoarsestLevel   10;
+        agglomerator    	faceAreaPair;
+        mergeLevels     	1;
+    };
 
     pFinal
     {
         $p;
-        tolerance        1e-6;
-        relTol           0.0;
-    }
+        tolerance           1e-6;
+        relTol              0;
+    };
 
     "(U|h|k|epsilon)"
     {
@@ -73,9 +80,9 @@ solvers
 
 PIMPLE
 {
-    momentumPredictor no;
+    momentumPredictor yes;
     nOuterCorrectors  1;
-    nCorrectors     2;
+    nCorrectors       2;
     nNonOrthogonalCorrectors 0;
 }
 

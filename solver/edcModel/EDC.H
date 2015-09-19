@@ -114,7 +114,7 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 	for(unsigned int i=0;i<ns;i++)	yMin(i) = 0.; yMin(ne-2) = 200.;	yMin(ne-1) = 0.;
 	for(unsigned int i=0;i<ns;i++)	yMax(i) = 1.; yMax(ne-2) = 5000.;	yMax(ne-1) = 1.e16;
 
-	OpenSMOKE::OpenSMOKEVectorDouble yMean(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble omegaMean(ns);
 	OpenSMOKE::OpenSMOKEVectorDouble xMean(ns);
 	OpenSMOKE::OpenSMOKEVectorDouble h_species(ns);
 	
@@ -123,6 +123,7 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 	const scalarField& TCells = thermo.T().internalField();
 	//const scalarField& hCells = thermo.he().internalField();
 	scalarField& ShCells = Sh_.internalField();
+	scalarField& dQCells = dQ.internalField();
 
 	// ISAT Statistics
 	#if EDCSMOKE_USE_ISAT == 1
@@ -145,10 +146,10 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 
 		// Extract the mean mass fractions
 		for(unsigned int i=0;i<ns;i++)
-			yMean[i+1] = Y[i].internalField()[celli];
-			
+			omegaMean[i+1] = Y[i].internalField()[celli];
+
 		// Convert to mole fractions
-		thermodynamicsMapXML->MoleFractions_From_MassFractions(xMean, MWMean, yMean);
+		thermodynamicsMapXML->MoleFractions_From_MassFractions(xMean, MWMean, omegaMean);
 
 		// Extract the fine strucutres mass fractions
 		if (reactorType == REACTORTYPE_PSR)
@@ -164,7 +165,7 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 			thermodynamicsMapXML->hMolar_Mixture_From_MoleFractions(hMean, xMean);
 			hMean/=MWMean;	
 			
-			fine_structure_ode_psr.Set(TCells[celli], pCells[celli], yMean, hMean, gammaStar[celli], mDotStar[celli], chi);
+			fine_structure_ode_psr.Set(TCells[celli], pCells[celli], omegaMean, hMean, gammaStar[celli], mDotStar[celli], chi);
 
 			tf = numberOfResidenceTimes/max(mDotStar[celli], SMALL);
 		}
@@ -173,7 +174,7 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 			tf = (1.-gammaStar[celli]*chi)/max(mDotStar[celli], SMALL);
 
 			for(unsigned int i=0;i<ns;i++)
-				yStar0(i) = yMean[i+1];
+				yStar0(i) = omegaMean[i+1];
 			yStar0(ne-2) = TCells[celli];
 			yStar0(ne-1) = tf;
 
@@ -360,13 +361,14 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 		for(unsigned int i=0;i<ns;i++)
 			HeatRelease += -h_species[i+1]/thermodynamicsMapXML->MW()[i+1] * R_[i].internalField()[celli];
 		ShCells[celli] = HeatRelease;
+		dQCells[celli] = HeatRelease * mesh.V()[celli];
 
 		if (debug == true)
 		{
 			Info << celli << " " << TCells[celli] << " " << gammaStar[celli] << " " << mDotStar[celli] << " " << HeatRelease << endl;
 			for(unsigned int i=0;i<ns;i++)
 			{
-				Info << Y[i].name() << " " << yStar0[i] << " " << yStarf[i] << " " << yMean[i+1] << " " << R_[i].internalField()[celli] << endl;
+				Info << Y[i].name() << " " << yStar0[i] << " " << yStarf[i] << " " << omegaMean[i+1] << " " << R_[i].internalField()[celli] << endl;
 			}
 			getchar();
 		}
@@ -410,6 +412,25 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 	WriteScalarField(mesh, mDotStar,  "edc::mDotStar");
 	WriteScalarField(mesh, gammaStar, "edc::gammaStar");
 	WriteScalarField(mesh, tfStar, 	  "edc::tfStar");
+
+	// Adjust on the boundaries
+	const fvPatchList& patches = mesh.boundary();
+    	forAll(patches, patchi)
+    	{
+        	const fvPatch& currPatch = patches[patchi];
+
+	        scalarField& pSh_ = Sh_.boundaryField()[patchi];
+	        scalarField& pQ_  = dQ.boundaryField()[patchi];
+		scalarField& ShCells = Sh_.internalField();
+		scalarField& dQCells = dQ.internalField();
+
+            	forAll(currPatch, facei)
+            	{
+                	label faceCelli = currPatch.faceCells()[facei];
+                	pSh_[facei] = ShCells[faceCelli];
+                	pQ_[facei] = dQCells[faceCelli];
+		}
+        }
 }
 
 edcCounter++;

@@ -84,9 +84,9 @@
 
 // ISAT
 #if EDCSMOKE_USE_ISAT == 1
-    #include "ISAT.h"
-    #include "mappingGradient.h"
-    #include "numericalJacobian4ISAT.H"
+#include "ISAT.h"
+#include "mappingGradient.h"
+#include "numericalJacobian4ISAT.H"
 #endif
 
 

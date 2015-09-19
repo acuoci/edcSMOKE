@@ -210,7 +210,6 @@ else if (combustionModel == "EDC")
 		Info << "Wrong reactor type: PSR || PFR" << endl;
 		abort();
 	}
-
 }
 // Error Message
 else
@@ -538,6 +537,20 @@ volScalarField Sh_
     ),
     mesh,
     dimensionedScalar("Sh", dimEnergy/dimTime/dimVolume, 0.0)
+);
+
+volScalarField dQ
+(
+	IOobject
+	(
+       		"dQ",
+        	runTime.timeName(),
+        	mesh,
+        	IOobject::NO_READ,
+        	IOobject::AUTO_WRITE
+	),
+	mesh,
+	dimensionedScalar("dQ", dimEnergy/dimTime, 0.0)
 );
 
 dimensionedScalar ksmall_("ksmall", dimensionSet(0,2,-2,0,0,0,0), scalar(1e-6) );

@@ -145,6 +145,8 @@ int main(int argc, char *argv[])
 
         runTime.write();
 
+	Pav << runTime.timeName() << "\t" << p.weightedAverage(mesh.V()).value() << endl;
+
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
             << "  ClockTime = " << runTime.elapsedClockTime() << " s"
             << nl << endl;

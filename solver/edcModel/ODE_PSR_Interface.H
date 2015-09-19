@@ -48,6 +48,9 @@
 |                                                                         |
 \*-----------------------------------------------------------------------*/
 
+#ifndef ODE_PSR_Interface_H
+#define	ODE_PSR_Interface_H
+
 #include "math/OpenSMOKEVector.h"
 #include "ode/OpenSMOKE_OdeSystemObject.h"
 
@@ -87,9 +90,6 @@
 #include "ODESystemVirtualClassWithOpenSMOKEVectors.H"
 
 #include "ODE_PSR.H"
-
-#ifndef ODE_PSR_Interface_H
-#define ODE_PSR_Interface_H
 
 namespace OpenSMOKE
 {
@@ -400,7 +400,7 @@ namespace OpenSMOKE
 	}; 
 	COMPLETE_ODESOLVERINTERFACE_MEBDF(ODE_PSR_MEBDF)
 	#endif
-}
+};
 
 #endif // ODE_PSR_Interface_H
 

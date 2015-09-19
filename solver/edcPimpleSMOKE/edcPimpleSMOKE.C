@@ -78,6 +78,7 @@
 #include "Utilities.H"
 
 // ODE system
+#include "DRG.h"
 #include "ODE_PSR.H"
 #include "ODE_PSR_Interface.H"
 #include "ODE_PFR.H"
@@ -144,8 +145,6 @@ int main(int argc, char *argv[])
         }
 
         runTime.write();
-
-	Pav << runTime.timeName() << "\t" << p.weightedAverage(mesh.V()).value() << endl;
 
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
             << "  ClockTime = " << runTime.elapsedClockTime() << " s"

@@ -83,6 +83,34 @@ IOdictionary combustionOptionsDictionary
 	)
 );
 
+// DRG
+OpenSMOKE::DRG* drg;
+Switch drg_analysis = false;
+double drg_minimum_temperature_for_chemistry = 300.;
+List<double>  drg_epsilon;
+List<double>  drg_temperature;
+const dictionary& drgDictionary = combustionOptionsDictionary.subDict("DRG");
+{
+	drg_analysis = Switch(drgDictionary.lookup(word("drg")));
+
+	if ( drg_analysis == true)
+	{
+		drg_minimum_temperature_for_chemistry  = readScalar(drgDictionary.lookup("minTemperature"));
+
+		std::vector<unsigned int> drgListSpecies;
+		List<word>  listSpecies(drgDictionary.lookup("species"));
+		drgListSpecies.resize(listSpecies.size());
+		for (int i=0;i<drgListSpecies.size();i++)
+			drgListSpecies[i] = thermodynamicsMapXML->IndexOfSpecies(listSpecies[i])-1;
+
+		drg_epsilon = readList<double>(drgDictionary.lookup("epsilon"));
+		drg_temperature = readList<double>(drgDictionary.lookup("temperature"));
+
+		drg = new OpenSMOKE::DRG(thermodynamicsMapXML, kineticsMapXML);
+		drg->SetKeySpecies(drgListSpecies);
+	}
+}
+
 // Selecting combustion model
 Switch homogeneousReactions(combustionOptionsDictionary.lookup("homogeneousReactions"));
 

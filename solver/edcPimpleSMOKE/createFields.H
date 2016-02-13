@@ -95,6 +95,9 @@ const volScalarField& psi = thermo.psi();
 
 #include "compressibleCreatePhi.H"
 
+dimensionedScalar rhoMax(pimple.dict().lookup("rhoMax"));
+dimensionedScalar rhoMin(pimple.dict().lookup("rhoMin"));
+
 Info << "Creating turbulence model.\n" << nl;
 autoPtr<compressible::turbulenceModel> turbulence
 (

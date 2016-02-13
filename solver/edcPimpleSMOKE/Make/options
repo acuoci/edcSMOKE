@@ -43,7 +43,7 @@ EXE_LIBS = \
     -lspecie \
     -lfluidThermophysicalModels \
     -lchemistryModel \
-    -lradiationModels \
+    $(FOAM_LIBBIN)/libradiationModels.so \
     -lODE \
     -lcombustionModels \
     $(SUNDIALS_LIBS) \

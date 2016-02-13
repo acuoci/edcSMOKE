@@ -48,7 +48,7 @@
 |                                                                         |
 \*-----------------------------------------------------------------------*/
 
-    fvVectorMatrix UEqn
+    tmp<fvVectorMatrix> UEqn
     (
         fvm::ddt(rho, U)
       + fvm::div(phi, U)
@@ -58,14 +58,16 @@
       + fvOptions(rho, U)
     );
 
-    UEqn.relax();
+    UEqn().relax();
 
-    fvOptions.constrain(UEqn);
+    fvOptions.constrain(UEqn());
 
     if (pimple.momentumPredictor())
     {
-        solve(UEqn == -fvc::grad(p));
+        solve(UEqn() == -fvc::grad(p));
 
         fvOptions.correct(U);
         K = 0.5*magSqr(U);
     }
+
+    Info << " Umin: " << min(U).value() << " Umax: " << max(U).value() << endl;

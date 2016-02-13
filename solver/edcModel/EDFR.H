@@ -188,5 +188,5 @@
 	}
 	const double tEnd = OpenSMOKE::OpenSMOKEGetCpuTime();
 			
-	Info << "CPU time for chemistry (EDFR) : " << tEnd - tStart << " s " << "(" << (tEnd - tStart)/double(TCells.size())*1e3 << " ms per cell)" << endl;
+	Info << "CPU time for chemistry (" << combustionModel << ") : " << tEnd - tStart << " s " << "(" << (tEnd - tStart)/double(TCells.size())*1e3 << " ms per cell)" << endl;
 }

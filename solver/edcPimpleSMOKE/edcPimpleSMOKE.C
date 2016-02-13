@@ -86,8 +86,8 @@
 // ISAT
 #if EDCSMOKE_USE_ISAT == 1
     #include "ISAT.h"
-    #include "mappingGradient.h"
     #include "numericalJacobian4ISAT.H"
+    #include "mappingGradients/mappingGradient4OpenFOAM.h"
 #endif
 
 
@@ -99,6 +99,9 @@ int main(int argc, char *argv[])
     #include "createTime.H"
     #include "createMesh.H"
     #include "readGravitationalAcceleration.H"
+
+    pimpleControl pimple(mesh);
+
     #include "createFields.H"
     #include "createOpenSMOKEFields.H"
     #include "createFvOptions.H"
@@ -107,8 +110,6 @@ int main(int argc, char *argv[])
     #include "readTimeControls.H"
     #include "compressibleCourantNo.H"
     #include "setInitialDeltaT.H"
-
-    pimpleControl pimple(mesh);
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

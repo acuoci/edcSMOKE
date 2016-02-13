@@ -95,6 +95,8 @@
     radiation->correct();
 
     Info<< "min/max(T) = " << min(T).value() << ", " << max(T).value() << endl;
+    T = max(T, minT);
+    T = min(T, maxT);
 
 	{
 		scalarField& TCells = thermo.T().internalField();

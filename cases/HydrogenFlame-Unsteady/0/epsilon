@@ -1,7 +1,7 @@
 /*--------------------------------*- C++ -*----------------------------------*\
 | =========                 |                                                 |
 | \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
-|  \\    /   O peration     | Version:  2.2.x                                 |
+|  \\    /   O peration     | Version:  2.4.x                                 |
 |   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
 |    \\/     M anipulation  |                                                 |
 \*---------------------------------------------------------------------------*/
@@ -1713,9 +1713,6 @@ boundaryField
     leftside
     {
         type            compressible::epsilonWallFunction;
-        Cmu             0.09;
-        kappa           0.41;
-        E               9.8;
         value           nonuniform List<scalar> 
 65
 (
@@ -1786,14 +1783,17 @@ boundaryField
 9.82425192316
 )
 ;
+        Cmu             0.09;
+        kappa           0.41;
+        E               9.8;
     }
     burnerwall
     {
         type            compressible::epsilonWallFunction;
+        value           nonuniform List<scalar> 7(839090.351492 1336362.65659 1590810.68856 3.48312651 5.2535297357 10.4064779028 55909.5348969);
         Cmu             0.09;
         kappa           0.41;
         E               9.8;
-        value           nonuniform List<scalar> 7(839090.351492 1336362.65659 1590810.68856 3.48312651 5.2535297357 10.4064779028 55909.5348969);
     }
     front
     {

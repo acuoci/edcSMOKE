@@ -56,3 +56,7 @@
 #include "pEqn23.H"
 #endif
 
+#if OPENFOAM_VERSION == 24
+#include "pEqn23.H"
+#endif
+

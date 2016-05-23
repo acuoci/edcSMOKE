@@ -68,11 +68,12 @@
 
 	const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
 
-	if (iLES == true)
+	if (iLES == true)	// LES
 	{
-		//volSymmTensorField D(symm(fvc::grad(U)));
-		//uTau_ = sqrt(2*(dev(D) && D));
+		// Nothing to do because uTau_ was already calculated
+		//uTau_ = 1./U.db().objectRegistry::lookupObject<volScalarField>("tauMix").internalField();
 
+		/*
 		const double ksmall = 1e-5;
 		const volScalarField& epsConst = turbulence->epsilon();
 		const volScalarField& kConst   = turbulence->k();
@@ -82,10 +83,10 @@
 
 		forAll(TCells, celli)
 			uTauCells[celli] = epsCells[celli]/(kCells[celli]+ksmall);
+		*/
 	}
-	else
+	else	// RANS
 	{
-		//const volScalarField& epsilonConst = turbulence->db().objectRegistry::lookupObject<volScalarField>("epsilon");
 		uTau_ = turbulence->epsilon()/(turbulence->k()+ksmall_);
 	}
 

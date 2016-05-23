@@ -48,116 +48,114 @@
 |                                                                         |
 \*-----------------------------------------------------------------------*/
 
-// This is a unsteady simulation
-#define STEADYSTATE 0
-
-// OpenSMOKE++ Definitions
-#include "OpenSMOKEpp"
-
-// CHEMKIN maps
-#include "maps/Maps_CHEMKIN"
-
-// Reactor utilities
-#include "reactors/utilities/Utilities"
-
-// ODE solvers
-#include "math/multivalue-ode-solvers/MultiValueSolver"
-#include "ode/ODE_Parameters.h"
-
-// OpenFOAM
-#include "fvCFD.H"
-#include "turbulenceModel.H"
-#include "psiCombustionModel.H"
-#include "multivariateScheme.H"
-#include "pimpleControl.H"
-#include "fvIOoptionList.H"
-#include "radiationModel.H"
-#include "compressible/LES/LESModel/LESModel.H"
-
-// Utilities
-#include "Utilities.H"
-
-// ODE system
-#include "ODE_PSR.H"
-#include "ODE_PSR_Interface.H"
-#include "ODE_PFR.H"
-#include "ODE_PFR_Interface.H"
-
-// ISAT
-#if EDCSMOKE_USE_ISAT == 1
-    #include "ISAT.h"
-    #include "numericalJacobian4ISAT.H"
-    #include "mappingGradients/mappingGradient4OpenFOAM.h"
-#endif
-
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-int main(int argc, char *argv[])
 {
-    #include "setRootCase.H"
-    #include "createTime.H"
-    #include "createMesh.H"
-    #include "readGravitationalAcceleration.H"
+    volScalarField rAU(1.0/UEqn().A());
+    volVectorField HbyA("HbyA", U);
+    HbyA = rAU*UEqn().H();
 
-    pimpleControl pimple(mesh);
+    UEqn.clear();
 
-    #include "createFields.H"
-    #include "createOpenSMOKEFields.H"
-    #include "createFvOptions.H"
-    #include "createRadiationModel.H"
-    #include "initContinuityErrs.H"
-    #include "readTimeControls.H"
-    #include "compressibleCourantNo.H"
-    #include "setInitialDeltaT.H"
+    bool closedVolume = false;
 
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-    Info<< "\nStarting time loop\n" << endl;
-
-    while (runTime.run())
+    if (simple.transonic())
     {
-        #include "readTimeControls.H"
-        #include "compressibleCourantNo.H"
-        #include "setDeltaT.H"
+        surfaceScalarField phid
+        (
+            "phid",
+            fvc::interpolate(psi)
+           *(fvc::interpolate(HbyA) & mesh.Sf())
+        );
 
-        runTime++;
-        Info<< "Time = " << runTime.timeName() << nl << endl;
+        fvOptions.makeRelative(fvc::interpolate(psi), phid);
 
-	#include "gammaStarEqn.H"
-
-        #include "rhoEqn.H"
-
-        while (pimple.loop())
+        while (simple.correctNonOrthogonal())
         {
-            #include "UEqn.H"
-            #include "YEqn.H"
-            #include "EEqn.H"
+            fvScalarMatrix pEqn
+            (
+                fvm::div(phid, p)
+              - fvm::laplacian(rho*rAU, p)
+              ==
+                fvOptions(psi, p, rho.name())
+            );
 
-            // --- Pressure corrector loop
-            while (pimple.correct())
-            {
-                #include "pEqn.H"
-            }
+            // Relax the pressure equation to ensure diagonal-dominance
+            pEqn.relax();
 
-            if (pimple.turbCorr())
+            fvOptions.constrain(pEqn);
+
+            pEqn.setReference(pRefCell, pRefValue);
+
+            pEqn.solve();
+
+            if (simple.finalNonOrthogonalIter())
             {
-                turbulence->correct();
+                phi == pEqn.flux();
             }
         }
+    }
+    else
+    {
+        surfaceScalarField phiHbyA
+        (
+            "phiHbyA",
+            fvc::interpolate(rho*HbyA) & mesh.Sf()
+        );
 
-        runTime.write();
+        fvOptions.makeRelative(fvc::interpolate(rho), phiHbyA);
 
-	Pav << runTime.timeName() << "\t" << p.weightedAverage(mesh.V()).value() << endl;
+        closedVolume = adjustPhi(phiHbyA, U, p);
 
-        Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
-            << "  ClockTime = " << runTime.elapsedClockTime() << " s"
-            << nl << endl;
+        while (simple.correctNonOrthogonal())
+        {
+            fvScalarMatrix pEqn
+            (
+                fvc::div(phiHbyA)
+              - fvm::laplacian(rho*rAU, p)
+              ==
+                fvOptions(psi, p, rho.name())
+            );
+
+            pEqn.setReference(pRefCell, pRefValue);
+
+            fvOptions.constrain(pEqn);
+
+            pEqn.solve();
+
+            if (simple.finalNonOrthogonalIter())
+            {
+                phi = phiHbyA + pEqn.flux();
+            }
+        }
     }
 
-    Info<< "End\n" << endl;
 
-    return 0;
+    #include "incompressible/continuityErrs.H"
+
+    // Explicitly relax pressure for momentum corrector
+    p.relax();
+
+    U = HbyA - rAU*fvc::grad(p);
+    U.correctBoundaryConditions();
+    fvOptions.correct(U);
+
+    // For closed-volume cases adjust the pressure and density levels
+    // to obey overall mass continuity
+    if (closedVolume)
+    {
+        p += (initialMass - fvc::domainIntegrate(psi*p))
+            /fvc::domainIntegrate(psi);
+    }
+
+    rho = thermo.rho();
+    rho = max(rho, rhoMin);
+    rho = min(rho, rhoMax);
+
+    if (!simple.transonic())
+    {
+        rho.relax();
+    }
+
+    Info<< "rho max/min : "
+        << max(rho).value() << " "
+        << min(rho).value() << endl;
 }
-
-// ************************************************************************* //

@@ -95,7 +95,7 @@
 			cpuTimeAddition += (t2-t1);
 		}
 
-		// check if is necessary to balance
+		// check if it is necessary to balance
 		isatTable->cleanAndBalance();
 	}
 }

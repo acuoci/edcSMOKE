@@ -60,6 +60,24 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 	#if STEADYSTATE == 0
 	if (iLES == true)
 	{
+		// TauStar (was already calculated)
+        	const scalarField& tauStar = U.db().objectRegistry::lookupObject<volScalarField>("tauStar").internalField();
+
+		// Fine structure properties
+		const scalarField gammaL = Ccsi * U.db().objectRegistry::lookupObject<volScalarField>("gammaL").internalField();
+		gammaStar = pow(gammaL,2.);
+		gammaStar = min(maxGammaSquared, gammaStar);
+		mDotStar  = (1./Ctau)/tauStar;
+    	
+		// EDC coefficient
+		edc_coefficient = rho*gammaStar*mDotStar*chi/(1.-gammaStar*chi);
+
+		// Info
+		Info<< "min/max(tauStar)   =  " << min(tauStar)   << ", " << max(tauStar)   << endl;
+		Info<< "min/max(gammaStar) =  " << min(gammaStar) << ", " << max(gammaStar) << endl;
+		Info<< "min/max(mDotStar)  =  " << min(mDotStar)  << ", " << max(mDotStar)  << endl;
+
+		/*
 		const Foam::compressible::LESModel& lesModel = U.db().lookupObject<Foam::compressible::LESModel>("LESProperties");
 
 		epsilonSGS = 1.048*pow(turbulence->k(), 1.5)/lesModel.delta();
@@ -81,6 +99,9 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 		Info<< "min/max(mut) =         " << min(turbulence->mut()).value() << ", " << max(turbulence->mut()).value() << endl;
 		Info<< "min/max(gammaStar) =   " << min(gammaStar) << ", " << max(gammaStar) << endl;
 		Info<< "min/max(mDotStar) =    " << min(mDotStar) << ", " << max(mDotStar) << endl;
+		*/
+
+		
 	}
 	else
 	#endif

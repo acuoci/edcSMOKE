@@ -91,19 +91,5 @@
 
 	Info<< "min/max(T) = " << min(T).value() << ", " << max(T).value() << endl;
 
-
-	{
-		scalarField& TCells = thermo.T().internalField();
-    		if( 	(spark == true) && 
-			(runTime.value() >= ignitionTime)&&(runTime.value() <= (ignitionTime+ignitionDuration)) ) 
-   		 {
-			Info << "Forcing the spark..." << endl;
-        		for(int i = 0; i<ignCellsList.size(); i++)
-        		{
-           			 TCells[ignCellsList[i]] = ignitionTemperature;
-				 if (combustionModel == "EDC")
-           			 	TStar_[0].internalField()[ignCellsList[i]] = ignitionTemperature;
-        		}
-    		}
-	}
+	#include "sparkPatch.H"
 }

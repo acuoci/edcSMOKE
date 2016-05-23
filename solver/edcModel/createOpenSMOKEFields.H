@@ -144,11 +144,102 @@ word combustionModel(combustionOptionsDictionary.lookup("combustionModel"));
 const scalar maxT = readScalar(combustionOptionsDictionary.lookup("maxT"));
 const scalar minT = readScalar(combustionOptionsDictionary.lookup("minT"));
 
+const dimensionedScalar tauMin( "tauMin", dimensionSet(0,0,1,0,0,0,0), SMALL ); 
+const dimensionedScalar eSgsMin( "eSgsMin",   dimensionSet(0,2,-3,0,0,0,0), SMALL ); 
+
+Info<< "Creating additional terms for EDC-LES\n" << endl;
+
+volScalarField tauStar
+(
+    IOobject
+    (
+        "tauStar",
+        runTime.timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::AUTO_WRITE
+    ),
+    mesh,
+    dimensionedScalar("tauStar", dimensionSet(0,0,1,0,0,0,0), 0.0)
+);
+
+volScalarField cDelta
+(
+    IOobject
+    (
+        "cDelta",
+        runTime.timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::NO_WRITE
+    ),
+    mesh,
+    dimensionedScalar("cDelta", dimensionSet(0,1,0,0,0,0,0), 0.0)
+);
+cDelta.internalField() = pow ( mesh.V(), 1.0/3.0) ;
+
+volScalarField eSgs
+(
+    IOobject
+    (
+        "eSgs",
+        runTime.timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::AUTO_WRITE
+    ),
+    mesh,
+    dimensionedScalar("eSgs", dimensionSet(0,2,-3,0,0,0,0), 1e-3)
+);
+
+volScalarField kSgs
+(
+    IOobject
+    (
+        "kSgs",
+        runTime.timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::AUTO_WRITE
+    ),
+    mesh,
+    dimensionedScalar("kSgs", dimensionSet(0,2,-2,0,0,0,0), 1e-3)
+);
+
+volScalarField gammaL
+(
+    IOobject
+    (
+        "gammaL",
+        runTime.timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::AUTO_WRITE
+    ),
+    mesh,
+    dimensionedScalar("gammaL", dimensionSet(0,0,0,0,0,0,0), 0.0)
+);
+
+
+volScalarField ReTauLES
+(
+    IOobject
+    (
+        "ReTauLES_",
+        runTime.timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::AUTO_WRITE
+    ),
+    mesh,
+    dimensionedScalar("ReTauLES", dimensionSet(0,0,0,0,0,0,0), 0.0)
+);
+
+
+
 // Numerical parameters for EDC
-// scalar CD1 = 0.134;
-// scalar CD2 = 0.5;
-scalar Ccsi = 2.1377; 	// Ccsi = pow(3.*CD2/4/CD1/CD1, 0.25);
-scalar Ctau = 0.40825;	// Ctau = sqrt(CD2/3.);
+scalar Ccsi = 2.1377;
+scalar Ctau = 0.40825;
 
 scalar maxGammaSquared = 0.75487766248;
 scalar numberOfResidenceTimes = 100.;
@@ -553,7 +644,8 @@ volScalarField dQ
 	dimensionedScalar("dQ", dimEnergy/dimTime, 0.0)
 );
 
-dimensionedScalar ksmall_("ksmall", dimensionSet(0,2,-2,0,0,0,0), scalar(1e-6) );
+dimensionedScalar ksmall_("ksmall", dimensionSet(0,2,-2,0,0,0,0), SMALL );
+dimensionedScalar musmall_("musmall", dimensionSet(1,-1,-1,0,0,0,0), SMALL );
 
 volScalarField uTau_
 (
@@ -567,20 +659,6 @@ volScalarField uTau_
     ),
     mesh,
     dimensionedScalar("uTau", dimensionSet(0,0,-1,0,0,0,0), 0.0)
-);
-
-volScalarField epsilonSGS
-(
-    IOobject
-    (
-        "epsilonSGS",
-        runTime.timeName(),
-        mesh,
-        IOobject::NO_READ,
-        IOobject::AUTO_WRITE
-    ),
-    mesh,
-    dimensionedScalar("epsilonSGS", dimensionSet(0,2,-3,0,0,0,0), 0.0)
 );
 
 // Normalize the mass fractions (mean fields)

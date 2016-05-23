@@ -52,7 +52,6 @@ EXE_LIBS = \
     $(RADAU_LIBS) \
     $(DASPK_LIBS) \
     $(ODEPACK_LIBS) \
-    $(DVODE_LIBS)     \
     $(LINPACK_LIBS) \
     $(ISAT_LIBS) \
     -lgfortran \

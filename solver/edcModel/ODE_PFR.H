@@ -67,9 +67,18 @@ public:
 	ODE_PFR(	OpenSMOKE::ThermodynamicsMap_CHEMKIN<double>& 		thermodynamicsMapXML, 
 			OpenSMOKE::KineticsMap_CHEMKIN<double>& 		kineticsMapXML);
 
-	void Set(const double P0_Pa)
+	// This is the version adopted when DRG is turned off
+	void Set(	const double P0_Pa)
 	{
-		P_Pa_ = P0_Pa;
+		P_Pa_ 		= P0_Pa;
+	}
+
+	// This is the version adopted when DRG is turned on
+	void Set(	const double P0_Pa, 
+			const OpenSMOKE::OpenSMOKEVectorDouble& omegaStar )
+	{
+		P_Pa_ 		= P0_Pa;
+		omegaStar_	= omegaStar;
 	}
 
 	void SetCheckMassFractions( const bool flag ) { checkMassFractions_ = flag; };
@@ -78,10 +87,13 @@ public:
 	int Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y, OpenSMOKE::OpenSMOKEVectorDouble& dy);
 	int Print(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y);
 
+	void SetDRG(OpenSMOKE::DRG* drg) { drg_ = drg; drgAnalysis_ = true; }
+
 private:
 
 	unsigned int number_of_equations_;
 	unsigned int number_of_gas_species_;
+	unsigned int number_of_reactions_;
 
 	double P_Pa_;
 	double MWStar_;
@@ -96,8 +108,12 @@ private:
 	OpenSMOKE::OpenSMOKEVectorDouble xStar_;
 	OpenSMOKE::OpenSMOKEVectorDouble cStar_;
 	OpenSMOKE::OpenSMOKEVectorDouble RStar_;
+	OpenSMOKE::OpenSMOKEVectorDouble rStar_;
 
 	bool checkMassFractions_;
+
+	OpenSMOKE::DRG* drg_;
+	bool drgAnalysis_;
 };
 
 #include "ODE_PFR.C"

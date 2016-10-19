@@ -110,7 +110,7 @@ private:
 	double hSurr_;
 
 	OpenSMOKE::ThermodynamicsMap_CHEMKIN<double>& 	thermodynamicsMapXML_;
-	OpenSMOKE::KineticsMap_CHEMKIN<double>& 		kineticsMapXML_;
+	OpenSMOKE::KineticsMap_CHEMKIN<double>& 	kineticsMapXML_;
 
 	OpenSMOKE::OpenSMOKEVectorDouble omegaMean_;
 	OpenSMOKE::OpenSMOKEVectorDouble omegaStar_;

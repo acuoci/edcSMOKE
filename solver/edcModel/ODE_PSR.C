@@ -208,7 +208,7 @@ int ODE_PSR::Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y
 		kineticsMapXML_.KineticConstants();
 		kineticsMapXML_.ReactionRates(cStar_);
 		kineticsMapXML_.GetReactionRates(&rStar_);
-		kineticsMapXML_.FormationRates(&RStar_);
+		//kineticsMapXML_.FormationRates(&RStar_);
 
 		// Remove useless reactions
 		for (unsigned int i=0;i<drg_->indices_unimportant_reactions().size();++i)

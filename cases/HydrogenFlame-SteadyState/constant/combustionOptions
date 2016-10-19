@@ -20,6 +20,7 @@ minT  280.;			// minimum temperature in K (useful for steady-state)
 maxT 3500.;			// maximum temperature in K (useful for steady-state)
 
 combustionModel "EDC";
+largeEddySimulation false;
 
 ED
 {
@@ -64,5 +65,7 @@ Spark
 }
 
 #include "isatOptions"
+#include "drgOptions"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+

@@ -60,48 +60,51 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 	#if STEADYSTATE == 0
 	if (iLES == true)
 	{
-		// TauStar (was already calculated)
-        	const scalarField& tauStar = U.db().objectRegistry::lookupObject<volScalarField>("tauStar").internalField();
+		int option = 1;
 
-		// Fine structure properties
-		const scalarField gammaL = Ccsi * U.db().objectRegistry::lookupObject<volScalarField>("gammaL").internalField();
-		gammaStar = pow(gammaL,2.);
-		gammaStar = min(maxGammaSquared, gammaStar);
-		mDotStar  = (1./Ctau)/tauStar;
-    	
-		// EDC coefficient
-		edc_coefficient = rho*gammaStar*mDotStar*chi/(1.-gammaStar*chi);
+		if (option == 1)
+		{
+			// TauStar (was already calculated)
+			const scalarField& tauStar = U.db().objectRegistry::lookupObject<volScalarField>("tauStar").internalField();
 
-		// Info
-		Info<< "min/max(tauStar)   =  " << min(tauStar)   << ", " << max(tauStar)   << endl;
-		Info<< "min/max(gammaStar) =  " << min(gammaStar) << ", " << max(gammaStar) << endl;
-		Info<< "min/max(mDotStar)  =  " << min(mDotStar)  << ", " << max(mDotStar)  << endl;
+			// Fine structure properties
+			const scalarField gammaL = Ccsi * U.db().objectRegistry::lookupObject<volScalarField>("gammaL").internalField();
+			gammaStar = pow(gammaL,2.);
+			gammaStar = min(maxGammaSquared, gammaStar);
+			mDotStar  = (1./Ctau)/tauStar;
+	    	
+			// EDC coefficient
+			edc_coefficient = rho*gammaStar*mDotStar*chi/(1.-gammaStar*chi);
 
-		/*
-		const Foam::compressible::LESModel& lesModel = U.db().lookupObject<Foam::compressible::LESModel>("LESProperties");
+			// Info
+			Info<< "min/max(tauStar)   =  " << min(tauStar)   << ", " << max(tauStar)   << endl;
+			Info<< "min/max(gammaStar) =  " << min(gammaStar) << ", " << max(gammaStar) << endl;
+			Info<< "min/max(mDotStar)  =  " << min(mDotStar)  << ", " << max(mDotStar)  << endl;
+		}
+		else if (option == 2)
+		{
+			const Foam::compressible::LESModel& lesModel = U.db().lookupObject<Foam::compressible::LESModel>("LESProperties");
 
-		epsilonSGS = 1.048*pow(turbulence->k(), 1.5)/lesModel.delta();
-		scalarField nu = thermo.mu().internalField()/rho;
-		scalar Cnusgs = 0.05;
-		scalar Cnusgs_025 = 0.472871;
-		scalarField gammaL = (Ccsi*Cnusgs_025) * pow(thermo.mu().internalField()/turbulence->mut(), 0.25);	
-		gammaStar = pow(gammaL, 2.);
-		gammaStar = min(maxGammaSquared,gammaStar);
-		mDotStar  = 1./Ctau*sqrt(epsilonSGS/nu);
-		edc_coefficient = rho*gammaStar*mDotStar*chi/(1.-gammaStar*chi);
+			epsilonSGS = 1.048*pow(turbulence->k(), 1.5)/lesModel.delta();
+			scalarField nu = thermo.mu().internalField()/rho;
+			scalar Cnusgs = 0.05;
+			scalar Cnusgs_025 = 0.472871;
+			scalarField gammaL = (Ccsi*Cnusgs_025) * pow(thermo.mu().internalField()/turbulence->mut(), 0.25);	
+			gammaStar = pow(gammaL, 2.);
+			gammaStar = min(maxGammaSquared,gammaStar);
+			mDotStar  = 1./Ctau*sqrt(epsilonSGS/nu);
+			edc_coefficient = rho*gammaStar*mDotStar*chi/(1.-gammaStar*chi);
 
-		Info<< "min/max(sgs_epsilon) = " << min(epsilonSGS).value() << ", " << max(epsilonSGS).value() << endl;
-		Info<< "min/max(les_epsilon) = " << min(lesModel.epsilon()).value() << ", " << max(lesModel.epsilon()).value() << endl;
-		Info<< "min/max(t_k) =         " << min(turbulence->k()).value() << ", " << max(turbulence->k()).value() << endl;
-		Info<< "min/max(les_k) =       " << min(lesModel.k()).value() << ", " << max(lesModel.k()).value() << endl;
-		Info<< "min/max(delta) =       " << min(lesModel.delta()).value() << ", " << max(lesModel.delta()).value() << endl;
-		Info<< "min/max(mu) =          " << min(thermo.mu()).value() << ", " << max(thermo.mu()).value() << endl;
-		Info<< "min/max(mut) =         " << min(turbulence->mut()).value() << ", " << max(turbulence->mut()).value() << endl;
-		Info<< "min/max(gammaStar) =   " << min(gammaStar) << ", " << max(gammaStar) << endl;
-		Info<< "min/max(mDotStar) =    " << min(mDotStar) << ", " << max(mDotStar) << endl;
-		*/
-
-		
+			Info<< "min/max(sgs_epsilon) = " << min(epsilonSGS).value() << ", " << max(epsilonSGS).value() << endl;
+			Info<< "min/max(les_epsilon) = " << min(lesModel.epsilon()).value() << ", " << max(lesModel.epsilon()).value() << endl;
+			Info<< "min/max(t_k) =         " << min(turbulence->k()).value() << ", " << max(turbulence->k()).value() << endl;
+			Info<< "min/max(les_k) =       " << min(lesModel.k()).value() << ", " << max(lesModel.k()).value() << endl;
+			Info<< "min/max(delta) =       " << min(lesModel.delta()).value() << ", " << max(lesModel.delta()).value() << endl;
+			Info<< "min/max(mu) =          " << min(thermo.mu()).value() << ", " << max(thermo.mu()).value() << endl;
+			Info<< "min/max(mut) =         " << min(turbulence->mut()).value() << ", " << max(turbulence->mut()).value() << endl;
+			Info<< "min/max(gammaStar) =   " << min(gammaStar) << ", " << max(gammaStar) << endl;
+			Info<< "min/max(mDotStar) =    " << min(mDotStar) << ", " << max(mDotStar) << endl;
+		}
 	}
 	else
 	#endif
@@ -126,6 +129,8 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 	Info << "ODE Integration..." << endl;
 	const int unsigned ns = Y.size();
 	const int unsigned ne = ns+1+1;
+	          unsigned ne_drg = 0;
+
 
 	Eigen::VectorXd yStar0(ne);
 	Eigen::VectorXd yStarf(ne);
@@ -136,7 +141,9 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 	for(unsigned int i=0;i<ns;i++)	yMax(i) = 1.; yMax(ne-2) = 5000.;	yMax(ne-1) = 1.e16;
 
 	OpenSMOKE::OpenSMOKEVectorDouble omegaMean(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble omegaStar(ns);
 	OpenSMOKE::OpenSMOKEVectorDouble xMean(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble cMean(ns);
 	OpenSMOKE::OpenSMOKEVectorDouble h_species(ns);
 	
 	double hMean, MWMean;
@@ -145,6 +152,11 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 	//const scalarField& hCells = thermo.he().internalField();
 	scalarField& ShCells = Sh_.internalField();
 	scalarField& dQCells = dQ.internalField();
+
+	// DRG Fields
+	scalarField& drgSpeciesCells = drg_important_species.internalField();
+	scalarField& drgReactionsCells = drg_important_reactions.internalField();
+	scalarField& cpuReactionsCells = cpu_reaction_times.internalField();
 
 	// ISAT Statistics
 	#if EDCSMOKE_USE_ISAT == 1
@@ -175,20 +187,83 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 		// Extract the fine strucutres mass fractions
 		if (reactorType == REACTORTYPE_PSR)
 		{
-			for(unsigned int i=0;i<ns;i++)
-				yStar0(i) = YStar_[i].internalField()[celli];
-			yStar0(ne-2) = TStar_[0].internalField()[celli];
-			yStar0(ne-1) = 0.;
+			if (drg_analysis == false)
+			{
+				for(unsigned int i=0;i<ns;i++)
+					yStar0(i) = YStar_[i].internalField()[celli];
+				yStar0(ne-2) = TStar_[0].internalField()[celli];
+				yStar0(ne-1) = 0.;
 
-			// Initialize the fine structure
-			thermodynamicsMapXML->SetTemperature(TCells[celli]);
-			thermodynamicsMapXML->SetPressure(pCells[celli]);
-			thermodynamicsMapXML->hMolar_Mixture_From_MoleFractions(hMean, xMean);
-			hMean/=MWMean;	
+				// Extract the star mass fractions
+				for(unsigned int i=1;i<=ns;i++)
+					omegaStar[i] = omegaMean[i];
+
+				// Initialize the fine structure
+				thermodynamicsMapXML->SetTemperature(TCells[celli]);
+				thermodynamicsMapXML->SetPressure(pCells[celli]);
+				thermodynamicsMapXML->hMolar_Mixture_From_MoleFractions(hMean, xMean);
+				hMean/=MWMean;	
 			
-			fine_structure_ode_psr.Set(TCells[celli], pCells[celli], omegaMean, hMean, gammaStar[celli], mDotStar[celli], chi);
+				fine_structure_ode_psr.Set(TCells[celli], pCells[celli], omegaMean, omegaStar, hMean, gammaStar[celli], mDotStar[celli], chi);
 
-			tf = numberOfResidenceTimes/max(mDotStar[celli], SMALL);
+				tf = numberOfResidenceTimes/max(mDotStar[celli], SMALL);
+			}
+			else
+			{
+				// Set epsilon for DRG
+				{
+					for(unsigned int i=0;i<drg_temperature.size();i++)
+						if(TCells[celli] < drg_temperature[i])
+						{
+							drg->SetEpsilon(drg_epsilon[i]);
+							break;
+						}
+				}
+
+				// DRG Analysis
+				{
+					double cTot_ = pCells[celli]/PhysicalConstants::R_J_kmol/TCells[celli];
+					Product(cTot_, xMean, &cMean);
+					drg->Analysis(TCells[celli], pCells[celli], cMean);
+				}
+
+				// Number of import species (+2)
+				ne_drg = drg->number_important_species()+2;
+
+				// Set minimum and maximum values
+				{
+					yStar0.resize(ne_drg);
+					yStarf.resize(ne_drg);
+					yMax.resize(ne_drg);	yMax.setConstant(1.); yMax(ne_drg-2) = 5000.;	yMax(ne_drg-1) = 1.e16; 
+					yMin.resize(ne_drg);	yMin.setConstant(0.); yMin(ne_drg-2) = 280.;	yMin(ne_drg-1) = 0.;
+				}
+
+				// Set initial condition
+				for (unsigned int i=0;i<drg->number_important_species();++i)	
+				{
+					const unsigned int j = drg->indices_important_species()[i]+1;
+					yStar0(i) = omegaMean[j];
+					yStar0(ne_drg-2) = TCells[celli];
+					yStar0(ne_drg-1) = 0.;
+				}
+
+				// Extract the star mass fractions
+				for(unsigned int i=1;i<=ns;i++)
+					omegaStar[i] = omegaMean[i];
+
+				// Set DRG
+				fine_structure_ode_psr.SetDRG(drg);
+
+				// Initialize the fine structure
+				thermodynamicsMapXML->SetTemperature(TCells[celli]);
+				thermodynamicsMapXML->SetPressure(pCells[celli]);
+				thermodynamicsMapXML->hMolar_Mixture_From_MoleFractions(hMean, xMean);
+				hMean/=MWMean;	
+
+				fine_structure_ode_psr.Set(TCells[celli], pCells[celli], omegaMean, omegaStar, hMean, gammaStar[celli], mDotStar[celli], chi);
+
+				tf = numberOfResidenceTimes/max(mDotStar[celli], SMALL);
+			}
 		}
 		else if (reactorType == REACTORTYPE_PFR)
 		{
@@ -207,28 +282,55 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 		{
 			if (reactorType == REACTORTYPE_PSR)
 			{
-				// Set initial conditions
-				odeSolverPSR.SetInitialConditions(t0, yStar0);
-
-				// Additional ODE solver options
-				if (celli == 0)
+				if (drg_analysis == false)
 				{
-					// Set linear algebra options
-					odeSolverPSR.SetLinearAlgebraSolver(odeParametersFineStructures.linear_algebra());
-					odeSolverPSR.SetFullPivoting(odeParametersFineStructures.full_pivoting());
+					// Set initial conditions
+					odeSolverPSR.SetInitialConditions(t0, yStar0);
 
-					// Set relative and absolute tolerances
-					odeSolverPSR.SetAbsoluteTolerances(odeParametersFineStructures.absolute_tolerance());
-					odeSolverPSR.SetRelativeTolerances(odeParametersFineStructures.relative_tolerance());
+					// Additional ODE solver options
+					if (celli == 0)
+					{
+						// Set linear algebra options
+						odeSolverPSR.SetLinearAlgebraSolver(odeParametersFineStructures.linear_algebra());
+						odeSolverPSR.SetFullPivoting(odeParametersFineStructures.full_pivoting());
 
-					// Set minimum and maximum values
-					odeSolverPSR.SetMinimumValues(yMin);
-					odeSolverPSR.SetMaximumValues(yMax);
-				}
+						// Set relative and absolute tolerances
+						odeSolverPSR.SetAbsoluteTolerances(odeParametersFineStructures.absolute_tolerance());
+						odeSolverPSR.SetRelativeTolerances(odeParametersFineStructures.relative_tolerance());
+
+						// Set minimum and maximum values
+						odeSolverPSR.SetMinimumValues(yMin);
+						odeSolverPSR.SetMaximumValues(yMax);
+					}
 						
-				// Solve
-				OdeSMOKE::OdeStatus status = odeSolverPSR.Solve(tf);
-				odeSolverPSR.Solution(yStarf);
+					// Solve
+					OdeSMOKE::OdeStatus status = odeSolverPSR.Solve(tf);
+					odeSolverPSR.Solution(yStarf);
+				}
+				else
+				{
+					// Set initial conditions
+					odeSolverPSR.SetInitialConditions(t0, yStar0);
+
+					// Additional ODE solver options (every time, because the number of important species can change)
+					{
+						// Set linear algebra options
+						odeSolverPSR.SetLinearAlgebraSolver(odeParametersFineStructures.linear_algebra());
+						odeSolverPSR.SetFullPivoting(odeParametersFineStructures.full_pivoting());
+
+						// Set relative and absolute tolerances
+						odeSolverPSR.SetAbsoluteTolerances(odeParametersFineStructures.absolute_tolerance());
+						odeSolverPSR.SetRelativeTolerances(odeParametersFineStructures.relative_tolerance());
+
+						// Set minimum and maximum values
+						odeSolverPSR.SetMinimumValues(yMin);
+						odeSolverPSR.SetMaximumValues(yMax);
+					}
+
+					// Solve
+					OdeSMOKE::OdeStatus status = odeSolverPSR.Solve(tf);
+					odeSolverPSR.Solution(yStarf);
+				}
 			}
 			else if (reactorType == REACTORTYPE_PFR)
 			{

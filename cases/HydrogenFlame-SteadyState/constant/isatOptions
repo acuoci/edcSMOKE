@@ -9,7 +9,7 @@
 ISAT 
 {
 	// Basic parameters
- 	ISAT		 			on;		// ISAT on/off
+ 	ISAT		 			off;		// ISAT on/off
 	tolerance 				1e-6;		// ISAT tolerance [default: 1e-4]
 	numberSubSteps				1;		// ISAT number of substeps for calculating gradient mapping [default: 1]
 

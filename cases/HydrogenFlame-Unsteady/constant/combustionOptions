@@ -19,7 +19,7 @@ homogeneousReactions on;	// chemistry on/off
 minT  280.;			// minimum temperature in K (useful for steady-state)
 maxT 3500.;			// maximum temperature in K (useful for steady-state)
 
-combustionModel "ED";
+combustionModel "EDC";
 largeEddySimulation false;
 
 ED
@@ -36,6 +36,7 @@ EDFR
 
 EDC
 {
+	reactorType				"PFR";			// Reactor type: PSR || PFR
 	Ccsi 					2.1377;			// EDC parameter
 	Ctau 					0.40825;		// EDC parameter
 	maxGammaSquared 			0.75487766248;		// EDC parameter
@@ -58,11 +59,12 @@ Spark
 	position        	(5e-3  0 5.e-3);
 	time            	0;
 	temperature     	2500;
-	duration        	50;
+	duration        	1e-2;
 	diameter        	10e-3;
 	additionalMassFraction	1e-3;
 }
 
 #include "isatOptions"
+#include "drgOptions"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

@@ -83,6 +83,34 @@ IOdictionary combustionOptionsDictionary
 	)
 );
 
+// DRG (Directed Relation Graph)
+OpenSMOKE::DRG* drg;
+Switch drg_analysis = false;
+double drg_minimum_temperature_for_chemistry = 300.;
+List<double>  drg_epsilon;
+List<double>  drg_temperature;
+const dictionary& drgDictionary = combustionOptionsDictionary.subDict("DRG");
+{
+	drg_analysis = Switch(drgDictionary.lookup(word("drg")));
+
+	if ( drg_analysis == true)
+	{
+		drg_minimum_temperature_for_chemistry  = readScalar(drgDictionary.lookup("minTemperature"));
+
+		std::vector<unsigned int> drgListSpecies;
+		List<word>  listSpecies(drgDictionary.lookup("species"));
+		drgListSpecies.resize(listSpecies.size());
+		for (int i=0;i<drgListSpecies.size();i++)
+			drgListSpecies[i] = thermodynamicsMapXML->IndexOfSpecies(listSpecies[i])-1;
+
+		drg_epsilon = readList<double>(drgDictionary.lookup("epsilon"));
+		drg_temperature = readList<double>(drgDictionary.lookup("temperature"));
+
+		drg = new OpenSMOKE::DRG(thermodynamicsMapXML, kineticsMapXML);
+		drg->SetKeySpecies(drgListSpecies);
+	}
+}
+
 // Selecting combustion model
 Switch homogeneousReactions(combustionOptionsDictionary.lookup("homogeneousReactions"));
 
@@ -457,6 +485,21 @@ scalarField gammaStar(mesh.nCells(),0.);
 scalarField tfStar(mesh.nCells(),0.);
 scalarField mDotStar(mesh.nCells(),0.);
 scalarField edc_coefficient(mesh.nCells(),0.);
+
+volScalarField epsilonSGS
+(
+    IOobject
+    (
+        "epsilonSGS",
+        runTime.timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::NO_WRITE
+    ),
+    mesh,
+    dimensionedScalar("epsilonSGS", dimensionSet(0,2,-3,0,0,0,0), 0.0)
+);
+
 {
 	// Check the order of species
 	if (thermodynamicsMapXML->NumberOfSpecies() != Y.size())

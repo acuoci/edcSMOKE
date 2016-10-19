@@ -80,10 +80,15 @@ solvers
 
 PIMPLE
 {
-    momentumPredictor yes;
-    nOuterCorrectors  1;
-    nCorrectors       2;
-    nNonOrthogonalCorrectors 0;
+
+    momentumPredictor 		yes;
+    nOuterCorrectors  		1;
+    nCorrectors       		2;
+    nNonOrthogonalCorrectors 	0;
+    consistent			yes;
+
+    rhoMin          rhoMin [ 1 -3 0 0 0 ] 0.01;
+    rhoMax          rhoMax [ 1 -3 0 0 0 ] 2.00;
 }
 
 

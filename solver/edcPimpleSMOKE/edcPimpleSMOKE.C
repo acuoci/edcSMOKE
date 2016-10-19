@@ -78,6 +78,7 @@
 #include "Utilities.H"
 
 // ODE system
+#include "DRG.H"
 #include "ODE_PSR.H"
 #include "ODE_PSR_Interface.H"
 #include "ODE_PFR.H"

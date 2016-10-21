@@ -47,8 +47,8 @@ EDC
 Ode
 {
 	odeSolver				"OpenSMOKE";		// Ode Solver
-	relTolerance				1e-7;			// ODE relative tolerance
-	absTolerance				1e-12;			// ODE absolute tolerance
+	relTolerance				1e-6;			// ODE relative tolerance
+	absTolerance				1e-10;			// ODE absolute tolerance
 	fullPivoting				false;			// full pivoting during LU factorization
 	maximumOrder				5;			// maximum order of ODE integration (only for OpenSMOKE++ solver)
 }

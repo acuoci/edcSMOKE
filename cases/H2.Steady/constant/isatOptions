@@ -43,6 +43,7 @@ ISAT
 	{
 		T 	1.e+4;
 		tf	1.e-4;
+		gamma	1.e+0;
 		others 	1;		
 	}
 
@@ -51,6 +52,7 @@ ISAT
 	{
 		T 	1.;
 		tf	1.;
+		gamma	1.;
 		others	1.;		
 	}
 }

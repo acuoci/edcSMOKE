@@ -78,7 +78,7 @@ ODE_PSR::ODE_PSR(
 {
 	number_of_gas_species_ = thermodynamicsMapXML_.NumberOfSpecies();
 	number_of_reactions_ = kineticsMapXML_.NumberOfReactions();
-	number_of_equations_ = number_of_gas_species_ + 1 + 1;
+	number_of_equations_ = number_of_gas_species_+1;
 
 	ChangeDimensions(number_of_gas_species_, &omegaSurr_, true);
 	ChangeDimensions(number_of_gas_species_, &omegaStar_, true);
@@ -176,9 +176,7 @@ int ODE_PSR::Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y
 		unsigned int index_TStar = drg_->number_important_species()+1;
 		TStar_ = y[index_TStar];
 
-		// Recover dummy variable
-		const double dummy_ = y[drg_->number_important_species()+2];
-
+		// Composition of surrouding environment
 		for(unsigned int i=0;i<drg_->number_important_species();++i)
 		{
 			const unsigned int j = drg_->indices_important_species()[i]+1;
@@ -208,7 +206,6 @@ int ODE_PSR::Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y
 		kineticsMapXML_.KineticConstants();
 		kineticsMapXML_.ReactionRates(cStar_);
 		kineticsMapXML_.GetReactionRates(&rStar_);
-		//kineticsMapXML_.FormationRates(&RStar_);
 
 		// Remove useless reactions
 		for (unsigned int i=0;i<drg_->indices_unimportant_reactions().size();++i)
@@ -225,10 +222,7 @@ int ODE_PSR::Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y
 		}
 
 		const double Q = 0.; // radiation contribution
-		dy[index_TStar] = mDotStar_/cpStar_*(hSurr_-hStar_) - Q/(rhoStar_*cpStar_);
-
-		// Dummy equation
-		dy[index_TStar+1] = 0.;		
+		dy[index_TStar] = mDotStar_/cpStar_*(hSurr_-hStar_) - Q/(rhoStar_*cpStar_);	
 	}
 }
 

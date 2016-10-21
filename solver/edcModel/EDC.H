@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------*\
+/*-----------------------------------------------------------------------*\
 |                  _       _____ __  __  ____  _  ________                |
 |                 | |     / ____|  \/  |/ __ \| |/ /  ____|               |
 |          ___  __| | ___| (___ | \  / | |  | | ' /| |__                  |
@@ -149,7 +149,6 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 	double hMean, MWMean;
 	const scalarField& pCells = thermo.p().internalField();
 	const scalarField& TCells = thermo.T().internalField();
-	//const scalarField& hCells = thermo.he().internalField();
 	scalarField& ShCells = Sh_.internalField();
 	scalarField& dQCells = dQ.internalField();
 
@@ -227,15 +226,15 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 					drg->Analysis(TCells[celli], pCells[celli], cMean);
 				}
 
-				// Number of import species (+2)
-				ne_drg = drg->number_important_species()+2;
+				// Number of import species (+1)
+				ne_drg = drg->number_important_species()+1;
 
 				// Set minimum and maximum values
 				{
 					yStar0.resize(ne_drg);
 					yStarf.resize(ne_drg);
-					yMax.resize(ne_drg);	yMax.setConstant(1.); yMax(ne_drg-2) = 5000.;	yMax(ne_drg-1) = 1.e16; 
-					yMin.resize(ne_drg);	yMin.setConstant(0.); yMin(ne_drg-2) = 280.;	yMin(ne_drg-1) = 0.;
+					yMax.resize(ne_drg);	yMax.setConstant(1.); yMax(ne_drg-1) = 5000.;
+					yMin.resize(ne_drg);	yMin.setConstant(0.); yMin(ne_drg-1) = 280.;
 				}
 
 				// Set initial condition
@@ -243,9 +242,8 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 				{
 					const unsigned int j = drg->indices_important_species()[i]+1;
 					yStar0(i) = omegaMean[j];
-					yStar0(ne_drg-2) = TCells[celli];
-					yStar0(ne_drg-1) = 0.;
 				}
+				yStar0(ne_drg-1) = TCells[celli];
 
 				// Extract the star mass fractions
 				for(unsigned int i=1;i<=ns;i++)
@@ -297,15 +295,15 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 					drg->Analysis(TCells[celli], pCells[celli], cMean);
 				}
 
-				// Number of import species (+2)
-				ne_drg = drg->number_important_species()+2;
+				// Number of import species (+1)
+				ne_drg = drg->number_important_species()+1;
 
 				// Set minimum and maximum values
 				{
 					yStar0.resize(ne_drg);
 					yStarf.resize(ne_drg);
-					yMax.resize(ne_drg);	yMax.setConstant(1.); yMax(ne_drg-2) = 5000.;	yMax(ne_drg-1) = 1.e16; 
-					yMin.resize(ne_drg);	yMin.setConstant(0.); yMin(ne_drg-2) = 280.;	yMin(ne_drg-1) = 0.;
+					yMax.resize(ne_drg);	yMax.setConstant(1.); yMax(ne_drg-1) = 5000.;
+					yMin.resize(ne_drg);	yMin.setConstant(0.); yMin(ne_drg-1) = 280.;
 				}
 
 				// Set integration time
@@ -316,9 +314,8 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 				{
 					const unsigned int j = drg->indices_important_species()[i]+1;
 					yStar0(i) = omegaMean[j];
-					yStar0(ne_drg-2) = TCells[celli];
-					yStar0(ne_drg-1) = tf;
 				}
+				yStar0(ne_drg-1) = TCells[celli];
 
 				// Extract the star mass fractions
 				for(unsigned int i=1;i<=ns;i++)
@@ -337,55 +334,36 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 		{
 			if (reactorType == REACTORTYPE_PSR)
 			{
-				if (drg_analysis == false)
-				{
-					// Set initial conditions
-					odeSolverPSR.SetInitialConditions(t0, yStar0);
 
-					// Additional ODE solver options
-					if (celli == 0)
+				#if EDCSMOKE_USE_ISAT == 1
+
+					if(isatCheck == true)
 					{
-						// Set linear algebra options
-						odeSolverPSR.SetLinearAlgebraSolver(odeParametersFineStructures.linear_algebra());
-						odeSolverPSR.SetFullPivoting(odeParametersFineStructures.full_pivoting());
-
-						// Set relative and absolute tolerances
-						odeSolverPSR.SetAbsoluteTolerances(odeParametersFineStructures.absolute_tolerance());
-						odeSolverPSR.SetRelativeTolerances(odeParametersFineStructures.relative_tolerance());
-
-						// Set minimum and maximum values
-						odeSolverPSR.SetMinimumValues(yMin);
-						odeSolverPSR.SetMaximumValues(yMax);
+						#include "solvePSR_ISAT.H"
 					}
-						
-					// Solve
-					OdeSMOKE::OdeStatus status = odeSolverPSR.Solve(tf);
-					odeSolverPSR.Solution(yStarf);
-				}
-				else
-				{
-					// Set initial conditions
-					odeSolverPSR.SetInitialConditions(t0, yStar0);
-
-					// Additional ODE solver options (every time, because the number of important species can change)
+					else
 					{
-						// Set linear algebra options
-						odeSolverPSR.SetLinearAlgebraSolver(odeParametersFineStructures.linear_algebra());
-						odeSolverPSR.SetFullPivoting(odeParametersFineStructures.full_pivoting());
-
-						// Set relative and absolute tolerances
-						odeSolverPSR.SetAbsoluteTolerances(odeParametersFineStructures.absolute_tolerance());
-						odeSolverPSR.SetRelativeTolerances(odeParametersFineStructures.relative_tolerance());
-
-						// Set minimum and maximum values
-						odeSolverPSR.SetMinimumValues(yMin);
-						odeSolverPSR.SetMaximumValues(yMax);
+						if (drg_analysis == false)
+						{
+							#include "solvePSR_DI.H"
+						}
+						else
+						{
+							#include "solvePSR_DI_DRG.H"
+						}
 					}
 
-					// Solve
-					OdeSMOKE::OdeStatus status = odeSolverPSR.Solve(tf);
-					odeSolverPSR.Solution(yStarf);
-				}
+				#else
+					if (drg_analysis == false)
+					{
+						#include "solvePSR_DI.H"
+					}
+					else
+					{
+						#include "solvePSR_DI_DRG.H"
+					}
+
+				#endif
 			}
 			else if (reactorType == REACTORTYPE_PFR)
 			{

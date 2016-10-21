@@ -57,8 +57,8 @@
 // CHEMKIN maps
 #include "maps/Maps_CHEMKIN"
 
-// Reactor utilities
-#include "reactors/utilities/Utilities"
+// OpenSMOKE++ Dictionaries
+#include "dictionary/OpenSMOKE_Dictionary"
 
 // ODE solvers
 #include "math/multivalue-ode-solvers/MultiValueSolver"

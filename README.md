@@ -5,6 +5,7 @@ EDC (Eddy Dissipation Concept) for OpenFOAM based on the OpenSMOKE++ Library
 
 Compulsory libraries
 --------------------
+- OpenSMOKE++ (provided with edcSMOKE)
 - Eigen (http://eigen.tuxfamily.org/index.php?title=Main_Page)
 - RapidXML (http://rapidxml.sourceforge.net/)
 - Boost C++ (http://www.boost.org/)

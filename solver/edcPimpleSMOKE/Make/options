@@ -5,7 +5,7 @@ EXE_INC = \
     $(MKL_SUPPORT) \
     $(ISAT_SUPPORT) \
     $(EXTERNAL_ODE_SOLVERS) \
-    -I$(OPENSMOKE_LIBRARY_PATH) \
+    -I../openSMOKEpp4edcSMOKE \
     -I$(BOOST_LIBRARY_PATH)/include \
     -I$(EIGEN_LIBRARY_PATH) \
     -I$(RAPIDXML_LIBRARY_PATH) \

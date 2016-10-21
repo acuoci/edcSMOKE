@@ -5,7 +5,7 @@ Eigen::MatrixXd mapGrad_HOM;
 
 if(isatCheck == true)
 {
-	phiISAT_HOM.resize(thermodynamicsMapXML->NumberOfSpecies()+2);
-	RphiISAT_HOM.resize(thermodynamicsMapXML->NumberOfSpecies()+2);
-	mapGrad_HOM.resize(thermodynamicsMapXML->NumberOfSpecies()+2,thermodynamicsMapXML->NumberOfSpecies()+2);
+	phiISAT_HOM.resize(ne_total);
+	RphiISAT_HOM.resize(ne_total);
+	mapGrad_HOM.resize(ne_total,ne_total);
 }

@@ -32,7 +32,7 @@
 |                                                                         |
 |	License                                                           |
 |                                                                         |
-|   Copyright(C) 2014 A. Cuoci, M.R. Malik, A. Parente                    |
+|   Copyright(C) 2016-2014 A. Cuoci, M.R. Malik, A. Parente               |
 |   edcSMOKE is free software: you can redistribute it and/or modify      |
 |   it under the terms of the GNU General Public License as published by  |
 |   the Free Software Foundation, either version 3 of the License, or     |
@@ -128,7 +128,7 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 
 	Info << "ODE Integration..." << endl;
 	const int unsigned ns = Y.size();
-	const int unsigned ne = ns+1+1;
+	const int unsigned ne = ne_total;
 	          unsigned ne_drg = 0;
 
 
@@ -137,8 +137,8 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 	Eigen::VectorXd yMin(ne);
 	Eigen::VectorXd yMax(ne);
 	
-	for(unsigned int i=0;i<ns;i++)	yMin(i) = 0.; yMin(ne-2) = 200.;	yMin(ne-1) = 0.;
-	for(unsigned int i=0;i<ns;i++)	yMax(i) = 1.; yMax(ne-2) = 5000.;	yMax(ne-1) = 1.e16;
+	for(unsigned int i=0;i<ns;i++)	yMin(i) = 0.; yMin(ne-3) = 200.;	yMin(ne-2) = 0.;	yMin(ne-1) = 0.;
+	for(unsigned int i=0;i<ns;i++)	yMax(i) = 1.; yMax(ne-3) = 5000.;	yMax(ne-2) = 1.e16;	yMax(ne-1) = 1.e16;
 
 	OpenSMOKE::OpenSMOKEVectorDouble omegaMean(ns);
 	OpenSMOKE::OpenSMOKEVectorDouble omegaStar(ns);
@@ -190,8 +190,9 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 			{
 				for(unsigned int i=0;i<ns;i++)
 					yStar0(i) = YStar_[i].internalField()[celli];
-				yStar0(ne-2) = TStar_[0].internalField()[celli];
-				yStar0(ne-1) = 0.;
+				yStar0(ne-3) = TStar_[0].internalField()[celli];
+				yStar0(ne-2) = (1.-gammaStar[celli]*chi)/max(mDotStar[celli], SMALL);
+				yStar0(ne-1) = gammaStar[celli]*chi;
 
 				// Extract the star mass fractions
 				for(unsigned int i=1;i<=ns;i++)
@@ -271,8 +272,9 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 
 				for(unsigned int i=0;i<ns;i++)
 					yStar0(i) = omegaMean[i+1];
-				yStar0(ne-2) = TCells[celli];
-				yStar0(ne-1) = tf;
+				yStar0(ne-3) = TCells[celli];
+				yStar0(ne-2) = tf;
+				yStar0(ne-1) = 0.;
 
 				fine_structure_ode_pfr.Set(pCells[celli]);
 			}
@@ -523,21 +525,21 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 		{		
 			for(unsigned int i=0;i<ns;i++)
 				YStar_[i].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0(i) + relaxationFactorFineStructures*yStarf(i);
-			TStar_[0].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0(ne-2) + relaxationFactorFineStructures*yStarf(ne-2);
+			TStar_[0].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0(ne-3) + relaxationFactorFineStructures*yStarf(ne-3);
 	 
 			for(unsigned int i=0;i<ns;i++)
 				R_[i].internalField()[celli] = edc_coefficient[celli]*(YStar_[i].internalField()[celli]-Y[i].internalField()[celli]);
 		}
 		else
 		{
-			for(unsigned int i=0;i<ne_drg-2;i++)
+			for(unsigned int i=0;i<ne_drg-1;i++)
 			{
                			const unsigned int j = drg->indices_important_species()[i];
                 		YStar_[j].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0(i) + relaxationFactorFineStructures*yStarf(i);
 			}
-				TStar_[0].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0(ne_drg-2) + relaxationFactorFineStructures*yStarf(ne_drg-2);
+			TStar_[0].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0(ne_drg-1) + relaxationFactorFineStructures*yStarf(ne_drg-1);
 	 
-			for(unsigned int i=0;i<ne_drg-2;i++)
+			for(unsigned int i=0;i<ne_drg-1;i++)
 				R_[i].internalField()[celli] = edc_coefficient[celli]*(YStar_[i].internalField()[celli]-Y[i].internalField()[celli]);
 		}
 

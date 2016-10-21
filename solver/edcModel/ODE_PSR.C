@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------*\
+/*-----------------------------------------------------------------------*\
 |                  _       _____ __  __  ____  _  ________                |
 |                 | |     / ____|  \/  |/ __ \| |/ /  ____|               |
 |          ___  __| | ___| (___ | \  / | |  | | ' /| |__                  |
@@ -32,7 +32,7 @@
 |                                                                         |
 |	License                                                           |
 |                                                                         |
-|   Copyright(C) 2014 A. Cuoci, M.R. Malik, A. Parente                    |
+|   Copyright(C) 2016-2014 A. Cuoci, M.R. Malik, A. Parente               |
 |   edcSMOKE is free software: you can redistribute it and/or modify      |
 |   it under the terms of the GNU General Public License as published by  |
 |   the Free Software Foundation, either version 3 of the License, or     |
@@ -78,7 +78,7 @@ ODE_PSR::ODE_PSR(
 {
 	number_of_gas_species_ = thermodynamicsMapXML_.NumberOfSpecies();
 	number_of_reactions_ = kineticsMapXML_.NumberOfReactions();
-	number_of_equations_ = number_of_gas_species_+1;
+	number_of_equations_ = number_of_gas_species_ + 1 + 2;	// species and temperature + 2 dummy variables
 
 	ChangeDimensions(number_of_gas_species_, &omegaSurr_, true);
 	ChangeDimensions(number_of_gas_species_, &omegaStar_, true);
@@ -110,8 +110,8 @@ int ODE_PSR::Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y
 		// Recover temperature
 		const double TStar_ = y[number_of_gas_species_+1];
 
-		// Recover dummy variable
-		const double dummy_ = y[number_of_gas_species_+2];
+		// Recover dummy variables
+		// There are 2 additional dummy variables (not needed to recover them)
 
 		for(unsigned int i=1;i<=number_of_gas_species_;i++)
 			omegaSurr_[i] = (omegaMean_[i] - omegaStar_[i]*gammaStar_*chi_)/(1.-gammaStar_*chi_);
@@ -147,8 +147,9 @@ int ODE_PSR::Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y
 		const double Q = 0.; // radiation contribution
 		dy[number_of_gas_species_+1] = mDotStar_/cpStar_*(hSurr_-hStar_) - Q/(rhoStar_*cpStar_);
 
-		// Dummy equation
+		// Dummy equations
 		dy[number_of_gas_species_+2] = 0.;
+		dy[number_of_gas_species_+3] = 0.;
 	
 		return 0;
 	}

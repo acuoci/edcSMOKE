@@ -68,6 +68,9 @@ OpenSMOKE::KineticsMap_CHEMKIN<double>* kineticsMapXML;
 	std::cout << " * Time to read XML file: " << tEnd-tStart << std::endl;
 }
 
+// Total number of equations for ODE systems (without DRG)
+const int ne_total = thermodynamicsMapXML->NumberOfSpecies()+3;	// species and temperature + 2 dummy variables
+
 const word combustionOptionsDictionaryName("combustionOptions");
 
 Info<< "Reading CombustionOptions dictionary\n" << endl;

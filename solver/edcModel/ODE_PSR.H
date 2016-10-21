@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------*\
+/*-----------------------------------------------------------------------*\
 |                  _       _____ __  __  ____  _  ________                |
 |                 | |     / ____|  \/  |/ __ \| |/ /  ____|               |
 |          ___  __| | ___| (___ | \  / | |  | | ' /| |__                  |
@@ -32,7 +32,7 @@
 |                                                                         |
 |	License                                                           |
 |                                                                         |
-|   Copyright(C) 2014 A. Cuoci, M.R. Malik, A. Parente                    |
+|   Copyright(C) 2016-2014 A. Cuoci, M.R. Malik, A. Parente               |
 |   edcSMOKE is free software: you can redistribute it and/or modify      |
 |   it under the terms of the GNU General Public License as published by  |
 |   the Free Software Foundation, either version 3 of the License, or     |

@@ -5,6 +5,11 @@ Eigen::VectorXd scalingFactors_ISAT;
 int luSolver_ISAT = 1;
 label numberSubSteps_ISAT = 1;
 
+if (isatCheck == true && drg_analysis == true)
+{
+	FatalError << "ISAT and DRG cannot be used together! Please turn off one between ISAT and DRG" << endl; 		
+}
+
 if (isatCheck == true)
 {
 	// mandatory if ISAT ON

@@ -267,14 +267,69 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 		}
 		else if (reactorType == REACTORTYPE_PFR)
 		{
-			tf = (1.-gammaStar[celli]*chi)/max(mDotStar[celli], SMALL);
+			if (drg_analysis == false)
+			{
+				tf = (1.-gammaStar[celli]*chi)/max(mDotStar[celli], SMALL);
 
-			for(unsigned int i=0;i<ns;i++)
-				yStar0(i) = omegaMean[i+1];
-			yStar0(ne-2) = TCells[celli];
-			yStar0(ne-1) = tf;
+				for(unsigned int i=0;i<ns;i++)
+					yStar0(i) = omegaMean[i+1];
+				yStar0(ne-2) = TCells[celli];
+				yStar0(ne-1) = tf;
 
-			fine_structure_ode_pfr.Set(pCells[celli]);
+				fine_structure_ode_pfr.Set(pCells[celli]);
+			}
+			else
+			{
+				// Set epsilon for DRG
+				{
+					for(unsigned int i=0;i<drg_temperature.size();i++)
+						if(TCells[celli] < drg_temperature[i])
+						{
+							drg->SetEpsilon(drg_epsilon[i]);
+							break;
+						}
+				}
+
+				// DRG Analysis
+				{
+					double cTot_ = pCells[celli]/PhysicalConstants::R_J_kmol/TCells[celli];
+					Product(cTot_, xMean, &cMean);
+					drg->Analysis(TCells[celli], pCells[celli], cMean);
+				}
+
+				// Number of import species (+2)
+				ne_drg = drg->number_important_species()+2;
+
+				// Set minimum and maximum values
+				{
+					yStar0.resize(ne_drg);
+					yStarf.resize(ne_drg);
+					yMax.resize(ne_drg);	yMax.setConstant(1.); yMax(ne_drg-2) = 5000.;	yMax(ne_drg-1) = 1.e16; 
+					yMin.resize(ne_drg);	yMin.setConstant(0.); yMin(ne_drg-2) = 280.;	yMin(ne_drg-1) = 0.;
+				}
+
+				// Set integration time
+				tf = (1.-gammaStar[celli]*chi)/max(mDotStar[celli], SMALL);
+
+				// Set initial condition
+				for (unsigned int i=0;i<drg->number_important_species();++i)	
+				{
+					const unsigned int j = drg->indices_important_species()[i]+1;
+					yStar0(i) = omegaMean[j];
+					yStar0(ne_drg-2) = TCells[celli];
+					yStar0(ne_drg-1) = tf;
+				}
+
+				// Extract the star mass fractions
+				for(unsigned int i=1;i<=ns;i++)
+					omegaStar[i] = omegaMean[i];
+
+				// Set DRG
+				fine_structure_ode_pfr.SetDRG(drg);
+
+				// Set the PFR solver
+				fine_structure_ode_pfr.Set(pCells[celli], omegaStar);
+			}
 		}			
 
 		// Solve the ODE system
@@ -335,16 +390,33 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 			else if (reactorType == REACTORTYPE_PFR)
 			{
 				#if EDCSMOKE_USE_ISAT == 1
+
 					if(isatCheck == true)
 					{
 						#include "solvePFR_ISAT.H"
 					}
 					else
 					{
+						if (drg_analysis == false)
+						{
+							#include "solvePFR_DI.H"
+						}
+						else
+						{
+							#include "solvePFR_DI_DRG.H"
+						}
+					}
+
+				#else
+					if (drg_analysis == false)
+					{
 						#include "solvePFR_DI.H"
 					}
-				#else
-					#include "solvePFR_DI.H"
+					else
+					{
+						#include "solvePFR_DI_DRG.H"
+					}
+
 				#endif
 			}
 
@@ -469,12 +541,27 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 		}
 		#endif
 				
-		for(unsigned int i=0;i<ns;i++)
-			YStar_[i].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0(i) + relaxationFactorFineStructures*yStarf(i);
-		TStar_[0].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0(ne-2) + relaxationFactorFineStructures*yStarf(ne-2);
- 
-		for(unsigned int i=0;i<ns;i++)
-			R_[i].internalField()[celli] = edc_coefficient[celli]*(YStar_[i].internalField()[celli]-Y[i].internalField()[celli]);
+		if (drg_analysis == false)
+		{		
+			for(unsigned int i=0;i<ns;i++)
+				YStar_[i].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0(i) + relaxationFactorFineStructures*yStarf(i);
+			TStar_[0].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0(ne-2) + relaxationFactorFineStructures*yStarf(ne-2);
+	 
+			for(unsigned int i=0;i<ns;i++)
+				R_[i].internalField()[celli] = edc_coefficient[celli]*(YStar_[i].internalField()[celli]-Y[i].internalField()[celli]);
+		}
+		else
+		{
+			for(unsigned int i=0;i<ne_drg-2;i++)
+			{
+               			const unsigned int j = drg->indices_important_species()[i];
+                		YStar_[j].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0(i) + relaxationFactorFineStructures*yStarf(i);
+			}
+				TStar_[0].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0(ne_drg-2) + relaxationFactorFineStructures*yStarf(ne_drg-2);
+	 
+			for(unsigned int i=0;i<ne_drg-2;i++)
+				R_[i].internalField()[celli] = edc_coefficient[celli]*(YStar_[i].internalField()[celli]-Y[i].internalField()[celli]);
+		}
 
 		thermodynamicsMapXML->SetTemperature(TCells[celli]);
 		thermodynamicsMapXML->SetPressure(pCells[celli]);
@@ -500,6 +587,13 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 			Info <<"   Accomplished: " << counter << "/" << mesh.nCells() << endl;
 
 		counter++;
+
+		if (drg_analysis == true)
+		{
+			// Fill the relevant DRG fields
+			drgSpeciesCells[celli]   = drg->number_important_species();
+			drgReactionsCells[celli] = drg->number_important_reactions();
+		}
 	}
 	const double tEnd = OpenSMOKE::OpenSMOKEGetCpuTime();
 			

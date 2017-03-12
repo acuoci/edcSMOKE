@@ -2,7 +2,7 @@
 export OPENFOAM_VERSION='-DOPENFOAM_VERSION=24'
 
 #Compulsory path
-export EIGEN_LIBRARY_PATH=/software/chimica2/libraries/eigen/eigen-3.3-dev
+export EIGEN_LIBRARY_PATH=/software/chimica2/libraries/eigen/eigen-3.3.3
 export BOOST_LIBRARY_PATH=/software/chimica2/libraries/boost/boost-1.60.0-gcc-4.8.2
 export RAPIDXML_LIBRARY_PATH=/software/chimica2/libraries/rapidxml/rapidxml-1.13
 
@@ -15,12 +15,9 @@ export ISAT_LIBS=-lISATLib4OpenFOAM
 export MKL_SUPPORT='-DOPENSMOKE_USE_MKL=1'
 export EXTERNAL_ODE_SOLVERS='-DOPENSMOKE_USE_ODEPACK=1 -DOPENSMOKE_USE_RADAU=1 -DOPENSMOKE_USE_DASPK=1 -DOPENSMOKE_USE_MEBDF=1 -DOPENSMOKE_USE_SUNDIALS=1'
 
-
 #Only if the OPENSMOKE_USE_MKL is turned on
 export MKL_PATH=$HOME/intel/mkl
-export MKL_INCLUDE='$(MKL_PATH)/include'
 export MKL_LIBS='-Wl,--start-group $(MKL_PATH)/lib/intel64/libmkl_intel_lp64.a $(MKL_PATH)/lib/intel64/libmkl_core.a $(MKL_PATH)/lib/intel64/libmkl_sequential.a -Wl,--end-group -lpthread -lm'
-
 
 #Optional external ODE solvers (ODEPACK already includes LSODE, LSODA, and DVODE)
 export MEBDF_LIBS=/software/chimica2/libraries/mebdf/medf-gcc-4.8.2/lib/libMEBDF_LAPACK_gcc_64bit.a

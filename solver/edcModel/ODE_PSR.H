@@ -53,10 +53,7 @@
 
 namespace OpenSMOKE
 {
-	template<typename type>
 	class ThermodynamicsMap_CHEMKIN;
-
-	template<typename type>
 	class KineticsMap_CHEMKIN;
 }
 
@@ -64,8 +61,8 @@ class ODE_PSR
 {
 public:
 
-	ODE_PSR(	OpenSMOKE::ThermodynamicsMap_CHEMKIN<double>& 		thermodynamicsMapXML, 
-			OpenSMOKE::KineticsMap_CHEMKIN<double>& 		kineticsMapXML);
+	ODE_PSR(	OpenSMOKE::ThermodynamicsMap_CHEMKIN& 		thermodynamicsMapXML, 
+			OpenSMOKE::KineticsMap_CHEMKIN& 		kineticsMapXML);
 
 	void Set(	const double T0, const double P0_Pa, 
 			const OpenSMOKE::OpenSMOKEVectorDouble& omegaMean, const OpenSMOKE::OpenSMOKEVectorDouble& omegaStar, 
@@ -109,8 +106,8 @@ private:
 	double hStar_;
 	double hSurr_;
 
-	OpenSMOKE::ThermodynamicsMap_CHEMKIN<double>& 	thermodynamicsMapXML_;
-	OpenSMOKE::KineticsMap_CHEMKIN<double>& 	kineticsMapXML_;
+	OpenSMOKE::ThermodynamicsMap_CHEMKIN& 	thermodynamicsMapXML_;
+	OpenSMOKE::KineticsMap_CHEMKIN& 	kineticsMapXML_;
 
 	OpenSMOKE::OpenSMOKEVectorDouble omegaMean_;
 	OpenSMOKE::OpenSMOKEVectorDouble omegaStar_;

@@ -56,8 +56,8 @@
 #include <Eigen/Dense>
 
 // Base classes
-#include "thermo/ThermoPolicy_CHEMKIN.h"
-#include "kinetics/ReactionPolicy_CHEMKIN.h"
+#include "kernel/thermo/ThermoPolicy_CHEMKIN.h"
+#include "kernel/kinetics/ReactionPolicy_CHEMKIN.h"
 #include "math/PhysicalConstants.h"
 #include "math/OpenSMOKEUtilities.h"
 
@@ -71,8 +71,8 @@
 
 
 ODE_PSR::ODE_PSR(
-	OpenSMOKE::ThermodynamicsMap_CHEMKIN<double>& thermodynamicsMapXML, 
-	OpenSMOKE::KineticsMap_CHEMKIN<double>& kineticsMapXML) :
+	OpenSMOKE::ThermodynamicsMap_CHEMKIN& thermodynamicsMapXML, 
+	OpenSMOKE::KineticsMap_CHEMKIN& kineticsMapXML) :
 	thermodynamicsMapXML_(thermodynamicsMapXML),
 	kineticsMapXML_(kineticsMapXML)
 {

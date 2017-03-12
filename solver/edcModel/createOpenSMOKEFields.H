@@ -49,8 +49,8 @@
 \*-----------------------------------------------------------------------*/
 
 // Read the kinetic scheme in XML format
-OpenSMOKE::ThermodynamicsMap_CHEMKIN<double>* thermodynamicsMapXML; 
-OpenSMOKE::KineticsMap_CHEMKIN<double>* kineticsMapXML;
+OpenSMOKE::ThermodynamicsMap_CHEMKIN* thermodynamicsMapXML; 
+OpenSMOKE::KineticsMap_CHEMKIN* kineticsMapXML;
 
 {	
 	word kinetics(thermo.lookup("kineticMechanism"));
@@ -61,9 +61,9 @@ OpenSMOKE::KineticsMap_CHEMKIN<double>* kineticsMapXML;
 	OpenSMOKE::OpenInputFileXML(doc, xml_string,path_kinetics / "kinetics.xml");
 
 	double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
-	thermodynamicsMapXML = new OpenSMOKE::ThermodynamicsMap_CHEMKIN<double>(doc); 
+	thermodynamicsMapXML = new OpenSMOKE::ThermodynamicsMap_CHEMKIN(doc); 
 	//transportMapXML = new OpenSMOKE::TransportPropertiesMap_CHEMKIN<double>(doc); 
-	kineticsMapXML = new OpenSMOKE::KineticsMap_CHEMKIN<double>(*thermodynamicsMapXML, doc); 					
+	kineticsMapXML = new OpenSMOKE::KineticsMap_CHEMKIN(*thermodynamicsMapXML, doc); 					
 	double tEnd = OpenSMOKE::OpenSMOKEGetCpuTime();
 	std::cout << " * Time to read XML file: " << tEnd-tStart << std::endl;
 }

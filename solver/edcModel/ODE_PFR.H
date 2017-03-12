@@ -53,10 +53,7 @@
 
 namespace OpenSMOKE
 {
-	template<typename type>
 	class ThermodynamicsMap_CHEMKIN;
-
-	template<typename type>
 	class KineticsMap_CHEMKIN;
 }
 
@@ -64,8 +61,8 @@ class ODE_PFR
 {
 public:
 
-	ODE_PFR(	OpenSMOKE::ThermodynamicsMap_CHEMKIN<double>& 		thermodynamicsMapXML, 
-			OpenSMOKE::KineticsMap_CHEMKIN<double>& 		kineticsMapXML);
+	ODE_PFR(	OpenSMOKE::ThermodynamicsMap_CHEMKIN& 		thermodynamicsMapXML, 
+			OpenSMOKE::KineticsMap_CHEMKIN& 		kineticsMapXML);
 
 	// This is the version adopted when DRG is turned off
 	void Set(	const double P0_Pa)
@@ -101,8 +98,8 @@ private:
 	double rhoStar_;
 	double cpStar_;
 
-	OpenSMOKE::ThermodynamicsMap_CHEMKIN<double>& 	thermodynamicsMapXML_;
-	OpenSMOKE::KineticsMap_CHEMKIN<double>& 	kineticsMapXML_;
+	OpenSMOKE::ThermodynamicsMap_CHEMKIN& 	thermodynamicsMapXML_;
+	OpenSMOKE::KineticsMap_CHEMKIN& 	kineticsMapXML_;
 
 	OpenSMOKE::OpenSMOKEVectorDouble omegaStar_;
 	OpenSMOKE::OpenSMOKEVectorDouble xStar_;

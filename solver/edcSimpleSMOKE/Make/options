@@ -10,8 +10,8 @@ EXE_INC = \
     -I$(EIGEN_LIBRARY_PATH) \
     -I$(RAPIDXML_LIBRARY_PATH) \
     -I$(SUNDIALS_PATH)/include \
-    -I$(MKL_INCLUDE) \
-    -I$(ISAT_INCLUDE) \
+    -I$(MKL_PATH)/include \
+    -I/$(ISAT_INCLUDE) \
     -I$(LIB_SRC)/finiteVolume/lnInclude \
     -I$(LIB_SRC)/fvOptions/lnInclude \
     -I$(LIB_SRC)/meshTools/lnInclude \

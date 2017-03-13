@@ -3,6 +3,16 @@ edcSMOKE
 
 EDC (Eddy Dissipation Concept) for OpenFOAM based on the OpenSMOKE++ Library
 
+If you use edcSMOKE for your publications, we kindly ask you to cite the following papers:
+
+> Parente, A., Malik, R.M., Contino, F., Cuoci, A., Dally, B., 
+> Extension of the Eddy Dissipation Concept for turbulence/chemistry interactions to MILD combustion
+> (2016) Fuel, 163, pp. 98-111, DOI: 10.1016/j.fuel.2015.09.020
+
+> Cuoci, A., Frassoldati, A., Faravelli, T., Ranzi, E., 
+> OpenSMOKE++: An object-oriented framework for the numerical modeling of reactive systems with detailed kinetic mechanisms 
+> (2015) Computer Physics Communications, 192, pp. 237-264, DOI: 10.1016/j.cpc.2015.02.014
+
 Compulsory libraries
 --------------------
 - OpenSMOKE++ (provided with edcSMOKE)

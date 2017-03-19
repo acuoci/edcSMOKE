@@ -131,7 +131,7 @@
 			
 			// Calculating the concentrations
 			double cTot = pCells[celli]/(PhysicalConstants::R_J_kmol * TCells[celli]);
-			thermodynamicsMapXML->MoleFractions_From_MassFractions(c_, MW, omega_);
+			thermodynamicsMapXML->MoleFractions_From_MassFractions(c_.GetHandle(), MW, omega_.GetHandle());
 			Product(cTot, &c_);
 
 			// Calculates kinetics
@@ -141,7 +141,7 @@
 			kineticsMapXML->SetPressure(pCells[celli]);
 			kineticsMapXML->ReactionEnthalpiesAndEntropies();
 			kineticsMapXML->KineticConstants();
-			kineticsMapXML->ReactionRates(c_);
+			kineticsMapXML->ReactionRates(c_.GetHandle());
 
 			for(unsigned int k=0;k<kineticsMapXML->NumberOfReactions();k++)
 			{
@@ -154,7 +154,7 @@
 					r[k] = std::min(r[k], constA*omega(ed_reactant_index_[k][j])/ed_denominator_reactants_[k][j]);
 				
 				// Comparison with chemistry
-				r[k] = std::min(r[k], kineticsMapXML->GetReactionRates()[k+1]);
+				r[k] = std::min(r[k], kineticsMapXML->GiveMeReactionRates()[k]);
 
 				// Constant coefficient
 				r[k] *= rho_epsilon_over_k;
@@ -173,13 +173,13 @@
 
 		// Formation rates [kg/m3/s]
 		for(unsigned int j=0;j<ns;j++)
-			R_[j].internalField()[celli] = R[j]*thermodynamicsMapXML->MW()[j+1];
+			R_[j].internalField()[celli] = R[j]*thermodynamicsMapXML->MW(j);
 
 		// Calculating the heat release
 		{
 			thermodynamicsMapXML->SetTemperature(TCells[celli]);
 			thermodynamicsMapXML->SetPressure(pCells[celli]);
-			thermodynamicsMapXML->hMolar_Species(h_species);
+			thermodynamicsMapXML->hMolar_Species(h_species.GetHandle());
 
 			double HeatRelease = 0.;
 			for(unsigned int i=0;i<ns;i++)

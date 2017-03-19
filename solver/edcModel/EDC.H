@@ -181,7 +181,7 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 			omegaMean[i+1] = Y[i].internalField()[celli];
 
 		// Convert to mole fractions
-		thermodynamicsMapXML->MoleFractions_From_MassFractions(xMean, MWMean, omegaMean);
+		thermodynamicsMapXML->MoleFractions_From_MassFractions(xMean.GetHandle(), MWMean, omegaMean.GetHandle());
 
 		// Extract the fine strucutres mass fractions
 		if (reactorType == REACTORTYPE_PSR)
@@ -201,7 +201,7 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 				// Initialize the fine structure
 				thermodynamicsMapXML->SetTemperature(TCells[celli]);
 				thermodynamicsMapXML->SetPressure(pCells[celli]);
-				thermodynamicsMapXML->hMolar_Mixture_From_MoleFractions(hMean, xMean);
+				hMean = thermodynamicsMapXML->hMolar_Mixture_From_MoleFractions(xMean.GetHandle());
 				hMean/=MWMean;	
 			
 				fine_structure_ode_psr.Set(TCells[celli], pCells[celli], omegaMean, omegaStar, hMean, gammaStar[celli], mDotStar[celli], chi);
@@ -256,7 +256,7 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 				// Initialize the fine structure
 				thermodynamicsMapXML->SetTemperature(TCells[celli]);
 				thermodynamicsMapXML->SetPressure(pCells[celli]);
-				thermodynamicsMapXML->hMolar_Mixture_From_MoleFractions(hMean, xMean);
+				hMean = thermodynamicsMapXML->hMolar_Mixture_From_MoleFractions(xMean.GetHandle());
 				hMean/=MWMean;	
 
 				fine_structure_ode_psr.Set(TCells[celli], pCells[celli], omegaMean, omegaStar, hMean, gammaStar[celli], mDotStar[celli], chi);
@@ -545,11 +545,11 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 
 		thermodynamicsMapXML->SetTemperature(TCells[celli]);
 		thermodynamicsMapXML->SetPressure(pCells[celli]);
-		thermodynamicsMapXML->hMolar_Species(h_species);
+		thermodynamicsMapXML->hMolar_Species(h_species.GetHandle());
 
 		double HeatRelease = 0.;
 		for(unsigned int i=0;i<ns;i++)
-			HeatRelease += -h_species[i+1]/thermodynamicsMapXML->MW()[i+1] * R_[i].internalField()[celli];
+			HeatRelease += -h_species[i+1]/thermodynamicsMapXML->MW(i) * R_[i].internalField()[celli];
 		ShCells[celli] = HeatRelease;
 		dQCells[celli] = HeatRelease * mesh.V()[celli];
 

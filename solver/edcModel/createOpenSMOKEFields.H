@@ -361,7 +361,7 @@ if (combustionModel == "ED" || combustionModel == "EDFR")
 		{
 			ed_reactant_index_[it.row()].push_back(it.col());
 			ed_reactant_nu_[it.row()].push_back(it.value());
-			ed_denominator_reactants_[it.row()].push_back( it.value()*thermodynamicsMapXML->MW()[it.col()+1] );
+			ed_denominator_reactants_[it.row()].push_back( it.value()*thermodynamicsMapXML->MW(it.col()) );
 		}
 	}
 	
@@ -371,7 +371,7 @@ if (combustionModel == "ED" || combustionModel == "EDFR")
 		{
 			ed_product_index_[it.row()].push_back(it.col());
 			ed_product_nu_[it.row()].push_back(it.value());
-			ed_denominator_products_[it.row()]+=it.value()*thermodynamicsMapXML->MW()[it.col()+1];
+			ed_denominator_products_[it.row()]+=it.value()*thermodynamicsMapXML->MW(it.col());
 		};
 	}
 }

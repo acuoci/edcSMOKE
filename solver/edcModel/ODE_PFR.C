@@ -110,7 +110,7 @@ int ODE_PFR::Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y
 		// There are 2 additional dummy variables (not needed to recover them)
 	
 		// Calculates the pressure and the concentrations of species
-		thermodynamicsMapXML_.MoleFractions_From_MassFractions(xStar_, MWStar_, omegaStar_);
+		thermodynamicsMapXML_.MoleFractions_From_MassFractions(xStar_.GetHandle(), MWStar_, omegaStar_.GetHandle());
 		cTotStar_ = P_Pa_/(PhysicalConstants::R_J_kmol * TStar_);
 		rhoStar_ = cTotStar_*MWStar_;
 		Product(cTotStar_, xStar_, &cStar_);
@@ -118,7 +118,7 @@ int ODE_PFR::Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y
 		// Calculates thermodynamic properties
 		thermodynamicsMapXML_.SetTemperature(TStar_);
 		thermodynamicsMapXML_.SetPressure(P_Pa_);
-		thermodynamicsMapXML_.cpMolar_Mixture_From_MoleFractions(cpStar_, xStar_);
+		cpStar_ = thermodynamicsMapXML_.cpMolar_Mixture_From_MoleFractions(xStar_.GetHandle());
 		cpStar_/=MWStar_;
 	
 		// Calculates kinetics
@@ -126,13 +126,13 @@ int ODE_PFR::Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y
 		kineticsMapXML_.SetPressure(P_Pa_);
 		kineticsMapXML_.ReactionEnthalpiesAndEntropies();
 		kineticsMapXML_.KineticConstants();
-		kineticsMapXML_.ReactionRates(cStar_);
-		kineticsMapXML_.FormationRates(&RStar_);
-		const double QRStar_ = kineticsMapXML_.HeatRelease(RStar_);
+		kineticsMapXML_.ReactionRates(cStar_.GetHandle());
+		kineticsMapXML_.FormationRates(RStar_.GetHandle());
+		const double QRStar_ = kineticsMapXML_.HeatRelease(RStar_.GetHandle());
 
 		// Recovering residuals
 		for (unsigned int i=1;i<=number_of_gas_species_;++i)	
-			dy[i] = thermodynamicsMapXML_.MW()[i]*RStar_[i]/rhoStar_;
+			dy[i] = thermodynamicsMapXML_.MW(i-1)*RStar_[i]/rhoStar_;
 	
 		const double Q = 0.; // radiation contribution
 		dy[number_of_gas_species_+1] = (QRStar_ - Q)/(rhoStar_*cpStar_);
@@ -168,7 +168,7 @@ int ODE_PFR::Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y
 		const double TStar_ = y[index_TStar];
 	
 		// Calculates the pressure and the concentrations of species
-		thermodynamicsMapXML_.MoleFractions_From_MassFractions(xStar_, MWStar_, omegaStar_);
+		thermodynamicsMapXML_.MoleFractions_From_MassFractions(xStar_.GetHandle(), MWStar_, omegaStar_.GetHandle());
 		cTotStar_ = P_Pa_/(PhysicalConstants::R_J_kmol * TStar_);
 		rhoStar_ = cTotStar_*MWStar_;
 		Product(cTotStar_, xStar_, &cStar_);
@@ -176,7 +176,7 @@ int ODE_PFR::Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y
 		// Calculates thermodynamic properties
 		thermodynamicsMapXML_.SetTemperature(TStar_);
 		thermodynamicsMapXML_.SetPressure(P_Pa_);
-		thermodynamicsMapXML_.cpMolar_Mixture_From_MoleFractions(cpStar_, xStar_);
+		cpStar_ = thermodynamicsMapXML_.cpMolar_Mixture_From_MoleFractions(xStar_.GetHandle());
 		cpStar_/=MWStar_;
 	
 		// Calculates kinetics
@@ -184,21 +184,21 @@ int ODE_PFR::Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y
 		kineticsMapXML_.SetPressure(P_Pa_);
 		kineticsMapXML_.ReactionEnthalpiesAndEntropies();
 		kineticsMapXML_.KineticConstants();
-		kineticsMapXML_.ReactionRates(cStar_);
+		kineticsMapXML_.ReactionRates(cStar_.GetHandle());
 
 		// Remove useless reactions
 		for (unsigned int i=0;i<drg_->indices_unimportant_reactions().size();++i)
 			rStar_[drg_->indices_unimportant_reactions()[i]+1] = 0.;
 
 		// Formation rates
-		kineticsMapXML_.stoichiometry().FormationRatesFromReactionRates(&RStar_, rStar_);
-		const double QRStar_ = kineticsMapXML_.HeatRelease(RStar_);
+		kineticsMapXML_.stoichiometry().FormationRatesFromReactionRates(RStar_.GetHandle(), rStar_.GetHandle());
+		const double QRStar_ = kineticsMapXML_.HeatRelease(RStar_.GetHandle());
 
 		// Recovering residuals
 		for (unsigned int i=0;i<drg_->number_important_species();++i)	
 		{
 			const unsigned int j = drg_->indices_important_species()[i]+1;
-			dy[i+1] = thermodynamicsMapXML_.MW()[j]*RStar_[j]/rhoStar_;
+			dy[i+1] = thermodynamicsMapXML_.MW(j-1)*RStar_[j]/rhoStar_;
 		}
 
 		const double Q = 0.; // radiation contribution

@@ -16,7 +16,7 @@
 |                                                                         |
 |   This file is part of OpenSMOKE++ framework.                           |
 |                                                                         |
-|	License                                                               |
+|	License                                                           |
 |                                                                         |
 |   Copyright(C) 2014, 2013, 2012  Alberto Cuoci                          |
 |   OpenSMOKE++ is free software: you can redistribute it and/or modify   |
@@ -73,11 +73,11 @@ namespace OpenSMOKE
 		*/
 		StoichiometricMap(const unsigned int nspecies, const unsigned int nreactions);
                 
-                /**
+        /**
 		*@brief Constructor with verbose option
 		*@param nspecies number of species 
 		*@param nreactions number of reactions
-                *@param verbose show output
+        *@param verbose show output
 		*/
 		StoichiometricMap(const unsigned int nspecies, const unsigned int nreactions, bool verbose);
 
@@ -85,6 +85,11 @@ namespace OpenSMOKE
 		*@brief Initialize the stoichiometry from ASCII file (obsolete, TOREMOVE)
 		*/
 		void ReadFromASCIIFile(std::istream& fInput);
+
+		/**
+		*@brief Buid vectors for non elementary reactions (if any)
+		*/
+		void BuildNonElementaryReactions();
 
 		/**
 		*@brief Returns the change of mole for each reaction
@@ -110,6 +115,11 @@ namespace OpenSMOKE
 		*@brief Evaluates the product of concentrations for each reaction (according to the stoichiometry and the reaction orders)
 		*/
 		void ProductOfConcentrations(std::vector<double>& productDirect, std::vector<double>& productReverse, const double* c);
+
+		/**
+		*@brief Evaluates the product of concentrations for each reaction (according to the stoichiometry and the reaction orders)
+		*/
+		void ProductOfConcentrationsForNonElementaryReactions(std::vector<double>& productDirect, std::vector<double>& productReverse, const double* c);
 
 		/**
 		*@brief Evaluates the formation rates from the reaction rates
@@ -162,8 +172,6 @@ namespace OpenSMOKE
 
 		unsigned int number_of_species_;
 		unsigned int number_of_reactions_;
-
-		bool global_reactions_;
                 
         bool verbose_output_;
 
@@ -206,6 +214,16 @@ namespace OpenSMOKE
 		Eigen::SparseMatrix<double> Cp;
 		Eigen::SparseMatrix<double> Cd;
 		Eigen::SparseMatrix<double> stoichiometric_matrix_;
+
+		unsigned int non_elementary_reactions_direct_;
+		unsigned int non_elementary_reactions_reverse_;
+		std::vector<bool>							is_non_elementary_reaction_direct_;
+		std::vector<bool>							is_non_elementary_reaction_reverse_;
+		std::vector< std::vector<unsigned int> >	non_elementary_reactions_species_indices_direct_;
+		std::vector< std::vector<double> >			non_elementary_reactions_orders_direct_;
+		std::vector< std::vector<unsigned int> >	non_elementary_reactions_species_indices_reverse_;
+		std::vector< std::vector<double> >			non_elementary_reactions_orders_reverse_;
+
 	};
 }
 

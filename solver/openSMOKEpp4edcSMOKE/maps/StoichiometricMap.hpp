@@ -36,6 +36,15 @@
 
 #include "math/OpenSMOKEUtilities.h"
 
+#if __cplusplus <= 199711L
+#include <boost/spirit/include/phoenix_core.hpp>
+#include <boost/spirit/include/phoenix_operator.hpp>
+#endif
+
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
+
 namespace OpenSMOKE
 {
 	StoichiometricMap::StoichiometricMap(const unsigned int nspecies, const unsigned int nreactions)
@@ -48,6 +57,8 @@ namespace OpenSMOKE
 		isTheStoichiometricMatrixAvailable_ = false;
 		isTheReactionOrderMatrixAvailable_ = false;
 		areTheContributionOfRateOfFormationMatricesAvailable_ = false;
+		non_elementary_reactions_direct_ = 0;
+		non_elementary_reactions_reverse_ = 0;
 	}
         
     StoichiometricMap::StoichiometricMap(const unsigned int nspecies, const unsigned int nreactions, bool verbose)
@@ -60,6 +71,8 @@ namespace OpenSMOKE
 		isTheStoichiometricMatrixAvailable_ = false;
 		isTheReactionOrderMatrixAvailable_ = false;
 		areTheContributionOfRateOfFormationMatricesAvailable_ = false;
+		non_elementary_reactions_direct_ = 0;
+		non_elementary_reactions_reverse_ = 0;
 	}
 
 	void StoichiometricMap::ReadFromASCIIFile(std::istream& fInput)
@@ -89,17 +102,19 @@ namespace OpenSMOKE
 		Load(jDir5_, fInput, OPENSMOKE_FORMATTED_FILE);
 		Load(valueDir5_, fInput, OPENSMOKE_FORMATTED_FILE);
 
+		#if __cplusplus > 199711L
+		std::for_each(jDir1_.begin(), jDir1_.end(), [](unsigned int& v) { v -= 1; });
+		std::for_each(jDir2_.begin(), jDir2_.end(), [](unsigned int& v) { v -= 1; });
+		std::for_each(jDir3_.begin(), jDir3_.end(), [](unsigned int& v) { v -= 1; });
+		std::for_each(jDir4_.begin(), jDir4_.end(), [](unsigned int& v) { v -= 1; });
+		std::for_each(jDir5_.begin(), jDir5_.end(), [](unsigned int& v) { v -= 1; });
+		#else
 		for(unsigned int i=0;i<jDir1_.size();i++)	jDir1_[i] -= 1;
 		for(unsigned int i=0;i<jDir2_.size();i++)	jDir2_[i] -= 1;
 		for(unsigned int i=0;i<jDir3_.size();i++)	jDir3_[i] -= 1;
 		for(unsigned int i=0;i<jDir4_.size();i++)	jDir4_[i] -= 1;
 		for(unsigned int i=0;i<jDir5_.size();i++)	jDir5_[i] -= 1;
-
-		//std::for_each(jDir1_.begin(), jDir1_.end(), [](unsigned int& v) { v -= 1; });
-		//std::for_each(jDir2_.begin(), jDir2_.end(), [](unsigned int& v) { v -= 1; });
-		//std::for_each(jDir3_.begin(), jDir3_.end(), [](unsigned int& v) { v -= 1; });
-		//std::for_each(jDir4_.begin(), jDir4_.end(), [](unsigned int& v) { v -= 1; });
-		//std::for_each(jDir5_.begin(), jDir5_.end(), [](unsigned int& v) { v -= 1; });
+		#endif
 
 		Load(jRevTot1_, fInput, OPENSMOKE_FORMATTED_FILE);
 		Load(jRevTot2_, fInput, OPENSMOKE_FORMATTED_FILE);
@@ -108,17 +123,19 @@ namespace OpenSMOKE
 		Load(jRevTot5_, fInput, OPENSMOKE_FORMATTED_FILE);
 		Load(valueRevTot5_, fInput, OPENSMOKE_FORMATTED_FILE);
 
+		#if __cplusplus > 199711L
+		std::for_each(jRevTot1_.begin(), jRevTot1_.end(), [](unsigned int& v) { v -= 1; });
+		std::for_each(jRevTot2_.begin(), jRevTot2_.end(), [](unsigned int& v) { v -= 1; });
+		std::for_each(jRevTot3_.begin(), jRevTot3_.end(), [](unsigned int& v) { v -= 1; });
+		std::for_each(jRevTot4_.begin(), jRevTot4_.end(), [](unsigned int& v) { v -= 1; });
+		std::for_each(jRevTot5_.begin(), jRevTot5_.end(), [](unsigned int& v) { v -= 1; });
+		#else
 		for(unsigned int i=0;i<jRevTot1_.size();i++)	jRevTot1_[i] -= 1;
 		for(unsigned int i=0;i<jRevTot2_.size();i++)	jRevTot2_[i] -= 1;
 		for(unsigned int i=0;i<jRevTot3_.size();i++)	jRevTot3_[i] -= 1;
 		for(unsigned int i=0;i<jRevTot4_.size();i++)	jRevTot4_[i] -= 1;
 		for(unsigned int i=0;i<jRevTot5_.size();i++)	jRevTot5_[i] -= 1;
-
-		//std::for_each(jRevTot1_.begin(), jRevTot1_.end(), [](unsigned int& v) { v -= 1; });
-		//std::for_each(jRevTot2_.begin(), jRevTot2_.end(), [](unsigned int& v) { v -= 1; });
-		//std::for_each(jRevTot3_.begin(), jRevTot3_.end(), [](unsigned int& v) { v -= 1; });
-		//std::for_each(jRevTot4_.begin(), jRevTot4_.end(), [](unsigned int& v) { v -= 1; });
-		//std::for_each(jRevTot5_.begin(), jRevTot5_.end(), [](unsigned int& v) { v -= 1; });
+		#endif
 
 		Load(jRevEq1_, fInput, OPENSMOKE_FORMATTED_FILE);
 		Load(jRevEq2_, fInput, OPENSMOKE_FORMATTED_FILE);
@@ -127,23 +144,26 @@ namespace OpenSMOKE
 		Load(jRevEq5_, fInput, OPENSMOKE_FORMATTED_FILE);
 		Load(valueRevEq5_, fInput, OPENSMOKE_FORMATTED_FILE);
 
+		#if __cplusplus > 199711L
+		std::for_each(jRevEq1_.begin(), jRevEq1_.end(), [](unsigned int& v) { v -= 1; });
+		std::for_each(jRevEq2_.begin(), jRevEq2_.end(), [](unsigned int& v) { v -= 1; });
+		std::for_each(jRevEq3_.begin(), jRevEq3_.end(), [](unsigned int& v) { v -= 1; });
+		std::for_each(jRevEq4_.begin(), jRevEq4_.end(), [](unsigned int& v) { v -= 1; });
+		std::for_each(jRevEq5_.begin(), jRevEq5_.end(), [](unsigned int& v) { v -= 1; });
+		#else
 		for(unsigned int i=0;i<jRevEq1_.size();i++)	jRevEq1_[i] -= 1;
 		for(unsigned int i=0;i<jRevEq2_.size();i++)	jRevEq2_[i] -= 1;
 		for(unsigned int i=0;i<jRevEq3_.size();i++)	jRevEq3_[i] -= 1;
 		for(unsigned int i=0;i<jRevEq4_.size();i++)	jRevEq4_[i] -= 1;
 		for(unsigned int i=0;i<jRevEq5_.size();i++)	jRevEq5_[i] -= 1;
-
-		//std::for_each(jRevEq1_.begin(), jRevEq1_.end(), [](unsigned int& v) { v -= 1; });
-		//std::for_each(jRevEq2_.begin(), jRevEq2_.end(), [](unsigned int& v) { v -= 1; });
-		//std::for_each(jRevEq3_.begin(), jRevEq3_.end(), [](unsigned int& v) { v -= 1; });
-		//std::for_each(jRevEq4_.begin(), jRevEq4_.end(), [](unsigned int& v) { v -= 1; });
-		//std::for_each(jRevEq5_.begin(), jRevEq5_.end(), [](unsigned int& v) { v -= 1; });
+		#endif
 
 		Load(changeOfMoles_, fInput, OPENSMOKE_FORMATTED_FILE);
 
-		fInput >> global_reactions_;
+		bool explicit_reaction_orders;
+		fInput >> explicit_reaction_orders;
 
-		if (global_reactions_ == false)
+		if (explicit_reaction_orders == false)
 		{
 			lambda_numDir1_	 = numDir1_;
 			lambda_numDir2_	 = numDir2_;
@@ -192,17 +212,19 @@ namespace OpenSMOKE
 			Load(lambda_jDir5_, fInput, OPENSMOKE_FORMATTED_FILE);
 			Load(lambda_valueDir5_, fInput, OPENSMOKE_FORMATTED_FILE);
 
+			#if __cplusplus > 199711L
+			std::for_each(lambda_jDir1_.begin(), lambda_jDir1_.end(), [](unsigned int& v) { v -= 1; });
+			std::for_each(lambda_jDir2_.begin(), lambda_jDir2_.end(), [](unsigned int& v) { v -= 1; });
+			std::for_each(lambda_jDir3_.begin(), lambda_jDir3_.end(), [](unsigned int& v) { v -= 1; });
+			std::for_each(lambda_jDir4_.begin(), lambda_jDir4_.end(), [](unsigned int& v) { v -= 1; });
+			std::for_each(lambda_jDir5_.begin(), lambda_jDir5_.end(), [](unsigned int& v) { v -= 1; });
+			#else
 			for(unsigned int i=0;i<lambda_jDir1_.size();i++)	lambda_jDir1_[i] -= 1;
 			for(unsigned int i=0;i<lambda_jDir2_.size();i++)	lambda_jDir2_[i] -= 1;
 			for(unsigned int i=0;i<lambda_jDir3_.size();i++)	lambda_jDir3_[i] -= 1;
 			for(unsigned int i=0;i<lambda_jDir4_.size();i++)	lambda_jDir4_[i] -= 1;
 			for(unsigned int i=0;i<lambda_jDir5_.size();i++)	lambda_jDir5_[i] -= 1;
-
-			//std::for_each(lambda_jDir1_.begin(), lambda_jDir1_.end(), [](unsigned int& v) { v -= 1; });
-			//std::for_each(lambda_jDir2_.begin(), lambda_jDir2_.end(), [](unsigned int& v) { v -= 1; });
-			//std::for_each(lambda_jDir3_.begin(), lambda_jDir3_.end(), [](unsigned int& v) { v -= 1; });
-			//std::for_each(lambda_jDir4_.begin(), lambda_jDir4_.end(), [](unsigned int& v) { v -= 1; });
-			//std::for_each(lambda_jDir5_.begin(), lambda_jDir5_.end(), [](unsigned int& v) { v -= 1; });
+			#endif
 
 			Load(lambda_jRevEq1_, fInput, OPENSMOKE_FORMATTED_FILE);
 			Load(lambda_jRevEq2_, fInput, OPENSMOKE_FORMATTED_FILE);
@@ -211,21 +233,224 @@ namespace OpenSMOKE
 			Load(lambda_jRevEq5_, fInput, OPENSMOKE_FORMATTED_FILE);
 			Load(lambda_valueRevEq5_, fInput, OPENSMOKE_FORMATTED_FILE);
 
+			#if __cplusplus > 199711L
+			std::for_each(lambda_jRevEq1_.begin(), lambda_jRevEq1_.end(), [](unsigned int& v) { v -= 1; });
+			std::for_each(lambda_jRevEq2_.begin(), lambda_jRevEq2_.end(), [](unsigned int& v) { v -= 1; });
+			std::for_each(lambda_jRevEq3_.begin(), lambda_jRevEq3_.end(), [](unsigned int& v) { v -= 1; });
+			std::for_each(lambda_jRevEq4_.begin(), lambda_jRevEq4_.end(), [](unsigned int& v) { v -= 1; });
+			std::for_each(lambda_jRevEq5_.begin(), lambda_jRevEq5_.end(), [](unsigned int& v) { v -= 1; });
+			#else
 			for(unsigned int i=0;i<lambda_jRevEq1_.size();i++)	lambda_jRevEq1_[i] -= 1;
 			for(unsigned int i=0;i<lambda_jRevEq2_.size();i++)	lambda_jRevEq2_[i] -= 1;
 			for(unsigned int i=0;i<lambda_jRevEq3_.size();i++)	lambda_jRevEq3_[i] -= 1;
 			for(unsigned int i=0;i<lambda_jRevEq4_.size();i++)	lambda_jRevEq4_[i] -= 1;
 			for(unsigned int i=0;i<lambda_jRevEq5_.size();i++)	lambda_jRevEq5_[i] -= 1;
-
-			//std::for_each(lambda_jRevEq1_.begin(), lambda_jRevEq1_.end(), [](unsigned int& v) { v -= 1; });
-			//std::for_each(lambda_jRevEq2_.begin(), lambda_jRevEq2_.end(), [](unsigned int& v) { v -= 1; });
-			//std::for_each(lambda_jRevEq3_.begin(), lambda_jRevEq3_.end(), [](unsigned int& v) { v -= 1; });
-			//std::for_each(lambda_jRevEq4_.begin(), lambda_jRevEq4_.end(), [](unsigned int& v) { v -= 1; });
-			//std::for_each(lambda_jRevEq5_.begin(), lambda_jRevEq5_.end(), [](unsigned int& v) { v -= 1; });
+			#endif
 		}
 
 		BuildStoichiometricMatrix();
 		BuildReactionOrdersMatrix();
+		BuildNonElementaryReactions();
+	}
+
+	void StoichiometricMap::BuildNonElementaryReactions()
+	{
+		// Recognize non elementary reactions: direct reactions
+		{
+			is_non_elementary_reaction_direct_.resize(number_of_reactions_);
+			std::fill(is_non_elementary_reaction_direct_.begin(), is_non_elementary_reaction_direct_.end(), false);
+
+			double* vD5 = lambda_valueDir5_.data();
+			unsigned int *jD4 = lambda_jDir4_.data();
+			unsigned int *jD5 = lambda_jDir5_.data();
+
+			for (unsigned int i = 0; i < number_of_species_; i++)
+			{
+				for (unsigned int k = 0; k < lambda_numDir4_[i]; k++)
+				{
+					is_non_elementary_reaction_direct_[*jD4] = true;
+					jD4++;
+				}
+
+				for (unsigned int k = 0; k < lambda_numDir5_[i]; k++)
+				{
+					if (*vD5 < 1.)
+						is_non_elementary_reaction_direct_[*jD5] = true;
+
+					jD5++;
+					vD5++;
+				}
+			}
+
+			// Number of non elemetary direct reactions 
+			non_elementary_reactions_direct_ = std::count(is_non_elementary_reaction_direct_.begin(), is_non_elementary_reaction_direct_.end(), true);;
+		}
+
+		// Recognize non elementary reactions: reverse reactions
+		{
+			is_non_elementary_reaction_reverse_.resize(number_of_reactions_);
+			std::fill(is_non_elementary_reaction_reverse_.begin(), is_non_elementary_reaction_reverse_.end(), false);
+
+			unsigned int *jIE4 = lambda_jRevEq4_.data();
+			unsigned int *jIE5 = lambda_jRevEq5_.data();
+			double *vIE5 = lambda_valueRevEq5_.data();
+
+			for (unsigned int i = 0; i < number_of_species_; i++)
+			{
+				for (unsigned int k = 0; k < lambda_numRevEq4_[i]; k++)
+				{
+					is_non_elementary_reaction_reverse_[*jIE4] = true;
+					jIE4++;
+				}
+				for (unsigned int k = 0; k < lambda_numRevEq5_[i]; k++)
+				{
+					if (*vIE5 < 1.)
+						is_non_elementary_reaction_reverse_[*jIE5] = true;
+					jIE5++;
+					vIE5++;
+				}
+			}
+
+			// Number of non elemetary reverse reactions 
+			non_elementary_reactions_reverse_ = std::count(is_non_elementary_reaction_reverse_.begin(), is_non_elementary_reaction_reverse_.end(), true);;
+		}
+
+		if (verbose_output_ == true)
+		{
+			std::cout << " * Non elementary direct reactions:  " << non_elementary_reactions_direct_ << std::endl;
+			std::cout << " * Non elementary reverse reactions: " << non_elementary_reactions_reverse_ << std::endl;
+		}
+
+		// Fill the vectors 
+		{
+			// Fill vectors for direct reactions
+			if (non_elementary_reactions_direct_ != 0)
+			{
+				non_elementary_reactions_species_indices_direct_.resize(number_of_reactions_);
+				non_elementary_reactions_orders_direct_.resize(number_of_reactions_);
+
+				unsigned int *jD1 = lambda_jDir1_.data();
+				unsigned int *jD2 = lambda_jDir2_.data();
+				unsigned int *jD3 = lambda_jDir3_.data();
+				unsigned int *jD4 = lambda_jDir4_.data();
+				unsigned int *jD5 = lambda_jDir5_.data();
+				double* vD5 = lambda_valueDir5_.data();
+
+				for (unsigned int i = 0; i < number_of_species_; i++)
+				{
+					for (unsigned int k = 0; k < lambda_numDir1_[i]; k++)
+					{
+						if (is_non_elementary_reaction_direct_[*jD1] == true)
+						{
+							non_elementary_reactions_species_indices_direct_[*jD1].push_back(i);
+							non_elementary_reactions_orders_direct_[*jD1].push_back(1.);
+						}
+						jD1++;
+					}
+					for (unsigned int k = 0; k < lambda_numDir2_[i]; k++)
+					{
+						if (is_non_elementary_reaction_direct_[*jD2] == true)
+						{
+							non_elementary_reactions_species_indices_direct_[*jD2].push_back(i);
+							non_elementary_reactions_orders_direct_[*jD2].push_back(2.);
+						}
+						jD2++;
+					}
+					for (unsigned int k = 0; k < lambda_numDir3_[i]; k++)
+					{
+						if (is_non_elementary_reaction_direct_[*jD3] == true)
+						{
+							non_elementary_reactions_species_indices_direct_[*jD3].push_back(i);
+							non_elementary_reactions_orders_direct_[*jD3].push_back(3.);
+						}
+						jD3++;
+					}
+					for (unsigned int k = 0; k < lambda_numDir4_[i]; k++)
+					{
+						if (is_non_elementary_reaction_direct_[*jD4] == true)
+						{
+							non_elementary_reactions_species_indices_direct_[*jD4].push_back(i);
+							non_elementary_reactions_orders_direct_[*jD4].push_back(0.5);
+						}
+						jD4++;
+					}
+					for (unsigned int k = 0; k < lambda_numDir5_[i]; k++)
+					{
+						if (is_non_elementary_reaction_direct_[*jD5] == true)
+						{
+							non_elementary_reactions_species_indices_direct_[*jD5].push_back(i);
+							non_elementary_reactions_orders_direct_[*jD5].push_back(*vD5);
+						}
+						jD5++;
+						vD5++;
+					}
+				}
+			}
+
+			// Fill vectors for reverse reactions
+			if (non_elementary_reactions_reverse_ != 0)
+			{
+				non_elementary_reactions_species_indices_reverse_.resize(number_of_reactions_);
+				non_elementary_reactions_orders_reverse_.resize(number_of_reactions_);
+
+				unsigned int *jIE1 = lambda_jRevEq1_.data();
+				unsigned int *jIE2 = lambda_jRevEq2_.data();
+				unsigned int *jIE3 = lambda_jRevEq3_.data();
+				unsigned int *jIE4 = lambda_jRevEq4_.data();
+				unsigned int *jIE5 = lambda_jRevEq5_.data();
+				double *vIE5 = lambda_valueRevEq5_.data();
+
+				for (unsigned int i = 0; i < number_of_species_; i++)
+				{
+					for (unsigned int k = 0; k<lambda_numRevEq1_[i]; k++)
+					{
+						if (is_non_elementary_reaction_reverse_[*jIE1] == true)
+						{
+							non_elementary_reactions_species_indices_reverse_[*jIE1].push_back(i);
+							non_elementary_reactions_orders_reverse_[*jIE1].push_back(1.);
+						}
+						jIE1++;
+					}
+					for (unsigned int k = 0; k<lambda_numRevEq2_[i]; k++)
+					{
+						if (is_non_elementary_reaction_reverse_[*jIE2] == true)
+						{
+							non_elementary_reactions_species_indices_reverse_[*jIE2].push_back(i);
+							non_elementary_reactions_orders_reverse_[*jIE2].push_back(2.);
+						}
+						jIE2++;
+					}
+					for (unsigned int k = 0; k<lambda_numRevEq3_[i]; k++)
+					{
+						if (is_non_elementary_reaction_reverse_[*jIE3] == true)
+						{
+							non_elementary_reactions_species_indices_reverse_[*jIE3].push_back(i);
+							non_elementary_reactions_orders_reverse_[*jIE3].push_back(3.);
+						}
+						jIE3++;
+					}
+					for (unsigned int k = 0; k<lambda_numRevEq4_[i]; k++)
+					{
+						if (is_non_elementary_reaction_reverse_[*jIE4] == true)
+						{
+							non_elementary_reactions_species_indices_reverse_[*jIE4].push_back(i);
+							non_elementary_reactions_orders_reverse_[*jIE4].push_back(0.5);
+						}
+						jIE4++;
+					}
+					for (unsigned int k = 0; k<lambda_numRevEq5_[i]; k++)
+					{
+						if (is_non_elementary_reaction_reverse_[*jIE5] == true)
+						{
+							non_elementary_reactions_species_indices_reverse_[*jIE5].push_back(i);
+							non_elementary_reactions_orders_reverse_[*jIE5].push_back(*vIE5);
+						}
+						jIE5++;
+						vIE5++;
+					}
+				}
+			}
+		}
 	}
 
 	void StoichiometricMap::CompleteChangeOfMoles(const bool* isThermodynamicReversible)
@@ -313,58 +538,117 @@ namespace OpenSMOKE
 			if (lambda_numDir4_[i] != 0 || lambda_numRevEq4_[i] != 0)
 				csq = std::sqrt(c1);
 
-			for (unsigned int k = 0; k<lambda_numDir1_[i]; k++)
+			for (unsigned int k = 0; k < lambda_numDir1_[i]; k++)
 			{
 				productDirect[*jD1] *= c1;
 				jD1++;
 			}
-			for (unsigned int k = 0; k<lambda_numDir2_[i]; k++)
+			for (unsigned int k = 0; k < lambda_numDir2_[i]; k++)
 			{
 				productDirect[*jD2] *= c2;
 				jD2++;
 			}
-			for (unsigned int k = 0; k<lambda_numDir3_[i]; k++)
+			for (unsigned int k = 0; k < lambda_numDir3_[i]; k++)
 			{
 				productDirect[*jD3] *= c3;
 				jD3++;
 			}
-			for (unsigned int k = 0; k<lambda_numDir4_[i]; k++)
+			for (unsigned int k = 0; k < lambda_numDir4_[i]; k++)
 			{
 				productDirect[*jD4] *= csq;
 				jD4++;
 			}
-			for (unsigned int k = 0; k<lambda_numDir5_[i]; k++)
+			for (unsigned int k = 0; k < lambda_numDir5_[i]; k++)
 			{
 				productDirect[*jD5] *= std::pow(c1, *vD5);
 				jD5++;
 				vD5++;
 			}
 
-			for (unsigned int k = 0; k<lambda_numRevEq1_[i]; k++)
+			for (unsigned int k = 0; k < lambda_numRevEq1_[i]; k++)
 			{
 				productReverse[*jIE1] *= c1;
 				jIE1++;
 			}
-			for (unsigned int k = 0; k<lambda_numRevEq2_[i]; k++)
+			for (unsigned int k = 0; k < lambda_numRevEq2_[i]; k++)
 			{
 				productReverse[*jIE2] *= c2;
 				jIE2++;
 			}
-			for (unsigned int k = 0; k<lambda_numRevEq3_[i]; k++)
+			for (unsigned int k = 0; k < lambda_numRevEq3_[i]; k++)
 			{
 				productReverse[*jIE3] *= c3;
 				jIE3++;
 			}
-			for (unsigned int k = 0; k<lambda_numRevEq4_[i]; k++)
+			for (unsigned int k = 0; k < lambda_numRevEq4_[i]; k++)
 			{
 				productReverse[*jIE4] *= csq;
 				jIE4++;
 			}
-			for (unsigned int k = 0; k<lambda_numRevEq5_[i]; k++)
+			for (unsigned int k = 0; k < lambda_numRevEq5_[i]; k++)
 			{
 				productReverse[*jIE5] *= std::pow(c1, *vIE5);
 				jIE5++;
 				vIE5++;
+			}
+		}
+
+		if (non_elementary_reactions_direct_ != 0 || non_elementary_reactions_reverse_ != 0)
+			ProductOfConcentrationsForNonElementaryReactions(productDirect, productReverse, c);
+	}
+
+	void StoichiometricMap::ProductOfConcentrationsForNonElementaryReactions(std::vector<double>& productDirect, std::vector<double>& productReverse, const double* c)
+	{
+		const double Cstar = 1.e-8;
+		const double ALFA = 1.e-5;
+		const double H = 1.50*std::log(ALFA / (1. - ALFA));
+		const double K = 2.00*std::log((1. - ALFA) / ALFA) / Cstar;
+		const double delta = 1.e9;
+
+		for (unsigned int j = 0; j < number_of_reactions_; j++)
+		{
+			if (is_non_elementary_reaction_direct_[j] == true)
+			{
+				productDirect[j] = 1.;
+
+				for (unsigned int i = 0; i < non_elementary_reactions_species_indices_direct_[j].size(); i++)
+				{
+					const double C = c[non_elementary_reactions_species_indices_direct_[j][i]];
+					const double lambda = non_elementary_reactions_orders_direct_[j][i];
+
+					if (lambda >= 1.)
+					{
+						productDirect[j] *= std::pow(C, lambda);
+					}
+					else
+					{
+						const double m = (std::tanh(K*C + H) + 1.) / 2.;	// transition is for 9.e-6 < C < 1.5e-5 [kmol/m3]
+						const double gamma = m*pow(C + m / delta, lambda) + (1. - m)*pow(Cstar, lambda - 1.)*C;
+						productDirect[j] *= gamma;
+					}
+				}
+			}
+
+			if (is_non_elementary_reaction_reverse_[j] == true)
+			{
+				productReverse[j] = 1.;
+
+				for (unsigned int i = 0; i < non_elementary_reactions_species_indices_reverse_[j].size(); i++)
+				{
+					const double C = c[non_elementary_reactions_species_indices_reverse_[j][i]];
+					const double lambda = non_elementary_reactions_orders_reverse_[j][i];
+
+					if (lambda >= 1.)
+					{
+						productReverse[j] *= std::pow(C, lambda);
+					}
+					else
+					{
+						const double m = (std::tanh(K*C + H) + 1.) / 2.;	// transition is for 9.e-6 < C < 1.5e-5 [kmol/m3]
+						const double gamma = m*pow(C + m / delta, lambda) + (1. - m)*pow(Cstar, lambda - 1.)*C;
+						productReverse[j] *= gamma;
+					}
+				}
 			}
 		}
 	}

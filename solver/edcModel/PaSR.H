@@ -1,0 +1,521 @@
+/*-----------------------------------------------------------------------*\
+|                  _       _____ __  __  ____  _  ________                |
+|                 | |     / ____|  \/  |/ __ \| |/ /  ____|               |
+|          ___  __| | ___| (___ | \  / | |  | | ' /| |__                  |
+|         / _ \/ _` |/ __|\___ \| |\/| | |  | |  < |  __|                 |
+|        |  __/ (_| | (__ ____) | |  | | |__| | . \| |____                |
+|         \___|\__,_|\___|_____/|_|  |_|\____/|_|\_\______|               |
+|                                                                         |
+|                                                                         |
+|   Authors: A. Cuoci, M.R. Malik, A. Parente                             |
+|                                                                         |
+|   Contacts: Alberto Cuoci                                               |
+|   email: alberto.cuoci@polimi.it                                        |
+|   Department of Chemistry, Materials and Chemical Engineering           |
+|   Politecnico di Milano                                                 |
+|   P.zza Leonardo da Vinci 32, 20133 Milano (Italy)                      |
+|                                                                         |
+|   Contacts: Mohammad Rafi Malik                                         |
+|   Aero-Thermo-Mechanical Department                                     |
+|   Université Libre de Bruxelles                                         |
+|   Avenue F. D. Roosevelt 50, 1050 Bruxelles (Belgium)                   |
+|                                                                         |
+|   Contacts: Alessandro Parente                                          |
+|   email: alessandro.parente@ulb.ac.be                                   |
+|   Aero-Thermo-Mechanical Department                                     |
+|   Université Libre de Bruxelles                                         |
+|   Avenue F. D. Roosevelt 50, 1050 Bruxelles (Belgium)                   |
+|                                                                         |
+|-------------------------------------------------------------------------|
+|                                                                         |
+|   This file is part of edcSMOKE solver.                                 |
+|                                                                         |
+|	License                                                           |
+|                                                                         |
+|   Copyright(C) 2016-2014 A. Cuoci, M.R. Malik, A. Parente               |
+|   edcSMOKE is free software: you can redistribute it and/or modify      |
+|   it under the terms of the GNU General Public License as published by  |
+|   the Free Software Foundation, either version 3 of the License, or     |
+|   (at your option) any later version.                                   |
+|                                                                         |
+|   edcSMOKE is distributed in the hope that it will be useful,           |
+|   but WITHOUT ANY WARRANTY; without even the implied warranty of        |
+|   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         |
+|   GNU General Public License for more details.                          |
+|                                                                         |
+|   You should have received a copy of the GNU General Public License     |
+|   along with edcSMOKE. If not, see <http://www.gnu.org/licenses/>.      |
+|                                                                         |
+\*-----------------------------------------------------------------------*/
+
+{
+	if (pasrCounter == numberIterationsToUpdateChemistry)
+	{
+		pasrCounter = 0;
+
+		const double threshold_tau_c = 0.10;
+		const double minimum_Da = 1e-10;
+		const double maximum_Da = 10.;
+		
+		bool debug = false;
+		const double relaxationFactorFineStructures = 1.;
+
+		Info << "Fine structure properties..." << endl;
+		#if STEADYSTATE == 0
+		if (iLES == true)
+		{
+			const Foam::compressible::LESModel& lesModel = U.db().lookupObject<Foam::compressible::LESModel>("LESProperties");
+			scalarField nu = thermo.mu().internalField()/rho;
+
+		        epsilonSGS = 0.54433*pow((turbulence->k()+ksmall_), 1.5)/lesModel.delta();
+		        tau_mix =  sqrt((1.2247*lesModel.delta()/pow((turbulence->k()+ksmall_), 0.5))*sqrt(nu/epsilonSGS)); //geometrical mean of kolmogorov scale and filter size scale
+
+			Info<< "min/max(sgs_epsilon) = " << min(epsilonSGS).value() << ", " << max(epsilonSGS).value() << endl;
+			Info<< "min/max(les_epsilon) = " << min(lesModel.epsilon()).value() << ", " << max(lesModel.epsilon()).value() << endl;
+			Info<< "min/max(mu) =          " << min(thermo.mu()).value() << ", " << max(thermo.mu()).value() << endl;
+			Info<< "min/max(mut) =         " << min(turbulence->mut()).value() << ", " << max(turbulence->mut()).value() << endl;
+
+		}
+		else
+		#endif
+		{
+			const volScalarField& epsilonConst = turbulence->epsilon();
+
+			scalarField nu = thermo.mu().internalField()/rho;
+
+			if ( tauMixType == SCALE_KOLMOGOROV)
+			{
+				Info << "Using kolmogorov mixing time scale..." << endl;
+				tau_mix =  pow((nu/turbulence->epsilon()), 0.5);// kolmogorov mixing scale
+			}
+			else if ( tauMixType == SCALE_MEAN)
+			{
+				Info << "Using geometrical mean of integral scale and kolmogorov scale as mixing time scale..." << endl;
+				tau_mix =  sqrt(((turbulence->k()+ksmall_)/(epsilonConst+epsilonsmall_))*sqrt(nu/(epsilonConst+epsilonsmall_))); //geometrical mean of integral scale and kolmogorov scale
+			}
+			else if ( tauMixType == SCALE_GLOBAL)
+			{
+				Info << "Using global mixing time scale..." << endl;
+				tau_mix = Cmix*(turbulence->k()+ksmall_)/(epsilonConst+epsilonsmall_);  //global scale
+			}
+
+			Info<< "min/max(epsilon) = " << min(epsilonConst).value() << ", " << max(epsilonConst).value() << endl;
+			Info<< "turbulence->mut() = " << min(turbulence->mut()).value() << ", " << max(turbulence->mut()).value() << endl;
+			Info<< "rho = " << min(rho).value() << ", " << max(rho).value() << endl;
+
+		}
+
+		Info << "ODE Integration..." << endl;
+		const int unsigned ns = Y.size();
+		const int unsigned ne = ne_total;
+			  unsigned ne_drg = 0;
+
+		Eigen::VectorXd yStar0(ne);
+		Eigen::VectorXd yStarf(ne);
+		Eigen::VectorXd yMin(ne);
+		Eigen::VectorXd yMax(ne);
+	
+		for(unsigned int i=0;i<ns;i++)	yMin(i) = 0.; yMin(ne-3) = 200.;	yMin(ne-2) = 0.;	yMin(ne-1) = 0.;
+		for(unsigned int i=0;i<ns;i++)	yMax(i) = 1.; yMax(ne-3) = 5000.;	yMax(ne-2) = 1.e16;	yMax(ne-1) = 1.e16;
+
+		OpenSMOKE::OpenSMOKEVectorDouble omegaMean(ns);
+		OpenSMOKE::OpenSMOKEVectorDouble omegaStar(ns);
+		OpenSMOKE::OpenSMOKEVectorDouble xMean(ns);
+		OpenSMOKE::OpenSMOKEVectorDouble cMean(ns);
+		OpenSMOKE::OpenSMOKEVectorDouble h_species(ns);
+	
+		double hMean, MWMean;
+		const scalarField& pCells = thermo.p().internalField();
+		const scalarField& TCells = thermo.T().internalField();
+		scalarField& ShCells = Sh_.internalField();
+		scalarField& dQCells = dQ.internalField();
+
+		// DRG Fields
+		scalarField& drgSpeciesCells = drg_important_species.internalField();
+		scalarField& drgReactionsCells = drg_important_reactions.internalField();
+		scalarField& cpuReactionsCells = cpu_reaction_times.internalField();
+
+		// ISAT Statistics
+		#if EDCSMOKE_USE_ISAT == 1
+			unsigned int nAddHOM   = 0;
+			unsigned int nGrowHOM  = 0;
+			unsigned int nRetHOM   = 0;
+			double cpuTimeRet      = 0.;
+			double cpuTimeDI       = 0.;
+			double cpuTimeGrowth   = 0.;
+			double cpuTimeAddition = 0.;
+		#endif
+
+		if (drg_analysis == true) 
+			drg->ResetCounters();
+	
+		unsigned int counter = 0;
+		double cpuTimeAllCells_ODE = 0.;
+		const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
+		forAll(TCells, celli)
+		{	
+			// Integration time
+			const double t0 = 0.;
+			double tf = 0.;
+
+			// Extract the mean mass fractions
+			for(unsigned int i=0;i<ns;i++)
+				omegaMean[i+1] = Y[i].internalField()[celli];
+
+			// Convert to mole fractions
+			thermodynamicsMapXML->MoleFractions_From_MassFractions(xMean.GetHandle(), MWMean, omegaMean.GetHandle());
+
+			// Extract the fine strucutres mass fractions
+			if (reactorType == REACTORTYPE_PFR)
+			{
+				if (drg_analysis == false)
+				{
+					tf = tau_mix[celli]*(1.-tau_c[celli]/(tau_c[celli]+tau_mix[celli]));
+
+					for(unsigned int i=0;i<ns;i++)
+						yStar0(i) = omegaMean[i+1];
+					yStar0(ne-3) = TCells[celli];
+					yStar0(ne-2) = tf;
+					yStar0(ne-1) = 0.;
+
+					fine_structure_ode_pfr.Set(pCells[celli]);
+				}
+				else
+				{
+					// Set epsilon for DRG
+					{
+						for(unsigned int i=0;i<drg_temperature.size();i++)
+							if(TCells[celli] < drg_temperature[i])
+							{
+								drg->SetEpsilon(drg_epsilon[i]);
+								break;
+							}
+					}
+
+					// DRG Analysis
+					{
+						double cTot_ = pCells[celli]/PhysicalConstants::R_J_kmol/TCells[celli];
+						Product(cTot_, xMean, &cMean);
+						drg->Analysis(TCells[celli], pCells[celli], cMean);
+					}
+
+					// Number of import species (+1)
+					ne_drg = drg->number_important_species()+1;
+
+					// Set minimum and maximum values
+					{
+						yStar0.resize(ne_drg);
+						yStarf.resize(ne_drg);
+						yMax.resize(ne_drg);	yMax.setConstant(1.); yMax(ne_drg-1) = 5000.;
+						yMin.resize(ne_drg);	yMin.setConstant(0.); yMin(ne_drg-1) = 280.;
+					}
+
+					// Set integration time
+					tf = tau_mix[celli]*(1.-tau_c[celli]/(tau_c[celli]+tau_mix[celli]));
+
+					// Set initial condition
+					for (unsigned int i=0;i<drg->number_important_species();++i)	
+					{
+						const unsigned int j = drg->indices_important_species()[i]+1;
+						yStar0(i) = omegaMean[j];
+					}
+					yStar0(ne_drg-1) = TCells[celli];
+
+					// Extract the star mass fractions
+					for(unsigned int i=1;i<=ns;i++)
+						omegaStar[i] = omegaMean[i];
+
+					// Set DRG
+					fine_structure_ode_pfr.SetDRG(drg);
+
+					// Set the PFR solver
+					fine_structure_ode_pfr.Set(pCells[celli], omegaStar);
+				}
+			}			
+
+			// Solve the ODE system
+			{
+				const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
+
+				if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_OPENSMOKE)
+				{
+					if (reactorType == REACTORTYPE_PFR)
+					{
+						#if EDCSMOKE_USE_ISAT == 1
+
+							if(isatCheck == true)
+							{
+								#include "solvePFR_ISAT.H"
+							}
+							else
+							{
+								if (drg_analysis == false)
+								{
+									#include "solvePFR_DI.H"
+								}
+								else
+								{
+									#include "solvePFR_DI_DRG.H"
+								}
+							}
+
+						#else
+							if (drg_analysis == false)
+							{
+								#include "solvePFR_DI.H"
+							}
+							else
+							{
+								#include "solvePFR_DI_DRG.H"
+							}
+
+						#endif
+					}
+
+				}
+				#if OPENSMOKE_USE_DVODE == 1
+				else if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_DVODE)
+				{
+					if (reactorType == REACTORTYPE_PFR)
+					{
+						SolverDVODEPFR->SetInitialValues(t0, yStar0.data());
+						SolverDVODEPFR->Solve(tf);
+						SolverDVODEPFR->Solution(yStarf.data());
+					}
+				}
+				#endif
+				#if OPENSMOKE_USE_ODEPACK == 1
+				else if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_DLSODE)
+				{
+					if (reactorType == REACTORTYPE_PFR)
+					{
+						SolverDLSODEPFR->SetInitialValues(t0, yStar0.data());
+						SolverDLSODEPFR->Solve(tf);
+						SolverDLSODEPFR->Solution(yStarf.data());
+					}
+				}
+				#endif
+				#if OPENSMOKE_USE_ODEPACK == 1
+				else if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_DLSODA)
+				{
+					if (reactorType == REACTORTYPE_PFR)
+					{
+						SolverDLSODAPFR->SetInitialValues(t0, yStar0.data());
+						SolverDLSODAPFR->Solve(tf);
+						SolverDLSODAPFR->Solution(yStarf.data());
+					}
+				}
+				#endif
+				#if OPENSMOKE_USE_DASPK == 1
+				else if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_DASPK)
+				{
+					if (reactorType == REACTORTYPE_PFR)
+					{
+						SolverDASPKPFR->SetInitialValues(t0, yStar0.data());
+						SolverDASPKPFR->Solve(tf);
+						SolverDASPKPFR->Solution(yStarf.data());
+					}
+				}
+				#endif
+				#if OPENSMOKE_USE_RADAU == 1
+				else if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_RADAU5)
+				{
+					if (reactorType == REACTORTYPE_PFR)
+					{
+						SolverRADAU5PFR->SetInitialValues(t0, yStar0.data());
+						SolverRADAU5PFR->Solve(tf);
+						SolverRADAU5PFR->Solution(yStarf.data());
+					}
+				}
+				#endif
+				#if OPENSMOKE_USE_MEBDF == 1
+				else if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_MEBDF)
+				{
+					if (reactorType == REACTORTYPE_PFR)
+					{
+						SolverMEBDFPFR->SetInitialValues(t0, yStar0.data());
+						SolverMEBDFPFR->Solve(tf);
+						SolverMEBDFPFR->Solution(yStarf.data());
+					}
+				}
+				#endif
+				#if OPENSMOKE_USE_SUNDIALS == 1
+				else if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_CVODE)
+				{
+					if (reactorType == REACTORTYPE_PFR)
+					{
+						SolverCVODEPFR->SetInitialValues(t0, yStar0.data());
+						SolverCVODEPFR->Solve(tf);
+						SolverCVODEPFR->Solution(yStarf.data());
+					}
+				}
+				#endif
+			
+				const double tEnd = OpenSMOKE::OpenSMOKEGetCpuTime();
+
+				cpuTimeAllCells_ODE += (tEnd-tStart);
+			}
+
+			{
+				double result = 0.0;
+		
+				for(unsigned int i=0;i<ns;i++)
+				{  
+
+					const double dYdt = fabs((YStar_[i].internalField()[celli]-Y[i].internalField()[celli])/tf);
+					if ( dYdt < 1e-16) 
+					{
+						tau_c[celli] = 0.0;  
+					}
+					else       
+					{ 
+						tau_c[celli] = YStar_[i].internalField()[celli]/dYdt;
+					}
+					
+					result = max(result, tau_c[celli]);
+				}
+
+
+				if (result == 0.0) result = threshold_tau_c;
+			
+				result = min(result, threshold_tau_c);
+				tau_c_max[celli] = result;
+
+				kappa_coefficient[celli] = tau_c_max[celli]/(tau_c_max[celli]+tau_mix[celli]);
+				Da[celli] = tau_mix[celli]/tau_c_max[celli];
+				Da[celli] = max (Da[celli], minimum_Da);
+				Da[celli] = min (Da[celli], maximum_Da);
+			}
+	
+			if (drg_analysis == false)
+			{		
+				for(unsigned int i=0;i<ns;i++)
+					YStar_[i].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0(i) + relaxationFactorFineStructures*yStarf(i);
+				TStar_[0].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0(ne-3) + relaxationFactorFineStructures*yStarf(ne-3);
+
+				for(unsigned int i=0;i<ns;i++)
+					R_[i].internalField()[celli] = rho[celli]*kappa_coefficient[celli]*(YStar_[i].internalField()[celli]-Y[i].internalField()[celli])/tf;
+			}
+			else
+			{
+				for(unsigned int i=0;i<ne_drg-1;i++)
+				{
+		       			const unsigned int j = drg->indices_important_species()[i];
+		        		YStar_[j].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0(i) + relaxationFactorFineStructures*yStarf(i);
+				}
+				TStar_[0].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0(ne_drg-1) + relaxationFactorFineStructures*yStarf(ne_drg-1);
+		 
+				// Reset to 0 every formation rate
+				for(unsigned int i=0;i<ns;i++)
+					R_[i].internalField()[celli] = 0.;
+
+				// Update only formation rates for relevant species
+				for(unsigned int i=0;i<ne_drg-1;i++)
+				{
+					const unsigned int j = drg->indices_important_species()[i];
+					R_[j].internalField()[celli] = rho[celli]*kappa_coefficient[celli]*(YStar_[j].internalField()[celli]-Y[j].internalField()[celli])/tf;
+				}
+			}
+
+			thermodynamicsMapXML->SetTemperature(TCells[celli]);
+			thermodynamicsMapXML->SetPressure(pCells[celli]);
+			thermodynamicsMapXML->hMolar_Species(h_species.GetHandle());
+
+			double HeatRelease = 0.;
+			for(unsigned int i=0;i<ns;i++)
+				HeatRelease += -h_species[i+1]/thermodynamicsMapXML->MW(i) * R_[i].internalField()[celli];
+			ShCells[celli] = HeatRelease;
+			dQCells[celli] = HeatRelease * mesh.V()[celli];
+
+			if (laminarDiffusion == true)
+			{
+				for(unsigned int i=0;i<ns;i++)
+					HeSpecies_[i].internalField()[celli] = -h_species[i+1]/thermodynamicsMapXML->MW(i);
+			}
+
+			if (debug == true)
+			{
+				Info << celli << " " << TCells[celli] << " " << gammaStar[celli] << " " << mDotStar[celli] << " " << HeatRelease << endl;
+				for(unsigned int i=0;i<ns;i++)
+				{
+					Info << Y[i].name() << " " << yStar0[i] << " " << yStarf[i] << " " << omegaMean[i+1] << " " << R_[i].internalField()[celli] << endl;
+				}
+				getchar();
+			}
+
+			if (counter%(int(0.20*mesh.nCells())+1) == 0)
+				Info <<"   Accomplished: " << counter << "/" << mesh.nCells() << endl;
+
+			counter++;
+
+			if (drg_analysis == true)
+			{
+				// Fill the relevant DRG fields
+				drgSpeciesCells[celli]   = drg->number_important_species();
+				drgReactionsCells[celli] = drg->number_important_reactions();
+			}
+		}
+		const double tEnd = OpenSMOKE::OpenSMOKEGetCpuTime();
+			
+		Info << "CPU time for chemistry (PaSR): " << tEnd - tStart << " s " << "(" << (tEnd - tStart)/double(TCells.size())*1e3 << " ms per cell)" << endl;
+		Info << "CPU time for ODE solution:    " << cpuTimeAllCells_ODE << " s " << "(" << (cpuTimeAllCells_ODE)/double(TCells.size())*1e3 << " ms per cell)" << endl;
+		if (drg_analysis == true) 
+		{
+			Info << "CPU time for DRG analysis:    " << drg->cpuTimeOverall() << " s " << "(" << (drg->cpuTimeOverall())/double(TCells.size())*1e3 << " ms per cell)" << endl;
+			drg->WriteCpuTimesOnTheScreen();
+		}
+
+		#if EDCSMOKE_USE_ISAT == 1
+		if(isatCheck == true) 
+		{
+			Info << endl;
+			Info << " ********* ISAT HOM stats **********" << endl;
+		
+			Info << "   Direct Integration : " << isatTable->nAdd()+isatTable->nGrow()  << " (" << nAddHOM+nGrowHOM << ")" << " (" << (nAddHOM+nGrowHOM)/double(mesh.nCells())*100. << "%)" << endl;
+			Info << "      Add             : " << isatTable->nAdd()  << " (" << nAddHOM  << ")" << " (" << nAddHOM/double(mesh.nCells())*100. << "%)" << endl;
+			Info << "      Grow            : " << isatTable->nGrow() << " (" << nGrowHOM << ")" << " (" << nGrowHOM/double(mesh.nCells())*100. << "%)" << endl;
+			Info << "   Retrieve           : " << isatTable->nUse()  << " (" << nRetHOM  << ")" << " (" << nRetHOM/double(mesh.nCells())*100. << "%)" << endl;
+			Info << endl;				
+
+			const double cpuTimeIntegration = cpuTimeDI + cpuTimeGrowth + cpuTimeAddition;
+			Info << "   CPU Integration  : " << cpuTimeIntegration  << " (" << cpuTimeIntegration/(tEnd-tStart)*100. << "%)" << endl;
+			Info << "     CPU DI         : " << cpuTimeDI           << " (" << cpuTimeDI/(tEnd-tStart)*100.          << "%)" << endl;				
+			Info << "     CPU Growth     : " << cpuTimeGrowth       << " (" << cpuTimeGrowth/(tEnd-tStart)*100.         << "%)" << endl;
+			Info << "     CPU Addition   : " << cpuTimeAddition     << " (" << cpuTimeAddition/(tEnd-tStart)*100.    << "%)" << endl;
+			Info << "   CPU Retrieve     : " << cpuTimeRet          << " (" << cpuTimeRet/(tEnd-tStart)*100.         << "%)" << endl;
+			Info << endl;
+
+			Info << "      BTS  : " << isatTable->nBTS()  << endl;
+			Info << "      MRU  : " << isatTable->nMRU()  << endl;
+			Info << "      MFU  : " << isatTable->nMFU()  << endl << endl;
+			Info << endl;
+		}
+		#endif
+
+		WriteScalarField(mesh, kappa_coefficient, "PaSR::kappa");
+		WriteScalarField(mesh, tau_c_max, "PaSR::tau_c_max");
+		WriteScalarField(mesh, Da, "Da");
+
+		// Adjust on the boundaries
+		const fvPatchList& patches = mesh.boundary();
+	    	forAll(patches, patchi)
+	    	{
+			const fvPatch& currPatch = patches[patchi];
+
+			scalarField& pSh_ = Sh_.boundaryField()[patchi];
+			scalarField& pQ_  = dQ.boundaryField()[patchi];
+			scalarField& ShCells = Sh_.internalField();
+			scalarField& dQCells = dQ.internalField();
+
+		    	forAll(currPatch, facei)
+		    	{
+		        	label faceCelli = currPatch.faceCells()[facei];
+		        	pSh_[facei] = ShCells[faceCelli];
+		        	pQ_[facei] = dQCells[faceCelli];
+			}
+		}
+	}
+
+	pasrCounter++;
+}
+

@@ -89,6 +89,31 @@ namespace OpenSMOKE
 		*@brief Returns epsilon
 		*/
 		double epsilon() const { return epsilon_; }
+
+		/**
+		*@brief Write cpu times on the screen
+		*/
+		void WriteCpuTimesOnTheScreen();
+
+		/**
+		*@brief Reset counters for calculating cpu time
+		*/
+		void ResetCounters();
+
+		/**
+		*@brief Return the overall cpu time [s] since ResetCounters()
+		*/
+		double cpuTimeOverall() const { return cpuTimeCumulative_PairWiseErrorMatrix_ + cpuTimeCumulative_ParsePairWiseErrorMatrix_; }
+
+		/**
+		*@brief Return the overall number of important species since ResetCounters()
+		*/
+		unsigned int numberImportantSpeciesOverall() const { return number_important_species_cumulative_; }
+
+		/**
+		*@brief Return the overall number of important reactions since ResetCounters()
+		*/
+		unsigned int numberImportantReactionsOverall() const { return number_important_reactions_cumulative_; }
                 
 	private:
 
@@ -132,6 +157,23 @@ namespace OpenSMOKE
 		std::vector< Eigen::SparseMatrix<double> >	nu_times_delta_;	/**< vector of sparse matrices (NS x NS) */
 		Eigen::SparseMatrix<double> 			delta_sparse_;		/**< delta matrix (NS x NR) */
 
+		unsigned int counter_analysis_;
+		double cpuTimeCumulative_PairWiseErrorMatrix_;
+		double cpuTimeAverage_PairWiseErrorMatrix_;
+		double cpuTimeCumulative_PairWiseErrorMatrix_Step2_;
+		double cpuTimeAverage_PairWiseErrorMatrix_Step2_;
+		double cpuTimeLocal_ParsePairWiseErrorMatrix_;
+		double cpuTimeCumulative_ParsePairWiseErrorMatrix_;
+		double cpuTimeAverage_ParsePairWiseErrorMatrix_;
+
+		unsigned int number_important_species_cumulative_;
+		double number_important_species_average_;
+		unsigned int number_important_reactions_cumulative_;
+		double number_important_reactions_average_;
+		unsigned int number_important_species_min_;
+		unsigned int number_important_species_max_;
+		unsigned int number_important_reactions_min_;
+		unsigned int number_important_reactions_max_;
 	};
 }
 

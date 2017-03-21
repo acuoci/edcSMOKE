@@ -24,6 +24,8 @@ namespace OpenSMOKE
 		number_important_species_ = NS_;
 		number_unimportant_reactions_ = 0;
 
+		ResetCounters();
+
 		// Build a full matrix of net stoichiometric coefficients nu = nuB - nuF
 		Eigen::MatrixXd nu_(NR_, NS_);						
 		{
@@ -126,6 +128,23 @@ namespace OpenSMOKE
 		}
 	}
 
+	void DRG::ResetCounters()
+	{
+		counter_analysis_ = 0;
+
+		cpuTimeCumulative_PairWiseErrorMatrix_ = 0.;
+		//cpuTimeCumulative_PairWiseErrorMatrix_Step1_ = 0.;
+		cpuTimeCumulative_PairWiseErrorMatrix_Step2_ = 0.;
+		cpuTimeCumulative_ParsePairWiseErrorMatrix_ = 0.;
+
+		number_important_species_cumulative_ = 0;
+		number_important_reactions_cumulative_ = 0;
+		number_important_species_min_ = 1e6;
+		number_important_species_max_ = 0;
+		number_important_reactions_min_ = 1e6;
+		number_important_reactions_max_ = 0;
+	}
+
 	void DRG::SetKeySpecies(const std::vector<std::string> names_key_species)
 	{
 		index_key_species_.resize(names_key_species.size());
@@ -145,8 +164,34 @@ namespace OpenSMOKE
 
 	void DRG::Analysis(const double T, const double P_Pa, const OpenSMOKE::OpenSMOKEVectorDouble& c)
 	{
-		PairWiseErrorMatrix(T, P_Pa, c);
-		ParsePairWiseErrorMatrix();
+		// Updating counter
+		counter_analysis_++;
+
+		// Construction pair wise matrix
+		{
+			const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
+
+			PairWiseErrorMatrix(T, P_Pa, c);
+
+			const double tEnd = OpenSMOKE::OpenSMOKEGetCpuTime();
+
+			const double cpuTimeLocal_PairWiseErrorMatrix = tEnd-tStart;
+			cpuTimeCumulative_PairWiseErrorMatrix_ += cpuTimeLocal_PairWiseErrorMatrix;
+			cpuTimeAverage_PairWiseErrorMatrix_ = cpuTimeCumulative_PairWiseErrorMatrix_/static_cast<double>(counter_analysis_);
+		}
+
+		// Parsing pair wise matrix
+		{
+			const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
+
+			ParsePairWiseErrorMatrix();
+
+			const double tEnd = OpenSMOKE::OpenSMOKEGetCpuTime();
+
+			const double cpuTimeLocal_ParsePairWiseErrorMatrix = tEnd-tStart;
+			cpuTimeCumulative_ParsePairWiseErrorMatrix_ += cpuTimeLocal_ParsePairWiseErrorMatrix;
+			cpuTimeAverage_ParsePairWiseErrorMatrix_ = cpuTimeCumulative_ParsePairWiseErrorMatrix_/static_cast<double>(counter_analysis_);
+		}
 	}
 
 	void DRG::PairWiseErrorMatrix(const double T, const double P_Pa, const OpenSMOKE::OpenSMOKEVectorDouble& c)
@@ -163,39 +208,49 @@ namespace OpenSMOKE
 		kineticsMapXML_.GiveMeReactionRates(rNet_.GetHandle());	// [kmol/m3/s]
 
 		// Calculate the pair-wise error matrix
-		r_.setZero();
 		{
-			Eigen::VectorXd numerator_(NS_);
-			Eigen::VectorXd denominator_(NS_);
+			const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
 
-			// Denominator			
-			denominator_.setConstant(0.);		
-			for (int k=0; k<nu_sparse_.outerSize(); ++k)
-  			{
-				const double rnet = rNet_[k+1];
-				for (Eigen::SparseMatrix<double>::InnerIterator it(nu_sparse_,k); it; ++it)
-  				{
-    					denominator_[it.row()] += std::fabs(it.value() * rnet);
-  				}
-			}
-
-			// Numerator
-			for (int i = 0; i < NS_; i++)
 			{
-				numerator_.setConstant(0.);
-				for (int k=0; k<nu_times_delta_[i].outerSize(); ++k)
-  				{
+				r_.setZero();
+
+				Eigen::VectorXd numerator_(NS_);
+				Eigen::VectorXd denominator_(NS_);
+
+				// Denominator			
+				denominator_.setConstant(0.);		
+				for (int k=0; k<nu_sparse_.outerSize(); ++k)
+	  			{
 					const double rnet = rNet_[k+1];
-					for (Eigen::SparseMatrix<double>::InnerIterator it(nu_times_delta_[i],k); it; ++it)
-  					{
-    						numerator_[it.row()] += std::fabs(it.value() * rnet);
-  					}
+					for (Eigen::SparseMatrix<double>::InnerIterator it(nu_sparse_,k); it; ++it)
+	  				{
+	    					denominator_[it.row()] += std::fabs(it.value() * rnet);
+	  				}
 				}
 
-				for (int j = 0; j < NS_; j++)
-					r_(i,j) = numerator_[j]/(1.e-64+denominator_[i]);
+				// Numerator
+				for (int i = 0; i < NS_; i++)
+				{
+					numerator_.setConstant(0.);
+					for (int k=0; k<nu_times_delta_[i].outerSize(); ++k)
+	  				{
+						const double rnet = rNet_[k+1];
+						for (Eigen::SparseMatrix<double>::InnerIterator it(nu_times_delta_[i],k); it; ++it)
+	  					{
+	    						numerator_[it.row()] += std::fabs(it.value() * rnet);
+	  					}
+					}
+
+					for (int j = 0; j < NS_; j++)
+						r_(i,j) = numerator_[j]/(1.e-64+denominator_[i]);
+				}
 			}
-			
+
+			const double tEnd = OpenSMOKE::OpenSMOKEGetCpuTime();
+
+			const double cpuTimeLocal_PairWiseErrorMatrix_Step2_ = tEnd-tStart;
+			cpuTimeCumulative_PairWiseErrorMatrix_Step2_ += cpuTimeLocal_PairWiseErrorMatrix_Step2_;
+			cpuTimeAverage_PairWiseErrorMatrix_Step2_ = cpuTimeCumulative_PairWiseErrorMatrix_Step2_/static_cast<double>(counter_analysis_);
 		}
         }
         
@@ -269,6 +324,26 @@ namespace OpenSMOKE
 					count++;
 				}
                 }
-			
+		
+		number_important_species_cumulative_ += number_important_species_;
+		number_important_reactions_cumulative_ += (NR_-number_unimportant_reactions_);
+		number_important_species_average_ = number_important_species_cumulative_/static_cast<double>(counter_analysis_);
+		number_important_reactions_average_ = number_important_reactions_cumulative_/static_cast<double>(counter_analysis_);
+
+		number_important_species_max_ = (number_important_species_ > number_important_species_max_) ? number_important_species_ : number_important_species_max_;
+		number_important_species_min_ = (number_important_species_ < number_important_species_min_) ? number_important_species_ : number_important_species_min_;
+
+		number_important_reactions_max_ = ((NR_-number_unimportant_reactions_) > number_important_reactions_max_) ? (NR_-number_unimportant_reactions_) : number_important_reactions_max_;
+		number_important_reactions_min_ = ((NR_-number_unimportant_reactions_) < number_important_reactions_min_) ? (NR_-number_unimportant_reactions_) : number_important_reactions_min_;
+	}
+
+	void DRG::WriteCpuTimesOnTheScreen()
+	{
+		std::cout << "DRG Analysis" << std::endl;
+		std::cout << " * Pair-Wise Error Matrix (overall):         " << cpuTimeAverage_PairWiseErrorMatrix_ << std::endl;
+		std::cout << " * Pair-Wise Error Matrix (construction):    " << cpuTimeAverage_PairWiseErrorMatrix_Step2_ << std::endl;
+		std::cout << " * Pair-Wise Error Matrix (parsing):         " << cpuTimeAverage_ParsePairWiseErrorMatrix_ << std::endl;
+		std::cout << " * Number important species (avg : min : max : tot):   " << number_important_species_average_ << " : " << number_important_species_min_ << " : " << number_important_species_max_ << " : " << NS_ << std::endl;
+		std::cout << " * Number important reactions (avg : min : max : tot): " << number_important_reactions_average_ << " : " << number_important_reactions_min_ << " : " << number_important_reactions_max_ << " : " << NR_ << std::endl;			
 	}
 }

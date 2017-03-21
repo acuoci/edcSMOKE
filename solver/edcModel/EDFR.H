@@ -153,11 +153,11 @@
 				for(unsigned int j=0;j<ed_reactant_index_[k].size();j++)
 					r[k] = std::min(r[k], constA*omega(ed_reactant_index_[k][j])/ed_denominator_reactants_[k][j]);
 				
-				// Comparison with chemistry
-				r[k] = std::min(r[k], kineticsMapXML->GiveMeReactionRates()[k]);
-
 				// Constant coefficient
 				r[k] *= rho_epsilon_over_k;
+
+				// Comparison with chemistry
+				r[k] = std::min(r[k], kineticsMapXML->GiveMeReactionRates()[k]);				
 			}
 		}		
 

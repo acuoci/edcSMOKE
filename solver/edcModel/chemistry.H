@@ -54,4 +54,6 @@ if (homogeneousReactions == true)
 		#include "EDFR.H"
 	else if (combustionModel == "EDC")
 		#include "EDC.H"
+	else if (combustionModel == "PaSR")
+		#include "PaSR.H"
 }

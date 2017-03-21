@@ -172,6 +172,7 @@ if (iLES == false)
 #endif
 
 // Models
+std::string combustion_model_tag;
 word combustionModel(combustionOptionsDictionary.lookup("combustionModel"));
 const scalar maxT = readScalar(combustionOptionsDictionary.lookup("maxT"));
 const scalar minT = readScalar(combustionOptionsDictionary.lookup("minT"));
@@ -285,11 +286,13 @@ volScalarField massDiffusionInEnergyEquation
 // Numerical parameters for EDC
 scalar Ccsi = 2.1377;
 scalar Ctau = 0.40825;
+scalar Cmix = 1.;
 
 scalar maxGammaSquared = 0.75487766248;
 scalar numberOfResidenceTimes = 100.;
 label  numberIterationsToUpdateChemistry = 1;
 label  edcCounter = 0;
+label  pasrCounter = 0;
 
 scalar Sct = readScalar(combustionOptionsDictionary.lookup("Sct"));
 
@@ -306,11 +309,16 @@ std::vector<double> ed_denominator_products_;
 // Reactor type: PSR or PFR
 enum { REACTORTYPE_PSR, REACTORTYPE_PFR} reactorType;
 
+// Reactor type: PSR or PFR
+enum { SCALE_KOLMOGOROV, SCALE_MEAN, SCALE_GLOBAL } tauMixType;
+
 // Reading constants from file
 {
 // ED Constants
 if (combustionModel == "ED")
 {
+	combustion_model_tag = "ed";
+
 	dictionary edSubDictionary(combustionOptionsDictionary.subDict("ED"));
 
 	constA = readScalar(edSubDictionary.lookup("A"));	// default: 4
@@ -319,6 +327,8 @@ if (combustionModel == "ED")
 // EDFR Constants
 else if (combustionModel == "EDFR")
 {
+	combustion_model_tag = "edfr";
+
 	dictionary edfrSubDictionary(combustionOptionsDictionary.subDict("EDFR"));
 
 	constA = readScalar(edfrSubDictionary.lookup("A"));	// default: 4
@@ -327,6 +337,8 @@ else if (combustionModel == "EDFR")
 // EDC Constants
 else if (combustionModel == "EDC")
 {
+	combustion_model_tag = "edc";
+
 	dictionary edcSubDictionary(combustionOptionsDictionary.subDict("EDC"));
 
 	Ccsi = readScalar(edcSubDictionary.lookup("Ccsi"));						// default: 2.1377
@@ -349,10 +361,45 @@ else if (combustionModel == "EDC")
 		abort();
 	}
 }
+// EDC Constants
+else if (combustionModel == "PaSR")
+{
+	combustion_model_tag = "pasr";
+
+	dictionary PaSRSubDictionary(combustionOptionsDictionary.subDict("PaSR"));
+	word tauMixTypestring(PaSRSubDictionary.lookup("tauMixType"));
+	
+	if ( tauMixTypestring == "kolmogorovScale")
+		tauMixType = SCALE_KOLMOGOROV;
+	else if ( tauMixTypestring == "geometricMeanScale")
+		tauMixType = SCALE_MEAN;
+	else if ( tauMixTypestring == "globalScale")
+		tauMixType = SCALE_GLOBAL;
+	else
+	{
+		Info << "Wrong tau_mix type: kolmogorovScale || geometriMeanScale || globalScale" << endl;
+		abort();
+	}
+
+	Cmix = readScalar(PaSRSubDictionary.lookup("Cmix"));                        
+	numberIterationsToUpdateChemistry = readLabel(PaSRSubDictionary.lookup("numberIterationsToUpdateChemistry")); 
+	pasrCounter = numberIterationsToUpdateChemistry;
+
+	// Type
+	word reactorTypeString(PaSRSubDictionary.lookup("reactorType"));
+	
+	if ( reactorTypeString == "PFR")
+		  reactorType = REACTORTYPE_PFR;
+	else
+	{
+		Info << "Wrong reactor type: only PFR" << endl;
+		abort();
+	}
+}
 // Error Message
 else
 {
-	FatalError << "Combustion model available: ED || EDFR || EDC" << endl;
+	FatalError << "Combustion model available: ED || EDFR || EDC || PaSR" << endl;
 }
 
 
@@ -396,7 +443,7 @@ if (combustionModel == "ED" || combustionModel == "EDFR")
 // Ode parameters
 OpenSMOKE::ODE_Parameters odeParametersFineStructures;
 
-if (combustionModel == "EDC")
+if (combustionModel == "EDC" || combustionModel == "PaSR")
 {
 	const dictionary& odeParametersFineStructuresDictionary = combustionOptionsDictionary.subDict("Ode");
 
@@ -506,6 +553,12 @@ scalarField gammaStar(mesh.nCells(),0.);
 scalarField tfStar(mesh.nCells(),0.);
 scalarField mDotStar(mesh.nCells(),0.);
 scalarField edc_coefficient(mesh.nCells(),0.);
+scalarField tau_c(mesh.nCells(),0.);
+scalarField tau_c_max(mesh.nCells(),0.);
+scalarField tau_mix(mesh.nCells(),0.);
+scalarField kappa_coefficient(mesh.nCells(),0.);
+scalarField Da(mesh.nCells(),0.);
+
 
 volScalarField epsilonSGS
 (
@@ -550,14 +603,14 @@ volScalarField epsilonSGS
 		std::cout << " * Processing species "<< i << " : " << Y[i].name() << " : ";
 		IOobject header
 		(
-			"edc::YStar_" + Y[i].name(),
+			combustion_model_tag + "::YStar_" + Y[i].name(),
 			mesh.time().timeName(),
 			mesh,
 			IOobject::NO_READ
 		);
 
 		// check if field exists and can be read
-		if (combustionModel == "EDC")
+		if (combustionModel == "EDC" || combustionModel == "PaSR")
 		{
 			if (header.headerOk())
 			{
@@ -569,7 +622,7 @@ volScalarField epsilonSGS
 					(
 						IOobject
 						(
-							"edc::YStar_"+ Y[i].name(),
+							combustion_model_tag + "::YStar_"+ Y[i].name(),
 							mesh.time().timeName(),
 							mesh,
 							IOobject::MUST_READ,
@@ -590,7 +643,7 @@ volScalarField epsilonSGS
 					(
 						IOobject
 						(
-							"edc::YStar_"+ Y[i].name(),
+							combustion_model_tag + "::YStar_"+ Y[i].name(),
 							mesh.time().timeName(),
 							mesh,
 							IOobject::NO_READ,
@@ -613,7 +666,7 @@ volScalarField epsilonSGS
 			(
 				IOobject
 				(
-					"edc::R_"+ Y[i].name(),
+					combustion_model_tag + "::R_"+ Y[i].name(),
 					mesh.time().timeName(),
 					mesh,
 					IOobject::NO_READ,
@@ -669,13 +722,13 @@ volScalarField epsilonSGS
 }
 
 // TStar
-if (combustionModel == "EDC")
+if (combustionModel == "EDC" || combustionModel == "PaSR")
 {
 	std::cout << " * Reading TStar field..." << std::endl;
 	{
 		IOobject header
 		(
-			"edc::TStar",
+			combustion_model_tag + "::TStar",
 			mesh.time().timeName(),
 			mesh,
 			IOobject::NO_READ
@@ -692,7 +745,7 @@ if (combustionModel == "EDC")
 				(
 					IOobject
 					(
-						"edc::TStar",
+						combustion_model_tag + "::TStar",
 						mesh.time().timeName(),
 						mesh,
 						IOobject::MUST_READ,
@@ -712,7 +765,7 @@ if (combustionModel == "EDC")
 				(
 					IOobject
 					(
-						"edc::TStar",
+						combustion_model_tag + "::TStar",
 						mesh.time().timeName(),
 						mesh,
 						IOobject::NO_READ,
@@ -758,6 +811,7 @@ volScalarField dQ
 
 dimensionedScalar ksmall_("ksmall", dimensionSet(0,2,-2,0,0,0,0), SMALL );
 dimensionedScalar musmall_("musmall", dimensionSet(1,-1,-1,0,0,0,0), SMALL );
+dimensionedScalar epsilonsmall_("epsilonsmall", dimensionSet(0,2,-3,0,0,0,0), SMALL );
 
 volScalarField uTau_
 (
@@ -806,7 +860,7 @@ volScalarField uTau_
 }
 
 // Normalize the mass fractions (fine structures)
-if (combustionModel == "EDC")
+if (combustionModel == "EDC" || combustionModel == "PaSR")
 {
 	Info << "Normalizing mass fractions (on entry...)" << endl;
 

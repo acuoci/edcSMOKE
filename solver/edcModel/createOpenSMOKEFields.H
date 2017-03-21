@@ -51,6 +51,7 @@
 // Read the kinetic scheme in XML format
 OpenSMOKE::ThermodynamicsMap_CHEMKIN* thermodynamicsMapXML; 
 OpenSMOKE::KineticsMap_CHEMKIN* kineticsMapXML;
+OpenSMOKE::TransportPropertiesMap_CHEMKIN* transportMapXML;
 
 {	
 	word kinetics(thermo.lookup("kineticMechanism"));
@@ -62,7 +63,7 @@ OpenSMOKE::KineticsMap_CHEMKIN* kineticsMapXML;
 
 	double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
 	thermodynamicsMapXML = new OpenSMOKE::ThermodynamicsMap_CHEMKIN(doc); 
-	//transportMapXML = new OpenSMOKE::TransportPropertiesMap_CHEMKIN<double>(doc); 
+	transportMapXML = new OpenSMOKE::TransportPropertiesMap_CHEMKIN(doc); 
 	kineticsMapXML = new OpenSMOKE::KineticsMap_CHEMKIN(*thermodynamicsMapXML, doc); 					
 	double tEnd = OpenSMOKE::OpenSMOKEGetCpuTime();
 	std::cout << " * Time to read XML file: " << tEnd-tStart << std::endl;
@@ -174,6 +175,7 @@ if (iLES == false)
 word combustionModel(combustionOptionsDictionary.lookup("combustionModel"));
 const scalar maxT = readScalar(combustionOptionsDictionary.lookup("maxT"));
 const scalar minT = readScalar(combustionOptionsDictionary.lookup("minT"));
+Switch laminarDiffusion(combustionOptionsDictionary.lookup("laminarDiffusion"));
 
 const dimensionedScalar tauMin( "tauMin", dimensionSet(0,0,1,0,0,0,0), SMALL ); 
 const dimensionedScalar eSgsMin( "eSgsMin",   dimensionSet(0,2,-3,0,0,0,0), SMALL ); 
@@ -266,7 +268,19 @@ volScalarField ReTauLES
     dimensionedScalar("ReTauLES", dimensionSet(0,0,0,0,0,0,0), 0.0)
 );
 
-
+volScalarField massDiffusionInEnergyEquation
+(
+    IOobject
+    (
+        "massDiffusionInEnergyEquation",
+        runTime.timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::NO_WRITE
+    ),
+    mesh,
+    dimensionedScalar("massDiffusionInEnergyEquation", dimensionSet(1,-1,-3,0,0,0,0), 0.0)
+);
 
 // Numerical parameters for EDC
 scalar Ccsi = 2.1377;
@@ -276,6 +290,8 @@ scalar maxGammaSquared = 0.75487766248;
 scalar numberOfResidenceTimes = 100.;
 label  numberIterationsToUpdateChemistry = 1;
 label  edcCounter = 0;
+
+scalar Sct = readScalar(combustionOptionsDictionary.lookup("Sct"));
 
 // Numerical parameters for ED
 scalar constA = 4.;
@@ -483,6 +499,8 @@ if (combustionModel == "EDC")
 PtrList<volScalarField> YStar_;
 PtrList<volScalarField> TStar_;
 PtrList<volScalarField> R_;
+PtrList<volScalarField> Dmix_;
+PtrList<volScalarField> HeSpecies_;
 scalarField Tau(mesh.nCells(),0.);
 scalarField gammaStar(mesh.nCells(),0.);
 scalarField tfStar(mesh.nCells(),0.);
@@ -517,6 +535,12 @@ volScalarField epsilonSGS
 	YStar_.resize(Y.size());
 	TStar_.resize(1);
 	R_.resize(Y.size());
+	
+	if (laminarDiffusion == true)
+	{
+		HeSpecies_.resize(Y.size());
+		Dmix_.resize(Y.size());
+	}
 
 	unsigned int species_from_file = 0;
 	unsigned int species_from_default = 0;
@@ -599,6 +623,48 @@ volScalarField epsilonSGS
 				dimensionedScalar("zero", dimensionSet(1, -3, -1, 0, 0), 0.)
 			)
 		);	
+
+		if (laminarDiffusion == true)
+		{
+			Dmix_.set
+			(
+				i,
+				new volScalarField
+				(
+					IOobject
+					(
+						"gas::Dmix_"+ Y[i].name(),
+						mesh.time().timeName(),
+						mesh,
+						IOobject::NO_READ,
+						IOobject::NO_WRITE
+					),
+					mesh,
+					dimensionedScalar("Dmix", dimensionSet(0, 2, -1, 0, 0), 1e-10)
+				)
+			);
+		}	
+
+		if (laminarDiffusion == true)
+		{
+			HeSpecies_.set
+			(
+				i,
+				new volScalarField
+				(
+					IOobject
+					(
+						"thermo::He_"+ Y[i].name(),
+						mesh.time().timeName(),
+						mesh,
+						IOobject::NO_READ,
+						IOobject::NO_WRITE
+					),
+					mesh,
+					dimensionedScalar("He", dimensionSet(0, 2, -2, 0, 0), 0.)
+				)
+			);
+		}	
 	}
 }
 

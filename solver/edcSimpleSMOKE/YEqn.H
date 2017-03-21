@@ -50,59 +50,99 @@
 
 tmp<fv::convectionScheme<scalar> > mvConvection
 (
-    fv::convectionScheme<scalar>::New
-    (
-        mesh,
-        fields,
-        phi,
-        mesh.divScheme("div(phi,Yi)")
-    )
+	fv::convectionScheme<scalar>::New
+	(
+		mesh,
+		fields,
+		phi,
+		mesh.divScheme("div(phi,Yi)")
+	)
 );
 
 {
-    reaction->correct();
-    #include "chemistry.H"
-    
-    label inertIndex = -1;
-    volScalarField Yt(0.0*Y[0]);
+	reaction->correct();
+	#include "chemistry.H"
 
-    const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
-    forAll(Y, i)
-    {
-        if (Y[i].name() != inertSpecie)
-        {
-            volScalarField& Yi = Y[i];
+	label inertIndex = -1;
+	volScalarField Yt(0.0*Y[0]);
 
-	    fvScalarMatrix YiEqn
-	    (
-		mvConvection->fvmDiv(phi, Yi)
-	      - fvm::laplacian(turbulence->muEff(), Yi)
-	     ==
-	      	R_[i] +
-		fvOptions(rho, Yi)
-	    );
+	const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
 
-	    YiEqn.relax();
+	if (laminarDiffusion == true)
+	{
 
-	    fvOptions.constrain(YiEqn);
+		forAll(Y, i)
+		{
+			if (Y[i].name() != inertSpecie)
+			{
+				volScalarField& Yi = Y[i];
+				volScalarField& Dmixi = Dmix_[i];
 
-	    YiEqn.solve(mesh.solver("Yi"));
+				fvScalarMatrix YiEqn
+				(
+					mvConvection->fvmDiv(phi, Yi)
+					- fvm::laplacian(rho*Dmixi+turbulence->mut()/Sct, Yi)
+					==
+					R_[i] +
+					fvOptions(rho, Yi)
+				);
 
-	    fvOptions.correct(Yi);
+				YiEqn.relax();
 
-	    Yi.max(0.0);
-            Yt += Yi;
-        }
-        else
-        {
-            inertIndex = i;
-        }
-    }
+				fvOptions.constrain(YiEqn);
 
-    Y[inertIndex] = scalar(1.0) - Yt;
-    Y[inertIndex].max(0.0);
+				YiEqn.solve(mesh.solver("Yi"));
 
-    const double tEnd = OpenSMOKE::OpenSMOKEGetCpuTime();
+				fvOptions.correct(Yi);
 
-    Info << "CPU time for species transport : " << tEnd - tStart << " s " << "(" << (tEnd - tStart)/double(mesh.C().size())*1e3 << " ms per cell)" << endl;
+				Yi.max(0.0);
+				Yt += Yi;
+			}
+			else
+			{
+				inertIndex = i;
+			}
+		}
+	}
+	else
+	{
+		forAll(Y, i)
+		{
+			if (Y[i].name() != inertSpecie)
+			{
+				volScalarField& Yi = Y[i];
+
+				fvScalarMatrix YiEqn
+				(
+					mvConvection->fvmDiv(phi, Yi)
+					- fvm::laplacian(turbulence->muEff()/Sct, Yi)
+					==
+					R_[i] +
+					fvOptions(rho, Yi)
+				);
+
+				YiEqn.relax();
+
+				fvOptions.constrain(YiEqn);
+
+				YiEqn.solve(mesh.solver("Yi"));
+
+				fvOptions.correct(Yi);
+
+				Yi.max(0.0);
+				Yt += Yi;
+			}
+			else
+			{
+				inertIndex = i;
+			}
+		}
+	}
+
+	Y[inertIndex] = scalar(1.0) - Yt;
+	Y[inertIndex].max(0.0);
+
+	const double tEnd = OpenSMOKE::OpenSMOKEGetCpuTime();
+
+	Info << "CPU time for species transport : " << tEnd - tStart << " s " << "(" << (tEnd - tStart)/double(mesh.C().size())*1e3 << " ms per cell)" << endl;
 }

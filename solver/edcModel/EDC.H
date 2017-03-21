@@ -573,6 +573,12 @@ if (edcCounter == numberIterationsToUpdateChemistry)
 		ShCells[celli] = HeatRelease;
 		dQCells[celli] = HeatRelease * mesh.V()[celli];
 
+		if (laminarDiffusion == true)
+		{
+			for(unsigned int i=0;i<ns;i++)
+				HeSpecies_[i].internalField()[celli] = -h_species[i+1]/thermodynamicsMapXML->MW(i);
+		}
+
 		if (debug == true)
 		{
 			Info << celli << " " << TCells[celli] << " " << gammaStar[celli] << " " << mDotStar[celli] << " " << HeatRelease << endl;

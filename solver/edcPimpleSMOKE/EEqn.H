@@ -60,6 +60,19 @@
 
 	volScalarField& he = thermo.he();
 
+	if (laminarDiffusion == true)
+	{
+		forAll(Y, i)
+		{ 
+			volScalarField& Yi = Y[i];
+			volScalarField& Dmixi = Dmix_[i];
+			volScalarField& HeSpeciesi = HeSpecies_[i];
+
+			massDiffusionInEnergyEquation += HeSpeciesi* (fvc::laplacian(rho*Dmixi, Yi)); 
+		}
+	}
+
+
 	fvScalarMatrix EEqn
 	(
 		fvm::ddt(rho, he) + mvConvection->fvmDiv(phi, he)
@@ -75,6 +88,7 @@
 		  : -dpdt
 		)
 		- fvm::laplacian(turbulence->alphaEff(), he)
+                + massDiffusionInEnergyEquation
 		==
 		Sh_
 		+ radiation->Sh(thermo)

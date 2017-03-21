@@ -132,6 +132,7 @@ int main(int argc, char *argv[])
         while (pimple.loop())
         {
             #include "UEqn.H"
+	    #include "properties.H"
             #include "YEqn.H"
             #include "EEqn.H"
 

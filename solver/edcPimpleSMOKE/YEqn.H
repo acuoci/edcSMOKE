@@ -61,46 +61,86 @@ tmp<fv::convectionScheme<scalar> > mvConvection
 
 
 {
-    reaction->correct();
-    #include "chemistry.H"
-    
-    label inertIndex = -1;
-    volScalarField Yt(0.0*Y[0]);
+	reaction->correct();
+	#include "chemistry.H"
 
-    const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
-    forAll(Y, i)
-    {
-        if (Y[i].name() != inertSpecie)
-        {
-            volScalarField& Yi = Y[i];
+	label inertIndex = -1;
+	volScalarField Yt(0.0*Y[0]);
 
-            fvScalarMatrix YiEqn
-            (
-                fvm::ddt(rho, Yi)
-              + mvConvection->fvmDiv(phi, Yi)
-              - fvm::laplacian(turbulence->muEff(), Yi)
-             ==
-		R_[i]
-              + fvOptions(rho, Yi)
-            );
+	const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
 
-            YiEqn.relax();
+	if (laminarDiffusion == true)
+	{
+		forAll(Y, i)
+		{
+			if (Y[i].name() != inertSpecie)
+			{
+				volScalarField& Yi = Y[i];
+				volScalarField& Dmixi = Dmix_[i];
 
-            fvOptions.constrain(YiEqn);
+				fvScalarMatrix YiEqn
+				(
+					fvm::ddt(rho, Yi)
+					+ mvConvection->fvmDiv(phi, Yi)
+					- fvm::laplacian(rho*Dmixi + turbulence->mut()/Sct, Yi)
+					==
+					R_[i]
+					+ fvOptions(rho, Yi)
+				);
 
-            YiEqn.solve(mesh.solver("Yi"));
+				YiEqn.relax();
 
-            fvOptions.correct(Yi);
+				fvOptions.constrain(YiEqn);
 
-            Yi.max(0.0);
-            Yt += Yi;
-        }
-        else
-        {
-            inertIndex = i;
-        }
+				YiEqn.solve(mesh.solver("Yi"));
+
+				fvOptions.correct(Yi);
+
+				Yi.max(0.0);
+				Yt += Yi;
+			}
+			else
+			{
+				inertIndex = i;
+			}
+		}
+	}
+	else
+	{
+
+		forAll(Y, i)
+		{
+			if (Y[i].name() != inertSpecie)
+			{
+				volScalarField& Yi = Y[i];
+
+				fvScalarMatrix YiEqn
+				(
+					fvm::ddt(rho, Yi)
+					+ mvConvection->fvmDiv(phi, Yi)
+					- fvm::laplacian(turbulence->muEff()/Sct, Yi)
+					==
+					R_[i]
+					+ fvOptions(rho, Yi)
+				);
+
+				YiEqn.relax();
+
+				fvOptions.constrain(YiEqn);
+
+				YiEqn.solve(mesh.solver("Yi"));
+
+				fvOptions.correct(Yi);
+
+				Yi.max(0.0);
+				Yt += Yi;
+			}
+			else
+			{
+				inertIndex = i;
+			}
+		}
     }
-    
 
     Y[inertIndex] = scalar(1.0) - Yt;
     Y[inertIndex].max(0.0);

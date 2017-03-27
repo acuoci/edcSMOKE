@@ -49,90 +49,21 @@
 \*-----------------------------------------------------------------------*/
 
 {
-	if (edcCounter == numberIterationsToUpdateChemistry)
+	if (counterToUpdateChemistry == numberIterationsToUpdateChemistry)
 	{
-		edcCounter = 0;
+		counterToUpdateChemistry = 0;
 
 		bool debug = false;
-		const double chi = 1.;
-		const double relaxationFactorFineStructures = 1.;
 
-		Info << "Fine structure properties..." << endl;
-		#if STEADYSTATE == 0
-		if (iLES == true)
-		{
-			int option = 1;
+		Info << "Fine structures properties..." << endl;
+		#include "propertiesFineStructures.H"
 
-			if (option == 1)
-			{
-				// TauStar (was already calculated)
-				const scalarField& tauStar = U.db().objectRegistry::lookupObject<volScalarField>("tauStar").internalField();
-
-				// Fine structure properties
-				const scalarField gammaL = Ccsi * U.db().objectRegistry::lookupObject<volScalarField>("gammaL").internalField();
-				gammaStar = pow(gammaL,2.);
-				gammaStar = min(maxGammaSquared, gammaStar);
-				mDotStar  = (1./Ctau)/tauStar;
-		    	
-				// EDC coefficient
-				edc_coefficient = rho*gammaStar*mDotStar*chi/(1.-gammaStar*chi);
-
-				// Info
-				Info<< "min/max(tauStar)   =  " << min(tauStar)   << ", " << max(tauStar)   << endl;
-				Info<< "min/max(gammaStar) =  " << min(gammaStar) << ", " << max(gammaStar) << endl;
-				Info<< "min/max(mDotStar)  =  " << min(mDotStar)  << ", " << max(mDotStar)  << endl;
-			}
-			else if (option == 2)
-			{
-				const Foam::compressible::LESModel& lesModel = U.db().lookupObject<Foam::compressible::LESModel>("LESProperties");
-
-				epsilonSGS = 1.048*pow(turbulence->k(), 1.5)/lesModel.delta();
-				scalarField nu = thermo.mu().internalField()/rho;
-				scalar Cnusgs = 0.05;
-				scalar Cnusgs_025 = 0.472871;
-				scalarField gammaL = (Ccsi*Cnusgs_025) * pow(thermo.mu().internalField()/turbulence->mut(), 0.25);	
-				gammaStar = pow(gammaL, 2.);
-				gammaStar = min(maxGammaSquared,gammaStar);
-				mDotStar  = 1./Ctau*sqrt(epsilonSGS/nu);
-				edc_coefficient = rho*gammaStar*mDotStar*chi/(1.-gammaStar*chi);
-
-				Info<< "min/max(sgs_epsilon) = " << min(epsilonSGS).value() << ", " << max(epsilonSGS).value() << endl;
-				Info<< "min/max(les_epsilon) = " << min(lesModel.epsilon()).value() << ", " << max(lesModel.epsilon()).value() << endl;
-				Info<< "min/max(t_k) =         " << min(turbulence->k()).value() << ", " << max(turbulence->k()).value() << endl;
-				Info<< "min/max(les_k) =       " << min(lesModel.k()).value() << ", " << max(lesModel.k()).value() << endl;
-				Info<< "min/max(delta) =       " << min(lesModel.delta()).value() << ", " << max(lesModel.delta()).value() << endl;
-				Info<< "min/max(mu) =          " << min(thermo.mu()).value() << ", " << max(thermo.mu()).value() << endl;
-				Info<< "min/max(mut) =         " << min(turbulence->mut()).value() << ", " << max(turbulence->mut()).value() << endl;
-				Info<< "min/max(gammaStar) =   " << min(gammaStar) << ", " << max(gammaStar) << endl;
-				Info<< "min/max(mDotStar) =    " << min(mDotStar) << ", " << max(mDotStar) << endl;
-			}
-		}
-		else
-		#endif
-		{
-			const volScalarField& epsilonConst = turbulence->epsilon();
-
-			scalarField nu = thermo.mu().internalField()/rho;
-			scalarField gammaL = Ccsi * pow(nu*turbulence->epsilon()/pow(turbulence->k()+ksmall_,2.),0.25);	
-			gammaStar = pow(gammaL, 2.);
-			gammaStar = min(maxGammaSquared,gammaStar);
-			mDotStar  = 1./Ctau*sqrt(turbulence->epsilon()/nu);
-			edc_coefficient = rho*gammaStar*mDotStar*chi/(1.-gammaStar*chi);
-
-			Info<< "min/max(epsilon) = " << min(epsilonConst).value() << ", " << max(epsilonConst).value() << endl;
-			Info<< "min/max(gammaStar) = " << min(gammaStar) << ", " << max(gammaStar) << endl;
-			Info<< "min/max(mDotStar) = " << min(mDotStar) << ", " << max(mDotStar) << endl;
-
-			tfStar = (1.-gammaStar*chi)/(mDotStar);
-			Info<< "min/max(tfStar) = " << min(tfStar) << ", " << max(tfStar) << endl;
-		}
-
-		Info << "ODE Integration..." << endl;
+		Info << "Fine structures integration..." << endl;
 		const int unsigned ns = Y.size();
 		const int unsigned ne = ne_total;
 			  unsigned ne_drg = 0;
 
-
+		Eigen::VectorXd residuals(ne);
 		Eigen::VectorXd yStar0(ne);
 		Eigen::VectorXd yStarf(ne);
 		Eigen::VectorXd yMin(ne);
@@ -169,11 +100,20 @@
 			double cpuTimeAddition = 0.;
 		#endif
 
+		// Set DRG Analysis
 		if (drg_analysis == true) 
 			drg->ResetCounters();
 	
+		// Statistics for PSR/NLS
+		double nls_norm2_cumulative_ = 0.;
+		double nls_norm2_max_ = 0.;
+		int nls_failures_ = 0;
+		int nls_number_iterations_cumulative_ = 0;
+
+		// Statistics
 		unsigned int counter = 0;
 		double cpuTimeAllCells_ODE = 0.;
+
 		const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
 		forAll(TCells, celli)
 		{	
@@ -196,8 +136,8 @@
 					for(unsigned int i=0;i<ns;i++)
 						yStar0(i) = YStar_[i].internalField()[celli];
 					yStar0(ne-3) = TStar_[0].internalField()[celli];
-					yStar0(ne-2) = (1.-gammaStar[celli]*chi)/max(mDotStar[celli], SMALL);
-					yStar0(ne-1) = gammaStar[celli]*chi;
+					yStar0(ne-2) = (1.-gammaStar[celli])/max(mDotStar[celli], SMALL);
+					yStar0(ne-1) = gammaStar[celli];
 
 					// Extract the star mass fractions
 					for(unsigned int i=1;i<=ns;i++)
@@ -209,7 +149,13 @@
 					hMean = thermodynamicsMapXML->hMolar_Mixture_From_MoleFractions(xMean.GetHandle());
 					hMean/=MWMean;	
 			
-					fine_structure_ode_psr.Set(TCells[celli], pCells[celli], omegaMean, omegaStar, hMean, gammaStar[celli], mDotStar[celli], chi);
+					fine_structure_ode_psr.Set(TCells[celli], pCells[celli], omegaMean, omegaStar, hMean, gammaStar[celli], mDotStar[celli]);
+					if(solverType == SOLVERTYPE_NLS)
+					{
+						int index_max;
+						omegaStar.Max(&index_max);
+						fine_structure_nls_psr.Set(TCells[celli], pCells[celli], omegaMean, omegaStar, hMean, gammaStar[celli], mDotStar[celli], index_max);
+					}
 
 					tf = numberOfResidenceTimes/max(mDotStar[celli], SMALL);
 				}
@@ -246,17 +192,21 @@
 					// Set initial condition
 					for (unsigned int i=0;i<drg->number_important_species();++i)	
 					{
-						const unsigned int j = drg->indices_important_species()[i]+1;
-						yStar0(i) = omegaMean[j];
+						const unsigned int j = drg->indices_important_species()[i];
+						yStar0(i) = YStar_[j].internalField()[celli];
 					}
 					yStar0(ne_drg-1) = TCells[celli];
 
 					// Extract the star mass fractions
 					for(unsigned int i=1;i<=ns;i++)
-						omegaStar[i] = omegaMean[i];
+					{
+						omegaStar[i] = YStar_[i-1].internalField()[celli];
+					}
 
 					// Set DRG
 					fine_structure_ode_psr.SetDRG(drg);
+					if(solverType == SOLVERTYPE_NLS)
+						fine_structure_nls_psr.SetDRG(drg);
 
 					// Initialize the fine structure
 					thermodynamicsMapXML->SetTemperature(TCells[celli]);
@@ -264,7 +214,24 @@
 					hMean = thermodynamicsMapXML->hMolar_Mixture_From_MoleFractions(xMean.GetHandle());
 					hMean/=MWMean;	
 
-					fine_structure_ode_psr.Set(TCells[celli], pCells[celli], omegaMean, omegaStar, hMean, gammaStar[celli], mDotStar[celli], chi);
+					fine_structure_ode_psr.Set(TCells[celli], pCells[celli], omegaMean, omegaStar, hMean, gammaStar[celli], mDotStar[celli]);
+					if(solverType == SOLVERTYPE_NLS)
+					{
+						// The species with the highest mass fraction is selected among the important species
+						double max_value = 0.;
+						unsigned int index_max = 0;
+						for (unsigned int i=0;i<drg->number_important_species();++i)	
+						{
+							const unsigned int j = drg->indices_important_species()[i]+1;
+							if (omegaStar[j] > max_value)
+							{
+								max_value = omegaStar[j];
+								index_max = i;
+							}
+						}
+
+						fine_structure_nls_psr.Set(TCells[celli], pCells[celli], omegaMean, omegaStar, hMean, gammaStar[celli], mDotStar[celli], index_max);
+					}
 
 					tf = numberOfResidenceTimes/max(mDotStar[celli], SMALL);
 				}
@@ -273,7 +240,7 @@
 			{
 				if (drg_analysis == false)
 				{
-					tf = (1.-gammaStar[celli]*chi)/max(mDotStar[celli], SMALL);
+					tf = (1.-gammaStar[celli])/max(mDotStar[celli], SMALL);
 
 					for(unsigned int i=0;i<ns;i++)
 						yStar0(i) = omegaMean[i+1];
@@ -314,7 +281,7 @@
 					}
 
 					// Set integration time
-					tf = (1.-gammaStar[celli]*chi)/max(mDotStar[celli], SMALL);
+					tf = (1.-gammaStar[celli])/max(mDotStar[celli], SMALL);
 
 					// Set initial condition
 					for (unsigned int i=0;i<drg->number_important_species();++i)	
@@ -537,8 +504,8 @@
 			if (drg_analysis == false)
 			{		
 				for(unsigned int i=0;i<ns;i++)
-					YStar_[i].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0(i) + relaxationFactorFineStructures*yStarf(i);
-				TStar_[0].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0(ne-3) + relaxationFactorFineStructures*yStarf(ne-3);
+					YStar_[i].internalField()[celli] = yStarf(i);
+				TStar_[0].internalField()[celli] = yStarf(ne-3);
 		 
 				for(unsigned int i=0;i<ns;i++)
 					R_[i].internalField()[celli] = edc_coefficient[celli]*(YStar_[i].internalField()[celli]-Y[i].internalField()[celli]);
@@ -548,9 +515,9 @@
 				for(unsigned int i=0;i<ne_drg-1;i++)
 				{
 		       			const unsigned int j = drg->indices_important_species()[i];
-		        		YStar_[j].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0(i) + relaxationFactorFineStructures*yStarf(i);
+		        		YStar_[j].internalField()[celli] = yStarf(i);
 				}
-				TStar_[0].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0(ne_drg-1) + relaxationFactorFineStructures*yStarf(ne_drg-1);
+				TStar_[0].internalField()[celli] = yStarf(ne_drg-1);
 		 
 				// Reset to 0 every formation rate
 				for(unsigned int i=0;i<ns;i++)
@@ -591,7 +558,18 @@
 			}
 
 			if (counter%(int(0.20*mesh.nCells())+1) == 0)
-				Info <<"   Accomplished: " << counter << "/" << mesh.nCells() << endl;
+			{
+				if (solverType == SOLVERTYPE_ODE)
+					Info << "   Accomplished: " << counter << "/" << mesh.nCells() << endl;
+				else
+				{
+					Info 	<< "   Accomplished: " 		<< counter << "/" << mesh.nCells() << " ";
+					Info 	<< "  Norm2(avg): " 		<< nls_norm2_cumulative_/static_cast<double>(counter+1) 	
+						<< "  Norm2(max): " 		<< nls_norm2_max_ 
+						<< "  Iterations(avg): " 	<< nls_number_iterations_cumulative_/static_cast<double>(counter+1) 
+						<< "  Ode: " 			<< nls_failures_ << endl;
+				}
+			}
 
 			counter++;
 
@@ -663,6 +641,6 @@
 		}
 	}
 
-	edcCounter++;
+	counterToUpdateChemistry++;
 }
 

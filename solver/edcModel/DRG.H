@@ -71,6 +71,11 @@ namespace OpenSMOKE
 		unsigned int number_important_species() const { return number_important_species_; }
 
 		/**
+		*@brief Returns the number of unimportant species
+		*/
+		unsigned int number_unimportant_species() const { return number_unimportant_species_; }
+
+		/**
 		*@brief Returns the number of important reactions
 		*/
 		unsigned int number_important_reactions() const { return (NR_ - number_unimportant_reactions_); }
@@ -79,6 +84,11 @@ namespace OpenSMOKE
 		*@brief Returns the indices of important species (zero-based)
 		*/
 		const std::vector<unsigned int>& indices_important_species() const { return indices_important_species_; }
+
+		/**
+		*@brief Returns the indices of unimportant species (zero-based)
+		*/
+		const std::vector<unsigned int>& indices_unimportant_species() const { return indices_unimportant_species_; }
 
 		/**
 		*@brief Returns the indices of unimportant reactions (zero-based)
@@ -147,10 +157,12 @@ namespace OpenSMOKE
 		double epsilon_;							/**< threshold value */
 
 		unsigned int number_important_species_;					/**< current number of important species */
+		unsigned int number_unimportant_species_;				/**< current number of unimportant species */
 		unsigned int number_unimportant_reactions_;				/**< number of unimportant reactions */
 
 		std::vector<unsigned int> indices_unimportant_reactions_;		/**< indices of unimportant reactions (zero-based) */
 		std::vector<unsigned int> indices_important_species_;			/**< indices of important species (zero-based) */
+		std::vector<unsigned int> indices_unimportant_species_;			/**< indices of unimportant species (zero-based) */
 
 		Eigen::MatrixXd					r_;			/**< full matrix, pair wise error matrix, (NS x NS) */
 		Eigen::SparseMatrix<double> 			nu_sparse_;		/**< sparse matrix containing the net stoichiometric coefficients, (NS x NR) */

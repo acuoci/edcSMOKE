@@ -48,110 +48,76 @@
 |                                                                         |
 \*-----------------------------------------------------------------------*/
 
-// This is a steady state simulation
-#define STEADYSTATE 1
+#ifndef CharacteristicChemicalTimes_H
+#define CharacteristicChemicalTimes_H
 
-// OpenSMOKE++ Definitions
-#include "OpenSMOKEpp"
-
-// CHEMKIN maps
-#include "maps/Maps_CHEMKIN"
-
-// OpenSMOKE++ Dictionaries
-#include "dictionary/OpenSMOKE_Dictionary"
-
-// ODE solvers
-#include "math/native-ode-solvers/MultiValueSolver"
-#include "math/external-ode-solvers/ODE_Parameters.h"
-
-// NLS solvers
-#include "math/native-nls-solvers/NonLinearSystemSolver"
-#include "math/native-nls-solvers/parameters/NonLinearSolver_Parameters.h"
-
-// OpenFOAM
-#include "fvCFD.H"
-#include "psiCombustionModel.H"
-#include "multivariateScheme.H"
-#include "RASModel.H"
-#include "simpleControl.H"
-#include "fvIOoptionList.H"
-#include "radiationModel.H"
-
-// Utilities
-#include "Utilities.H"
-
-// ODE system
-#include "DRG.H"
-#include "ODE_PSR.H"
-#include "ODE_PSR_Interface.H"
-#include "ODE_PFR.H"
-#include "ODE_PFR_Interface.H"
-
-// NLS Systems
-#include "NLS_PSR.H"
-#include "NLS_PSR_Interface.H"
-
-// Characteristic chemical times
-#include "CharacteristicChemicalTimes.H"
-
-// ISAT
-#if EDCSMOKE_USE_ISAT == 1
-    #include "ISAT.h"
-    #include "numericalJacobian4ISAT.H"
-    #include "mappingGradients/mappingGradient4OpenFOAM.h"
-#endif
-
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-int main(int argc, char *argv[])
+class CharacteristicChemicalTimes
 {
-    unsigned int runTimeStep = 0;
+	public:
 
-    #include "setRootCase.H"
-    #include "createTime.H"
-    #include "createMesh.H"
-    #include "readGravitationalAcceleration.H"
+	enum CharacteristicChemicalTimesType { CHEMICAL_TIMES_FORMATION_RATES, CHEMICAL_TIMES_REACTION_RATES, CHEMICAL_TIMES_EIGENVALUES };
 
-    simpleControl simple(mesh);
+	public:
 
-    #include "createFields.H"
-    #include "createOpenSMOKEFields.H"
-    #include "createFvOptions.H"
-    #include "createRadiationModel.H"
-    #include "initContinuityErrs.H"
+	CharacteristicChemicalTimes(	OpenSMOKE::ThermodynamicsMap_CHEMKIN& 		thermodynamicsMapXML, 
+					OpenSMOKE::KineticsMap_CHEMKIN& 		kineticsMapXML);
 
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+	void SetThresholdChemicalTime(const double threshold);
+	void SetThresholdTemperatureChemicalTime(const double threshold);
+	void SetType(const CharacteristicChemicalTimesType type);
+	void SetLapackMode(const bool flag);
+	double CalculateCharacteristicChemicalTime(const double T, const double P, const OpenSMOKE::OpenSMOKEVectorDouble& omega);
 
-    Info<< "\nStarting time loop\n" << endl;
+	private:
 
-    while (simple.loop())
-    {
-	runTimeStep++;
-        Info<< "Time = " << runTime.timeName() << nl << endl;
+	double FromFormationRates(const double T, const double P, const OpenSMOKE::OpenSMOKEVectorDouble& omega);
+	double FromReactionRates(const double T, const double P, const OpenSMOKE::OpenSMOKEVectorDouble& omega);
+	double FromEigenValueAnalysis(const double T, const double P, const OpenSMOKE::OpenSMOKEVectorDouble& omega);
 
-        // Pressure-velocity SIMPLE corrector
-        {
-            #include "UEqn.H"
-	    #include "properties.H"
-            #include "YEqn.H"
-            #include "EEqn.H"
-            #include "pEqn.H"
-        }
+	void Equations(const OpenSMOKE::OpenSMOKEVectorDouble& c, OpenSMOKE::OpenSMOKEVectorDouble& dc_over_dt);
 
-        turbulence->correct();
+	void NumericalJacobian(const OpenSMOKE::OpenSMOKEVectorDouble& y, Eigen::MatrixXd& J);
 
-        runTime.write();
+	void SearchConservativeModes(const std::vector<double>& lambda_real, const std::vector<double>& lambda_mod, std::vector<double>& lambda_real_cleaned);
 
-        Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
-            << "  ClockTime = " << runTime.elapsedClockTime() << " s"
-            << nl << endl;
-    }
+	private:
 
-    Info<< "End\n" << endl;
+	OpenSMOKE::ThermodynamicsMap_CHEMKIN& 	thermodynamicsMapXML_;
+	OpenSMOKE::KineticsMap_CHEMKIN& 	kineticsMapXML_;
 
-    return 0;
-}
+	unsigned int ne_;
+	unsigned int ns_;
+	unsigned int nr_;
+	unsigned int n_;
 
+	bool lapack_mode_;
 
-// ************************************************************************* //
+	double T_;
+	double P_;
+
+	Eigen::MatrixXd Jc_;
+	Eigen::VectorXd sum_nu_;
+
+	Eigen::VectorXd vr_;
+	Eigen::VectorXd vl_;
+
+	OpenSMOKE::OpenSMOKEVectorDouble x_;
+	OpenSMOKE::OpenSMOKEVectorDouble c_;
+	OpenSMOKE::OpenSMOKEVectorDouble R_;
+	OpenSMOKE::OpenSMOKEVectorDouble rf_;
+
+	// Local variables
+	std::vector<double> lambda_real_;
+	std::vector<double> lambda_imag_;
+	std::vector<double> lambda_mod_;
+	std::vector<double> lambda_real_cleaned_;
+
+	double tauChem_threshold_;
+	double tauChem_temperature_threshold_;
+
+	CharacteristicChemicalTimesType type_;
+};
+
+#include "CharacteristicChemicalTimes.C"
+
+#endif // CharacteristicChemicalTimes_H

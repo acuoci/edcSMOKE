@@ -1630,5 +1630,16 @@ namespace OpenSMOKE
 				ropa.production_coefficients[k][j2++] = it.value();
 		}
 	}	
+
+	void StoichiometricMap::GetSumOfStoichiometricCoefficientsOfProducts(Eigen::VectorXd& sum_nu) const
+	{
+		sum_nu.resize(number_of_reactions_);
+		sum_nu.setZero();
+		for (int k = 0; k<stoichiometric_matrix_products_.outerSize(); ++k)
+		{
+			for (Eigen::SparseMatrix<double>::InnerIterator it(stoichiometric_matrix_products_, k); it; ++it)
+				sum_nu(it.row()) += it.value();
+		}
+	}
 }
 

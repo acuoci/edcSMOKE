@@ -49,6 +49,9 @@
 \*-----------------------------------------------------------------------*/
 
 {
+	Info << "Fine structures properties..." << endl;
+	#include "propertiesFineStructures.H"
+
 	const int unsigned ns = Y.size();
 
 	Eigen::VectorXd omega(ns);
@@ -68,32 +71,10 @@
 
 	const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
 
-	if (iLES == true)	// LES
-	{
-		// Nothing to do because uTau_ was already calculated
-		//uTau_ = 1./U.db().objectRegistry::lookupObject<volScalarField>("tauMix").internalField();
-
-		/*
-		const double ksmall = 1e-5;
-		const volScalarField& epsConst = turbulence->epsilon();
-		const volScalarField& kConst   = turbulence->k();
-		const scalarField& kCells      = kConst.internalField();
-		const scalarField& epsCells    = epsConst.internalField();
-		      scalarField& uTauCells   = uTau_.internalField();
-
-		forAll(TCells, celli)
-			uTauCells[celli] = epsCells[celli]/(kCells[celli]+ksmall);
-		*/
-	}
-	else	// RANS
-	{
-		uTau_ = turbulence->epsilon()/(turbulence->k()+ksmall_);
-	}
-
 	forAll(TCells, celli)
 	{	
 		// Calculating constant coefficient
-		const double rho_epsilon_over_k = rhoCells[celli]*uTau_.internalField()[celli];	
+		const double rho_epsilon_over_k = rhoCells[celli]*one_over_tauStar.internalField()[celli];	
 
 		// Vector containing mass fractions and mole formation rates
 		for(unsigned int i=0;i<ns;i++)

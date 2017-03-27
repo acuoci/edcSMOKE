@@ -66,7 +66,7 @@ public:
 
 	void Set(	const double T0, const double P0_Pa, 
 			const OpenSMOKE::OpenSMOKEVectorDouble& omegaMean, const OpenSMOKE::OpenSMOKEVectorDouble& omegaStar, 
-			const double hMean, const double gammaStar, const double mDotStar, const double chi	)
+			const double hMean, const double gammaStar, const double mDotStar )
 	{
 		TStar_ 		= T0;
 		P_Pa_ 		= P0_Pa;
@@ -74,7 +74,6 @@ public:
 		mDotStar_ 	= mDotStar;
 		omegaMean_  	= omegaMean;
 		hMean_ 		= hMean;
-		chi_ 		= chi;
 		omegaStar_	= omegaStar;
 	}
 
@@ -100,7 +99,6 @@ private:
 	double mDotStar_;
 	double gammaStar_;
 	double cpStar_;
-	double chi_;
 	
 	double hMean_;
 	double hStar_;

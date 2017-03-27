@@ -64,6 +64,10 @@
 #include "math/native-ode-solvers/MultiValueSolver"
 #include "math/external-ode-solvers/ODE_Parameters.h"
 
+// NLS solvers
+#include "math/native-nls-solvers/NonLinearSystemSolver"
+#include "math/native-nls-solvers/parameters/NonLinearSolver_Parameters.h"
+
 // OpenFOAM
 #include "fvCFD.H"
 #include "turbulenceModel.H"
@@ -77,12 +81,21 @@
 // Utilities
 #include "Utilities.H"
 
-// ODE system
+// DRG
 #include "DRG.H"
+
+// ODE systems
 #include "ODE_PSR.H"
 #include "ODE_PSR_Interface.H"
 #include "ODE_PFR.H"
 #include "ODE_PFR_Interface.H"
+
+// NLS Systems
+#include "NLS_PSR.H"
+#include "NLS_PSR_Interface.H"
+
+// Characteristic chemical times
+#include "CharacteristicChemicalTimes.H"
 
 // ISAT
 #if EDCSMOKE_USE_ISAT == 1
@@ -96,6 +109,8 @@
 
 int main(int argc, char *argv[])
 {
+    unsigned int runTimeStep = 0;
+
     #include "setRootCase.H"
     #include "createTime.H"
     #include "createMesh.H"
@@ -123,9 +138,8 @@ int main(int argc, char *argv[])
         #include "setDeltaT.H"
 
         runTime++;
+	runTimeStep++;
         Info<< "Time = " << runTime.timeName() << nl << endl;
-
-	#include "gammaStarEqn.H"
 
         #include "rhoEqn.H"
 

@@ -49,63 +49,18 @@
 \*-----------------------------------------------------------------------*/
 
 {
-	if (pasrCounter == numberIterationsToUpdateChemistry)
+	if (counterToUpdateChemistry == numberIterationsToUpdateChemistry)
 	{
-		pasrCounter = 0;
+		counterToUpdateChemistry = 0;
 
 		const double threshold_tau_c = 0.10;
-		const double minimum_Da = 1e-10;
-		const double maximum_Da = 10.;
 		
 		bool debug = false;
-		const double relaxationFactorFineStructures = 1.;
 
-		Info << "Fine structure properties..." << endl;
-		#if STEADYSTATE == 0
-		if (iLES == true)
-		{
-			const Foam::compressible::LESModel& lesModel = U.db().lookupObject<Foam::compressible::LESModel>("LESProperties");
-			scalarField nu = thermo.mu().internalField()/rho;
+		Info << "Fine structures properties..." << endl;
+		#include "propertiesFineStructures.H"
 
-		        epsilonSGS = 0.54433*pow((turbulence->k()+ksmall_), 1.5)/lesModel.delta();
-		        tau_mix =  sqrt((1.2247*lesModel.delta()/pow((turbulence->k()+ksmall_), 0.5))*sqrt(nu/epsilonSGS)); //geometrical mean of kolmogorov scale and filter size scale
-
-			Info<< "min/max(sgs_epsilon) = " << min(epsilonSGS).value() << ", " << max(epsilonSGS).value() << endl;
-			Info<< "min/max(les_epsilon) = " << min(lesModel.epsilon()).value() << ", " << max(lesModel.epsilon()).value() << endl;
-			Info<< "min/max(mu) =          " << min(thermo.mu()).value() << ", " << max(thermo.mu()).value() << endl;
-			Info<< "min/max(mut) =         " << min(turbulence->mut()).value() << ", " << max(turbulence->mut()).value() << endl;
-
-		}
-		else
-		#endif
-		{
-			const volScalarField& epsilonConst = turbulence->epsilon();
-
-			scalarField nu = thermo.mu().internalField()/rho;
-
-			if ( tauMixType == SCALE_KOLMOGOROV)
-			{
-				Info << "Using kolmogorov mixing time scale..." << endl;
-				tau_mix =  pow((nu/turbulence->epsilon()), 0.5);// kolmogorov mixing scale
-			}
-			else if ( tauMixType == SCALE_MEAN)
-			{
-				Info << "Using geometrical mean of integral scale and kolmogorov scale as mixing time scale..." << endl;
-				tau_mix =  sqrt(((turbulence->k()+ksmall_)/(epsilonConst+epsilonsmall_))*sqrt(nu/(epsilonConst+epsilonsmall_))); //geometrical mean of integral scale and kolmogorov scale
-			}
-			else if ( tauMixType == SCALE_GLOBAL)
-			{
-				Info << "Using global mixing time scale..." << endl;
-				tau_mix = Cmix*(turbulence->k()+ksmall_)/(epsilonConst+epsilonsmall_);  //global scale
-			}
-
-			Info<< "min/max(epsilon) = " << min(epsilonConst).value() << ", " << max(epsilonConst).value() << endl;
-			Info<< "turbulence->mut() = " << min(turbulence->mut()).value() << ", " << max(turbulence->mut()).value() << endl;
-			Info<< "rho = " << min(rho).value() << ", " << max(rho).value() << endl;
-
-		}
-
-		Info << "ODE Integration..." << endl;
+		Info << "Fine structures integration..." << endl;
 		const int unsigned ns = Y.size();
 		const int unsigned ne = ne_total;
 			  unsigned ne_drg = 0;
@@ -127,6 +82,7 @@
 		double hMean, MWMean;
 		const scalarField& pCells = thermo.p().internalField();
 		const scalarField& TCells = thermo.T().internalField();
+		const scalarField& kappaCells = kappa.internalField(); 
 		scalarField& ShCells = Sh_.internalField();
 		scalarField& dQCells = dQ.internalField();
 
@@ -170,7 +126,7 @@
 			{
 				if (drg_analysis == false)
 				{
-					tf = tau_mix[celli]*(1.-tau_c[celli]/(tau_c[celli]+tau_mix[celli]));
+					tf = tauMix[celli]*(1.-kappaCells[celli]);
 
 					for(unsigned int i=0;i<ns;i++)
 						yStar0(i) = omegaMean[i+1];
@@ -211,7 +167,7 @@
 					}
 
 					// Set integration time
-					tf = tau_mix[celli]*(1.-tau_c[celli]/(tau_c[celli]+tau_mix[celli]));
+					tf = tauMix[celli]*(1.-kappaCells[celli]);
 
 					// Set initial condition
 					for (unsigned int i=0;i<drg->number_important_species();++i)	
@@ -355,55 +311,24 @@
 
 				cpuTimeAllCells_ODE += (tEnd-tStart);
 			}
-
-			{
-				double result = 0.0;
-		
-				for(unsigned int i=0;i<ns;i++)
-				{  
-
-					const double dYdt = fabs((YStar_[i].internalField()[celli]-Y[i].internalField()[celli])/tf);
-					if ( dYdt < 1e-16) 
-					{
-						tau_c[celli] = 0.0;  
-					}
-					else       
-					{ 
-						tau_c[celli] = YStar_[i].internalField()[celli]/dYdt;
-					}
-					
-					result = max(result, tau_c[celli]);
-				}
-
-
-				if (result == 0.0) result = threshold_tau_c;
-			
-				result = min(result, threshold_tau_c);
-				tau_c_max[celli] = result;
-
-				kappa_coefficient[celli] = tau_c_max[celli]/(tau_c_max[celli]+tau_mix[celli]);
-				Da[celli] = tau_mix[celli]/tau_c_max[celli];
-				Da[celli] = max (Da[celli], minimum_Da);
-				Da[celli] = min (Da[celli], maximum_Da);
-			}
 	
 			if (drg_analysis == false)
 			{		
 				for(unsigned int i=0;i<ns;i++)
-					YStar_[i].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0(i) + relaxationFactorFineStructures*yStarf(i);
-				TStar_[0].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0(ne-3) + relaxationFactorFineStructures*yStarf(ne-3);
+					YStar_[i].internalField()[celli] = yStarf(i);
+				TStar_[0].internalField()[celli] = yStarf(ne-3);
 
 				for(unsigned int i=0;i<ns;i++)
-					R_[i].internalField()[celli] = rho[celli]*kappa_coefficient[celli]*(YStar_[i].internalField()[celli]-Y[i].internalField()[celli])/tf;
+					R_[i].internalField()[celli] = rho[celli]*kappa[celli]*(YStar_[i].internalField()[celli]-Y[i].internalField()[celli])/tf;
 			}
 			else
 			{
 				for(unsigned int i=0;i<ne_drg-1;i++)
 				{
 		       			const unsigned int j = drg->indices_important_species()[i];
-		        		YStar_[j].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0(i) + relaxationFactorFineStructures*yStarf(i);
+		        		YStar_[j].internalField()[celli] = yStarf(i);
 				}
-				TStar_[0].internalField()[celli] = (1.-relaxationFactorFineStructures)*yStar0(ne_drg-1) + relaxationFactorFineStructures*yStarf(ne_drg-1);
+				TStar_[0].internalField()[celli] = yStarf(ne_drg-1);
 		 
 				// Reset to 0 every formation rate
 				for(unsigned int i=0;i<ns;i++)
@@ -413,7 +338,7 @@
 				for(unsigned int i=0;i<ne_drg-1;i++)
 				{
 					const unsigned int j = drg->indices_important_species()[i];
-					R_[j].internalField()[celli] = rho[celli]*kappa_coefficient[celli]*(YStar_[j].internalField()[celli]-Y[j].internalField()[celli])/tf;
+					R_[j].internalField()[celli] = rho[celli]*kappa[celli]*(YStar_[j].internalField()[celli]-Y[j].internalField()[celli])/tf;
 				}
 			}
 
@@ -492,10 +417,6 @@
 		}
 		#endif
 
-		WriteScalarField(mesh, kappa_coefficient, "PaSR::kappa");
-		WriteScalarField(mesh, tau_c_max, "PaSR::tau_c_max");
-		WriteScalarField(mesh, Da, "Da");
-
 		// Adjust on the boundaries
 		const fvPatchList& patches = mesh.boundary();
 	    	forAll(patches, patchi)
@@ -516,6 +437,6 @@
 		}
 	}
 
-	pasrCounter++;
+	counterToUpdateChemistry++;
 }
 

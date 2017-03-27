@@ -114,7 +114,7 @@ int ODE_PSR::Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y
 		// There are 2 additional dummy variables (not needed to recover them)
 
 		for(unsigned int i=1;i<=number_of_gas_species_;i++)
-			omegaSurr_[i] = (omegaMean_[i] - omegaStar_[i]*gammaStar_*chi_)/(1.-gammaStar_*chi_);
+			omegaSurr_[i] = (omegaMean_[i] - omegaStar_[i]*gammaStar_)/(1.-gammaStar_);
 	
 	
 		// Calculates the pressure and the concentrations of species
@@ -130,7 +130,7 @@ int ODE_PSR::Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y
 		hStar_ = thermodynamicsMapXML_.hMolar_Mixture_From_MoleFractions(xStar_.GetHandle());
 		cpStar_/=MWStar_;
 		hStar_/=MWStar_;	
-		hSurr_ = (hMean_ - hStar_*gammaStar_*chi_)/(1.-gammaStar_*chi_);
+		hSurr_ = (hMean_ - hStar_*gammaStar_)/(1.-gammaStar_);
 	
 		// Calculates kinetics
 		kineticsMapXML_.SetTemperature(TStar_);
@@ -150,8 +150,6 @@ int ODE_PSR::Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y
 		// Dummy equations
 		dy[number_of_gas_species_+2] = 0.;
 		dy[number_of_gas_species_+3] = 0.;
-	
-		return 0;
 	}
 	else
 	{
@@ -181,7 +179,7 @@ int ODE_PSR::Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y
 		for(unsigned int i=0;i<drg_->number_important_species();++i)
 		{
 			const unsigned int j = drg_->indices_important_species()[i]+1;
-			omegaSurr_[j] = (omegaMean_[j] - omegaStar_[j]*gammaStar_*chi_)/(1.-gammaStar_*chi_);
+			omegaSurr_[j] = (omegaMean_[j] - omegaStar_[j]*gammaStar_)/(1.-gammaStar_);
 		}
 
 		// Calculates the pressure and the concentrations of species
@@ -198,7 +196,7 @@ int ODE_PSR::Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y
 
 		cpStar_/=MWStar_;
 		hStar_/=MWStar_;
-		hSurr_ = (hMean_ - hStar_*gammaStar_*chi_)/(1.-gammaStar_*chi_);
+		hSurr_ = (hMean_ - hStar_*gammaStar_)/(1.-gammaStar_);
 
 		// Calculates kinetics
 		kineticsMapXML_.SetTemperature(TStar_);

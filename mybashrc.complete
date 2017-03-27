@@ -13,14 +13,14 @@ export ISAT_LIBS=-lISATLib4OpenFOAM
 
 #Options
 export MKL_SUPPORT='-DOPENSMOKE_USE_MKL=1'
-export EXTERNAL_ODE_SOLVERS='-DOPENSMOKE_USE_ODEPACK=1 -DOPENSMOKE_USE_RADAU=1 -DOPENSMOKE_USE_DASPK=1 -DOPENSMOKE_USE_MEBDF=1 -DOPENSMOKE_USE_SUNDIALS=1'
+export EXTERNAL_ODE_SOLVERS='-DOPENSMOKE_USE_ODEPACK=1 -DOPENSMOKE_USE_RADAU=1 -DOPENSMOKE_USE_DASPK=1 -DOPENSMOKE_USE_MEBDF=0 -DOPENSMOKE_USE_SUNDIALS=1'
 
 #Only if the OPENSMOKE_USE_MKL is turned on
 export MKL_PATH=$HOME/intel/mkl
 export MKL_LIBS='-Wl,--start-group $(MKL_PATH)/lib/intel64/libmkl_intel_lp64.a $(MKL_PATH)/lib/intel64/libmkl_core.a $(MKL_PATH)/lib/intel64/libmkl_sequential.a -Wl,--end-group -lpthread -lm'
 
 #Optional external ODE solvers (ODEPACK already includes LSODE, LSODA, and DVODE)
-export MEBDF_LIBS=/software/chimica2/libraries/mebdf/medf-gcc-4.8.2/lib/libMEBDF_LAPACK_gcc_64bit.a
+export MEBDF_LIBS=
 export RADAU_LIBS=/software/chimica2/libraries/radau/radau-gcc-4.8.2/lib/libRADAU_LAPACK_gcc_64bit.a
 export DASPK_LIBS=/software/chimica2/libraries/daspk/daspk-gcc-4.8.2/lib/libDASPK20_LAPACK_gcc_64bit.a
 export ODEPACK_LIBS=/software/chimica2/libraries/odepack/odepack-gcc-4.8.2/lib/libODEPACK_LAPACK_gcc_64bit.a

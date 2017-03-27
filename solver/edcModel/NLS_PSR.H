@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------*\
+/*-----------------------------------------------------------------------*\
 |                  _       _____ __  __  ____  _  ________                |
 |                 | |     / ____|  \/  |/ __ \| |/ /  ____|               |
 |          ___  __| | ___| (___ | \  / | |  | | ' /| |__                  |
@@ -32,7 +32,7 @@
 |                                                                         |
 |	License                                                           |
 |                                                                         |
-|   Copyright(C) 2014 A. Cuoci, M.R. Malik, A. Parente                    |
+|   Copyright(C) 2016-2014 A. Cuoci, M.R. Malik, A. Parente               |
 |   edcSMOKE is free software: you can redistribute it and/or modify      |
 |   it under the terms of the GNU General Public License as published by  |
 |   the Free Software Foundation, either version 3 of the License, or     |
@@ -48,110 +48,78 @@
 |                                                                         |
 \*-----------------------------------------------------------------------*/
 
-// This is a steady state simulation
-#define STEADYSTATE 1
+#ifndef NLS_PSR_H
+#define NLS_PSR_H
 
-// OpenSMOKE++ Definitions
-#include "OpenSMOKEpp"
-
-// CHEMKIN maps
-#include "maps/Maps_CHEMKIN"
-
-// OpenSMOKE++ Dictionaries
-#include "dictionary/OpenSMOKE_Dictionary"
-
-// ODE solvers
-#include "math/native-ode-solvers/MultiValueSolver"
-#include "math/external-ode-solvers/ODE_Parameters.h"
-
-// NLS solvers
-#include "math/native-nls-solvers/NonLinearSystemSolver"
-#include "math/native-nls-solvers/parameters/NonLinearSolver_Parameters.h"
-
-// OpenFOAM
-#include "fvCFD.H"
-#include "psiCombustionModel.H"
-#include "multivariateScheme.H"
-#include "RASModel.H"
-#include "simpleControl.H"
-#include "fvIOoptionList.H"
-#include "radiationModel.H"
-
-// Utilities
-#include "Utilities.H"
-
-// ODE system
-#include "DRG.H"
-#include "ODE_PSR.H"
-#include "ODE_PSR_Interface.H"
-#include "ODE_PFR.H"
-#include "ODE_PFR_Interface.H"
-
-// NLS Systems
-#include "NLS_PSR.H"
-#include "NLS_PSR_Interface.H"
-
-// Characteristic chemical times
-#include "CharacteristicChemicalTimes.H"
-
-// ISAT
-#if EDCSMOKE_USE_ISAT == 1
-    #include "ISAT.h"
-    #include "numericalJacobian4ISAT.H"
-    #include "mappingGradients/mappingGradient4OpenFOAM.h"
-#endif
-
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-int main(int argc, char *argv[])
+class NLS_PSR
 {
-    unsigned int runTimeStep = 0;
+public:
 
-    #include "setRootCase.H"
-    #include "createTime.H"
-    #include "createMesh.H"
-    #include "readGravitationalAcceleration.H"
+	NLS_PSR(	OpenSMOKE::ThermodynamicsMap_CHEMKIN& 		thermodynamicsMapXML, 
+			OpenSMOKE::KineticsMap_CHEMKIN& 		kineticsMapXML);
 
-    simpleControl simple(mesh);
+	void Set(	const double T0, const double P0_Pa, 
+			const OpenSMOKE::OpenSMOKEVectorDouble& omegaMean, const OpenSMOKE::OpenSMOKEVectorDouble& omegaStar, 
+			const double hMean, const double gammaStar, const double mDotStar, const int index_max_species )
+	{
+		TStar_ 			= T0;
+		P_Pa_ 			= P0_Pa;
+		gammaStar_ 		= gammaStar;
+		mDotStar_ 		= mDotStar;
+		omegaMean_  		= omegaMean;
+		hMean_ 			= hMean;
+		omegaStar_		= omegaStar;
+		index_max_species_	= index_max_species;
+	}
 
-    #include "createFields.H"
-    #include "createOpenSMOKEFields.H"
-    #include "createFvOptions.H"
-    #include "createRadiationModel.H"
-    #include "initContinuityErrs.H"
+	void SetCheckMassFractions( const bool flag ) { checkMassFractions_ = flag; };
+	unsigned int NumberOfEquations() const { return number_of_equations_; }
 
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+	int Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y, OpenSMOKE::OpenSMOKEVectorDouble& dy);
+	int Print(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y);
 
-    Info<< "\nStarting time loop\n" << endl;
+	void SetDRG(OpenSMOKE::DRG* drg) { drg_ = drg; drgAnalysis_ = true; }
 
-    while (simple.loop())
-    {
-	runTimeStep++;
-        Info<< "Time = " << runTime.timeName() << nl << endl;
+	int index_max_species() const { return index_max_species_; }
+	unsigned int number_of_gas_species() const { return number_of_gas_species_; }
+	void ReconstructData(const Eigen::VectorXd& y, double& TStar, double& omegaReconstructed);
 
-        // Pressure-velocity SIMPLE corrector
-        {
-            #include "UEqn.H"
-	    #include "properties.H"
-            #include "YEqn.H"
-            #include "EEqn.H"
-            #include "pEqn.H"
-        }
+private:
 
-        turbulence->correct();
+	unsigned int number_of_equations_;
+	unsigned int number_of_gas_species_;
+	unsigned int number_of_reactions_;
+	         int index_max_species_;
 
-        runTime.write();
-
-        Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
-            << "  ClockTime = " << runTime.elapsedClockTime() << " s"
-            << nl << endl;
-    }
-
-    Info<< "End\n" << endl;
-
-    return 0;
-}
+	double TStar_;
+	double P_Pa_;
+	double MWStar_;
+	double cTotStar_;
+	double rhoStar_;
+	double mDotStar_;
+	double gammaStar_;
+	
+	double hMean_;
 
 
-// ************************************************************************* //
+	OpenSMOKE::ThermodynamicsMap_CHEMKIN& 	thermodynamicsMapXML_;
+	OpenSMOKE::KineticsMap_CHEMKIN& 	kineticsMapXML_;
+
+	OpenSMOKE::OpenSMOKEVectorDouble omegaMean_;
+	OpenSMOKE::OpenSMOKEVectorDouble omegaStar_;
+	OpenSMOKE::OpenSMOKEVectorDouble omegaSurr_;
+	OpenSMOKE::OpenSMOKEVectorDouble xStar_;
+	OpenSMOKE::OpenSMOKEVectorDouble cStar_;
+	OpenSMOKE::OpenSMOKEVectorDouble RStar_;
+	OpenSMOKE::OpenSMOKEVectorDouble rStar_;
+
+	bool checkMassFractions_;
+
+	OpenSMOKE::DRG* drg_;
+	bool drgAnalysis_;
+};
+
+#include "NLS_PSR.C"
+
+#endif // NLS_PSR_H
+

@@ -48,110 +48,47 @@
 |                                                                         |
 \*-----------------------------------------------------------------------*/
 
-// This is a steady state simulation
-#define STEADYSTATE 1
+#ifndef NLS_PSR_Interface_H
+#define	NLS_PSR_Interface_H
 
-// OpenSMOKE++ Definitions
-#include "OpenSMOKEpp"
+#include "math/OpenSMOKEVector.h"
 
-// CHEMKIN maps
-#include "maps/Maps_CHEMKIN"
+#include "NLSSystemVirtualClassWithOpenSMOKEVectors.H"
 
-// OpenSMOKE++ Dictionaries
-#include "dictionary/OpenSMOKE_Dictionary"
-
-// ODE solvers
-#include "math/native-ode-solvers/MultiValueSolver"
-#include "math/external-ode-solvers/ODE_Parameters.h"
-
-// NLS solvers
-#include "math/native-nls-solvers/NonLinearSystemSolver"
-#include "math/native-nls-solvers/parameters/NonLinearSolver_Parameters.h"
-
-// OpenFOAM
-#include "fvCFD.H"
-#include "psiCombustionModel.H"
-#include "multivariateScheme.H"
-#include "RASModel.H"
-#include "simpleControl.H"
-#include "fvIOoptionList.H"
-#include "radiationModel.H"
-
-// Utilities
-#include "Utilities.H"
-
-// ODE system
-#include "DRG.H"
 #include "ODE_PSR.H"
-#include "ODE_PSR_Interface.H"
-#include "ODE_PFR.H"
-#include "ODE_PFR_Interface.H"
 
-// NLS Systems
-#include "NLS_PSR.H"
-#include "NLS_PSR_Interface.H"
-
-// Characteristic chemical times
-#include "CharacteristicChemicalTimes.H"
-
-// ISAT
-#if EDCSMOKE_USE_ISAT == 1
-    #include "ISAT.h"
-    #include "numericalJacobian4ISAT.H"
-    #include "mappingGradients/mappingGradient4OpenFOAM.h"
-#endif
-
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-int main(int argc, char *argv[])
+struct NonLinearSystemParameters
 {
-    unsigned int runTimeStep = 0;
+	double relTolerance;
+	double absTolerance;
+	double thresholdResiduals;
+	double maxAttempts;
+};
 
-    #include "setRootCase.H"
-    #include "createTime.H"
-    #include "createMesh.H"
-    #include "readGravitationalAcceleration.H"
+namespace OpenSMOKE
+{
+	class NLS_PSR_OpenSMOKE : public NLSSystemVirtualClassWithOpenSMOKEVectors
+	{
+	public:
 
-    simpleControl simple(mesh);
+		NLS_PSR_OpenSMOKE() {};
 
-    #include "createFields.H"
-    #include "createOpenSMOKEFields.H"
-    #include "createFvOptions.H"
-    #include "createRadiationModel.H"
-    #include "initContinuityErrs.H"
+		void SetReactor(NLS_PSR* reactor) { reactor_ = reactor; }
 
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+		virtual void GetEquations(const OpenSMOKE::OpenSMOKEVectorDouble& y, OpenSMOKE::OpenSMOKEVectorDouble& dy)
+		{
+			reactor_->Equations(0., y, dy);
+		}
+		virtual void PrintResults(const OpenSMOKE::OpenSMOKEVectorDouble& y)
+		{
+			reactor_->Print(0., y);
+		}
 
-    Info<< "\nStarting time loop\n" << endl;
+	private:
 
-    while (simple.loop())
-    {
-	runTimeStep++;
-        Info<< "Time = " << runTime.timeName() << nl << endl;
+		NLS_PSR* reactor_;
+	};
+};
 
-        // Pressure-velocity SIMPLE corrector
-        {
-            #include "UEqn.H"
-	    #include "properties.H"
-            #include "YEqn.H"
-            #include "EEqn.H"
-            #include "pEqn.H"
-        }
+#endif // ODE_PSR_Interface_H
 
-        turbulence->correct();
-
-        runTime.write();
-
-        Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
-            << "  ClockTime = " << runTime.elapsedClockTime() << " s"
-            << nl << endl;
-    }
-
-    Info<< "End\n" << endl;
-
-    return 0;
-}
-
-
-// ************************************************************************* //

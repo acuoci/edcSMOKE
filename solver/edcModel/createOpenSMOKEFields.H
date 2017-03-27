@@ -177,9 +177,7 @@ word combustionModel(combustionOptionsDictionary.lookup("combustionModel"));
 const scalar maxT = readScalar(combustionOptionsDictionary.lookup("maxT"));
 const scalar minT = readScalar(combustionOptionsDictionary.lookup("minT"));
 Switch laminarDiffusion(combustionOptionsDictionary.lookup("laminarDiffusion"));
-
-const dimensionedScalar tauMin( "tauMin", dimensionSet(0,0,1,0,0,0,0), SMALL ); 
-const dimensionedScalar eSgsMin( "eSgsMin",   dimensionSet(0,2,-3,0,0,0,0), SMALL ); 
+scalar Sct = readScalar(combustionOptionsDictionary.lookup("Sct"));
 
 Info<< "Creating additional terms for EDC-LES\n" << endl;
 
@@ -197,47 +195,18 @@ volScalarField tauStar
     dimensionedScalar("tauStar", dimensionSet(0,0,1,0,0,0,0), 0.0)
 );
 
-volScalarField cDelta
+volScalarField epsilonSGS
 (
     IOobject
     (
-        "cDelta",
+        "epsilonSGS",
         runTime.timeName(),
         mesh,
         IOobject::NO_READ,
         IOobject::NO_WRITE
     ),
     mesh,
-    dimensionedScalar("cDelta", dimensionSet(0,1,0,0,0,0,0), 0.0)
-);
-cDelta.internalField() = pow ( mesh.V(), 1.0/3.0) ;
-
-volScalarField eSgs
-(
-    IOobject
-    (
-        "eSgs",
-        runTime.timeName(),
-        mesh,
-        IOobject::NO_READ,
-        IOobject::AUTO_WRITE
-    ),
-    mesh,
-    dimensionedScalar("eSgs", dimensionSet(0,2,-3,0,0,0,0), 1e-3)
-);
-
-volScalarField kSgs
-(
-    IOobject
-    (
-        "kSgs",
-        runTime.timeName(),
-        mesh,
-        IOobject::NO_READ,
-        IOobject::AUTO_WRITE
-    ),
-    mesh,
-    dimensionedScalar("kSgs", dimensionSet(0,2,-2,0,0,0,0), 1e-3)
+    dimensionedScalar("epsilonSGS", dimensionSet(0,2,-3,0,0,0,0), 0.0)
 );
 
 volScalarField gammaL
@@ -254,21 +223,6 @@ volScalarField gammaL
     dimensionedScalar("gammaL", dimensionSet(0,0,0,0,0,0,0), 0.0)
 );
 
-
-volScalarField ReTauLES
-(
-    IOobject
-    (
-        "ReTauLES_",
-        runTime.timeName(),
-        mesh,
-        IOobject::NO_READ,
-        IOobject::AUTO_WRITE
-    ),
-    mesh,
-    dimensionedScalar("ReTauLES", dimensionSet(0,0,0,0,0,0,0), 0.0)
-);
-
 volScalarField massDiffusionInEnergyEquation
 (
     IOobject
@@ -283,18 +237,30 @@ volScalarField massDiffusionInEnergyEquation
     dimensionedScalar("massDiffusionInEnergyEquation", dimensionSet(1,-1,-3,0,0,0,0), 0.0)
 );
 
-// Numerical parameters for EDC
+// Counters
+label  counterToUpdateChemistry = 0;
+
+// Numerical parameters for EDC/PaSR
 scalar Ccsi = 2.1377;
 scalar Ctau = 0.40825;
 scalar Cmix = 1.;
-
-scalar maxGammaSquared = 0.75487766248;
+word   edc_version = "v2005";
+scalar maxGammaL = 0.9;
 scalar numberOfResidenceTimes = 100.;
 label  numberIterationsToUpdateChemistry = 1;
-label  edcCounter = 0;
-label  pasrCounter = 0;
+scalar edc_exp = 2.;
 
-scalar Sct = readScalar(combustionOptionsDictionary.lookup("Sct"));
+// EDC v2016: Coefficients revised by A. Parente
+scalar Ctau_coefficient   = 0.75;
+scalar Cgamma_coefficient = std::sqrt(3./2.);
+scalar CRe_coefficient    = 0.09;
+
+scalar threshold_temperature_chemical_time = 300.;
+scalar threshold_chemical_time = 0.1;
+CharacteristicChemicalTimes::CharacteristicChemicalTimesType characteristic_chemical_times_type = CharacteristicChemicalTimes::CHEMICAL_TIMES_FORMATION_RATES;
+
+const double minimum_Da = 1e-10;
+const double maximum_Da = 10.;
 
 // Numerical parameters for ED
 scalar constA = 4.;
@@ -309,135 +275,230 @@ std::vector<double> ed_denominator_products_;
 // Reactor type: PSR or PFR
 enum { REACTORTYPE_PSR, REACTORTYPE_PFR} reactorType;
 
+// Solver type: ODE or NLS
+enum { SOLVERTYPE_ODE, SOLVERTYPE_NLS} solverType;
+
 // Reactor type: PSR or PFR
 enum { SCALE_KOLMOGOROV, SCALE_MEAN, SCALE_GLOBAL } tauMixType;
 
 // Reading constants from file
 {
-// ED Constants
-if (combustionModel == "ED")
-{
-	combustion_model_tag = "ed";
-
-	dictionary edSubDictionary(combustionOptionsDictionary.subDict("ED"));
-
-	constA = readScalar(edSubDictionary.lookup("A"));	// default: 4
-	constB = readScalar(edSubDictionary.lookup("B"));	// default: 0.5
-}
-// EDFR Constants
-else if (combustionModel == "EDFR")
-{
-	combustion_model_tag = "edfr";
-
-	dictionary edfrSubDictionary(combustionOptionsDictionary.subDict("EDFR"));
-
-	constA = readScalar(edfrSubDictionary.lookup("A"));	// default: 4
-	constB = readScalar(edfrSubDictionary.lookup("B"));	// default: 0.5
-}
-// EDC Constants
-else if (combustionModel == "EDC")
-{
-	combustion_model_tag = "edc";
-
-	dictionary edcSubDictionary(combustionOptionsDictionary.subDict("EDC"));
-
-	Ccsi = readScalar(edcSubDictionary.lookup("Ccsi"));						// default: 2.1377
-	Ctau = readScalar(edcSubDictionary.lookup("Ctau"));						// default: 0.40825
-	maxGammaSquared = readScalar(edcSubDictionary.lookup("maxGammaSquared"));			// default: 0.75487766248
-	numberOfResidenceTimes = readScalar(edcSubDictionary.lookup("numberOfResidenceTimes"));		// default: 100.
-	numberIterationsToUpdateChemistry = readLabel(edcSubDictionary.lookup("numberIterationsToUpdateChemistry")); // default 1
-	edcCounter = numberIterationsToUpdateChemistry;
-
-	// Type
-	word reactorTypeString(edcSubDictionary.lookup("reactorType"));
-	
-	if ( reactorTypeString == "PSR")
-	     reactorType = REACTORTYPE_PSR;
-	else if ( reactorTypeString == "PFR")
-		  reactorType = REACTORTYPE_PFR;
-	else
+	// ED Constants
+	if (combustionModel == "ED")
 	{
-		Info << "Wrong reactor type: PSR || PFR" << endl;
-		abort();
+		combustion_model_tag = "ed";
+
+		dictionary edSubDictionary(combustionOptionsDictionary.subDict("ED"));
+
+		constA = readScalar(edSubDictionary.lookup("A"));	// default: 4
+		constB = readScalar(edSubDictionary.lookup("B"));	// default: 0.5
 	}
-}
-// EDC Constants
-else if (combustionModel == "PaSR")
-{
-	combustion_model_tag = "pasr";
-
-	dictionary PaSRSubDictionary(combustionOptionsDictionary.subDict("PaSR"));
-	word tauMixTypestring(PaSRSubDictionary.lookup("tauMixType"));
-	
-	if ( tauMixTypestring == "kolmogorovScale")
-		tauMixType = SCALE_KOLMOGOROV;
-	else if ( tauMixTypestring == "geometricMeanScale")
-		tauMixType = SCALE_MEAN;
-	else if ( tauMixTypestring == "globalScale")
-		tauMixType = SCALE_GLOBAL;
-	else
+	// EDFR Constants
+	else if (combustionModel == "EDFR")
 	{
-		Info << "Wrong tau_mix type: kolmogorovScale || geometriMeanScale || globalScale" << endl;
-		abort();
+		combustion_model_tag = "edfr";
+
+		dictionary edfrSubDictionary(combustionOptionsDictionary.subDict("EDFR"));
+
+		constA = readScalar(edfrSubDictionary.lookup("A"));	// default: 4
+		constB = readScalar(edfrSubDictionary.lookup("B"));	// default: 0.5
 	}
-
-	Cmix = readScalar(PaSRSubDictionary.lookup("Cmix"));                        
-	numberIterationsToUpdateChemistry = readLabel(PaSRSubDictionary.lookup("numberIterationsToUpdateChemistry")); 
-	pasrCounter = numberIterationsToUpdateChemistry;
-
-	// Type
-	word reactorTypeString(PaSRSubDictionary.lookup("reactorType"));
-	
-	if ( reactorTypeString == "PFR")
-		  reactorType = REACTORTYPE_PFR;
-	else
+	// EDC Constants
+	else if (combustionModel == "EDC")
 	{
-		Info << "Wrong reactor type: only PFR" << endl;
-		abort();
-	}
-}
-// Error Message
-else
-{
-	FatalError << "Combustion model available: ED || EDFR || EDC || PaSR" << endl;
-}
+		combustion_model_tag = "edc";
 
+		dictionary edcSubDictionary(combustionOptionsDictionary.subDict("EDC"));
 
-if (combustionModel == "ED" || combustionModel == "EDFR")
-{
-	if (kineticsMapXML->NumberOfReversibleReactions() != 0)
-		FatalError << "The ED and EDFR models cannot be used with reversible reactions" << endl;
+		edc_version = word(edcSubDictionary.lookup("version"));								// default: v2005
+		Ccsi = readScalar(edcSubDictionary.lookup("Ccsi"));								// default: 2.1377
+		Ctau = readScalar(edcSubDictionary.lookup("Ctau"));								// default: 0.40825
+		maxGammaL = readScalar(edcSubDictionary.lookup("maxGammaL"));							// default: 0.9
+		numberOfResidenceTimes = readScalar(edcSubDictionary.lookup("numberOfResidenceTimes"));				// default: 100.
+		numberIterationsToUpdateChemistry = readLabel(edcSubDictionary.lookup("numberIterationsToUpdateChemistry")); 	// default 1
+		counterToUpdateChemistry = numberIterationsToUpdateChemistry;
 
-	ed_denominator_reactants_.resize(kineticsMapXML->NumberOfReactions());
-	ed_denominator_products_.resize(kineticsMapXML->NumberOfReactions());
-	ed_reactant_index_.resize(kineticsMapXML->NumberOfReactions());
-	ed_product_index_.resize(kineticsMapXML->NumberOfReactions());
-	ed_reactant_nu_.resize(kineticsMapXML->NumberOfReactions());
-	ed_product_nu_.resize(kineticsMapXML->NumberOfReactions());
-
-	for(unsigned int k=0;k<kineticsMapXML->NumberOfReactions();k++)
-		ed_denominator_products_[k] = 0.;
-
-	for (int k=0; k<kineticsMapXML->stoichiometry().stoichiometric_matrix_reactants().outerSize(); ++k)
-	{
-		for (Eigen::SparseMatrix<double>::InnerIterator it(kineticsMapXML->stoichiometry().stoichiometric_matrix_reactants(),k); it; ++it)
+		// Version
+		if (edc_version == "v2005")
 		{
-			ed_reactant_index_[it.row()].push_back(it.col());
-			ed_reactant_nu_[it.row()].push_back(it.value());
-			ed_denominator_reactants_[it.row()].push_back( it.value()*thermodynamicsMapXML->MW(it.col()) );
+			edc_exp = 2.;
+		}
+		else if (edc_version == "v1981")
+		{
+			edc_exp = 3.;
+		}
+		else if (edc_version == "v2016")
+		{
+			edc_exp = 2.;
+		}
+		else
+		{
+			Info << "Wrong EDC version: v1981 || v2005 || v2016" << endl;
+			abort();
+		}
+
+
+		// Reactor type options
+		{
+			word reactorTypeString(edcSubDictionary.lookup("reactorType"));
+	
+			if ( reactorTypeString == "PSR")
+			     reactorType = REACTORTYPE_PSR;
+			else if ( reactorTypeString == "PFR")
+				  reactorType = REACTORTYPE_PFR;
+			else
+			{
+				Info << "Wrong reactor type: PSR || PFR" << endl;
+				abort();
+			}
+		}
+
+		// Solver type options
+		{
+			word solverTypeString(edcSubDictionary.lookup("solverType"));
+			if ( solverTypeString == "ODE")
+			     solverType = SOLVERTYPE_ODE;
+			else if ( solverTypeString == "NLS")
+				  solverType = SOLVERTYPE_NLS;
+			else
+			{
+				Info << "Wrong solver type: ODE || NLS" << endl;
+				abort();
+			}
+		}
+
+		// Coefficients (only in case of v2016)
+		if (edc_version == "v2016")
+		{
+			Ctau_coefficient   = readScalar(edcSubDictionary.lookup("CtauCoeff"));		// default: 0.75
+			Cgamma_coefficient = readScalar(edcSubDictionary.lookup("CgammaCoeff"));	// default: sqrt(3/2)
+			CRe_coefficient    = readScalar(edcSubDictionary.lookup("CReCoeff"));		// default: 0.09
+
+			// The following coeffients are currently implemented in the official OF version
+			//  * Ctau_coefficient   = 0.01
+			//  * Cgamma_coefficient = 0.5
+			//  * CRe_coefficient    = 1.0
+		}
+
+		// Characteristic chemical type options (only in case of v2016)
+		if (edc_version == "v2016")
+		{
+			threshold_temperature_chemical_time = readScalar(edcSubDictionary.lookup("ChemicalTimesTemperatureThreshold"));
+			threshold_chemical_time = readScalar(edcSubDictionary.lookup("ChemicalTimesThreshold"));
+			word chemicalTimesTypeString(edcSubDictionary.lookup("ChemicalTimesType"));
+
+			if (chemicalTimesTypeString == "formationRates")
+				characteristic_chemical_times_type = CharacteristicChemicalTimes::CHEMICAL_TIMES_FORMATION_RATES;
+			else if (chemicalTimesTypeString == "reactionRates")
+				characteristic_chemical_times_type = CharacteristicChemicalTimes::CHEMICAL_TIMES_REACTION_RATES;
+			else if (chemicalTimesTypeString == "eigenvalues")
+				characteristic_chemical_times_type = CharacteristicChemicalTimes::CHEMICAL_TIMES_EIGENVALUES;
+			else
+			{
+				Info << "Wrong chemical times type: formationRates | reactionRates | eigenvalues" << endl;
+				abort();
+			}
 		}
 	}
-	
-	for (int k=0; k<kineticsMapXML->stoichiometry().stoichiometric_matrix_products().outerSize(); ++k)
+	// PaSR Constants
+	else if (combustionModel == "PaSR")
 	{
-		for (Eigen::SparseMatrix<double>::InnerIterator it(kineticsMapXML->stoichiometry().stoichiometric_matrix_products(),k); it; ++it)
+		combustion_model_tag = "pasr";
+
+		dictionary PaSRSubDictionary(combustionOptionsDictionary.subDict("PaSR"));
+		word tauMixTypestring(PaSRSubDictionary.lookup("tauMixType"));
+	
+		if ( tauMixTypestring == "kolmogorovScale")
+			tauMixType = SCALE_KOLMOGOROV;
+		else if ( tauMixTypestring == "geometricMeanScale")
+			tauMixType = SCALE_MEAN;
+		else if ( tauMixTypestring == "globalScale")
+			tauMixType = SCALE_GLOBAL;
+		else
 		{
-			ed_product_index_[it.row()].push_back(it.col());
-			ed_product_nu_[it.row()].push_back(it.value());
-			ed_denominator_products_[it.row()]+=it.value()*thermodynamicsMapXML->MW(it.col());
-		};
+			Info << "Wrong tau_mix type: kolmogorovScale || geometriMeanScale || globalScale" << endl;
+			abort();
+		}
+
+		Cmix = readScalar(PaSRSubDictionary.lookup("Cmix"));                        
+		numberIterationsToUpdateChemistry = readLabel(PaSRSubDictionary.lookup("numberIterationsToUpdateChemistry")); 
+		counterToUpdateChemistry = numberIterationsToUpdateChemistry;
+
+		// Type options
+		{
+			word reactorTypeString(PaSRSubDictionary.lookup("reactorType"));
+			if ( reactorTypeString == "PFR")
+			{
+				  reactorType = REACTORTYPE_PFR;
+			}
+			else
+			{
+				Info << "Wrong reactor type: only PFR" << endl;
+				abort();
+			}
+		}
+
+		// Characteristic chemical type options
+		{
+			threshold_temperature_chemical_time = readScalar(PaSRSubDictionary.lookup("ChemicalTimesTemperatureThreshold"));
+			threshold_chemical_time = readScalar(PaSRSubDictionary.lookup("ChemicalTimesThreshold"));
+			word chemicalTimesTypeString(PaSRSubDictionary.lookup("ChemicalTimesType"));
+
+			if (chemicalTimesTypeString == "formationRates")
+				characteristic_chemical_times_type = CharacteristicChemicalTimes::CHEMICAL_TIMES_FORMATION_RATES;
+			else if (chemicalTimesTypeString == "reactionRates")
+				characteristic_chemical_times_type = CharacteristicChemicalTimes::CHEMICAL_TIMES_REACTION_RATES;
+			else if (chemicalTimesTypeString == "eigenvalues")
+				characteristic_chemical_times_type = CharacteristicChemicalTimes::CHEMICAL_TIMES_EIGENVALUES;
+			else
+			{
+				Info << "Wrong chemical times type: formationRates | reactionRates | eigenvalues" << endl;
+				abort();
+			}
+		}
 	}
-}
+	// Error Message
+	else
+	{
+		FatalError << "Combustion model available: ED || EDFR || EDC || PaSR" << endl;
+	}
+
+
+	if (combustionModel == "ED" || combustionModel == "EDFR")
+	{
+		if (kineticsMapXML->NumberOfReversibleReactions() != 0)
+			FatalError << "The ED and EDFR models cannot be used with reversible reactions" << endl;
+
+		ed_denominator_reactants_.resize(kineticsMapXML->NumberOfReactions());
+		ed_denominator_products_.resize(kineticsMapXML->NumberOfReactions());
+		ed_reactant_index_.resize(kineticsMapXML->NumberOfReactions());
+		ed_product_index_.resize(kineticsMapXML->NumberOfReactions());
+		ed_reactant_nu_.resize(kineticsMapXML->NumberOfReactions());
+		ed_product_nu_.resize(kineticsMapXML->NumberOfReactions());
+
+		for(unsigned int k=0;k<kineticsMapXML->NumberOfReactions();k++)
+			ed_denominator_products_[k] = 0.;
+
+		for (int k=0; k<kineticsMapXML->stoichiometry().stoichiometric_matrix_reactants().outerSize(); ++k)
+		{
+			for (Eigen::SparseMatrix<double>::InnerIterator it(kineticsMapXML->stoichiometry().stoichiometric_matrix_reactants(),k); it; ++it)
+			{
+				ed_reactant_index_[it.row()].push_back(it.col());
+				ed_reactant_nu_[it.row()].push_back(it.value());
+				ed_denominator_reactants_[it.row()].push_back( it.value()*thermodynamicsMapXML->MW(it.col()) );
+			}
+		}
+	
+		for (int k=0; k<kineticsMapXML->stoichiometry().stoichiometric_matrix_products().outerSize(); ++k)
+		{
+			for (Eigen::SparseMatrix<double>::InnerIterator it(kineticsMapXML->stoichiometry().stoichiometric_matrix_products(),k); it; ++it)
+			{
+				ed_product_index_[it.row()].push_back(it.col());
+				ed_product_nu_[it.row()].push_back(it.value());
+				ed_denominator_products_[it.row()]+=it.value()*thermodynamicsMapXML->MW(it.col());
+			};
+		}
+	}
 }
 
 // Ode parameters
@@ -481,6 +542,25 @@ if (combustionModel == "EDC" || combustionModel == "PaSR")
 	if (homogeneousODESolverString == "DASPK") 	odeParametersFineStructures.SetType(OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_DASPK);
 	if (homogeneousODESolverString == "MEBDF") 	odeParametersFineStructures.SetType(OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_MEBDF);
 	if (homogeneousODESolverString == "RADAU5") 	odeParametersFineStructures.SetType(OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_RADAU5);	
+}
+
+// Nls parameters
+NonLinearSystemParameters nlsParametersFineStructures;
+
+if (combustionModel == "EDC")
+{
+	const dictionary& nlsParametersFineStructuresDictionary = combustionOptionsDictionary.subDict("Nls");
+
+	//- Mass fractions tolerance
+	scalar relTolerance = readScalar(nlsParametersFineStructuresDictionary.lookup("relTolerance"));
+	scalar absTolerance = readScalar(nlsParametersFineStructuresDictionary.lookup("absTolerance"));
+	scalar thresholdResiduals = readScalar(nlsParametersFineStructuresDictionary.lookup("thresholdResiduals"));
+	scalar maxAttempts = readScalar(nlsParametersFineStructuresDictionary.lookup("maxAttempts"));
+
+	nlsParametersFineStructures.relTolerance = relTolerance;
+	nlsParametersFineStructures.absTolerance = absTolerance;
+	nlsParametersFineStructures.thresholdResiduals = thresholdResiduals;
+	nlsParametersFineStructures.maxAttempts = maxAttempts;
 }
 
 // Check type
@@ -548,30 +628,96 @@ PtrList<volScalarField> TStar_;
 PtrList<volScalarField> R_;
 PtrList<volScalarField> Dmix_;
 PtrList<volScalarField> HeSpecies_;
-scalarField Tau(mesh.nCells(),0.);
+
+//scalarField Tau(mesh.nCells(),0.);
 scalarField gammaStar(mesh.nCells(),0.);
 scalarField tfStar(mesh.nCells(),0.);
 scalarField mDotStar(mesh.nCells(),0.);
 scalarField edc_coefficient(mesh.nCells(),0.);
-scalarField tau_c(mesh.nCells(),0.);
-scalarField tau_c_max(mesh.nCells(),0.);
-scalarField tau_mix(mesh.nCells(),0.);
-scalarField kappa_coefficient(mesh.nCells(),0.);
-scalarField Da(mesh.nCells(),0.);
 
-
-volScalarField epsilonSGS
+// Characteristic mixing time [s]
+volScalarField tauMix
 (
-    IOobject
-    (
-        "epsilonSGS",
-        runTime.timeName(),
-        mesh,
-        IOobject::NO_READ,
-        IOobject::NO_WRITE
-    ),
-    mesh,
-    dimensionedScalar("epsilonSGS", dimensionSet(0,2,-3,0,0,0,0), 0.0)
+	IOobject
+	(
+		"combustion::tauMix",
+		mesh.time().timeName(),
+		mesh,
+		IOobject::NO_READ,
+		IOobject::AUTO_WRITE,
+		false
+	),
+	mesh,
+	dimensionedScalar("zero", dimensionSet(0, 0, 1, 0, 0), 0.), 
+	zeroGradientFvPatchScalarField::typeName
+);
+
+// Characteristic chemical time [s]
+volScalarField tauChem
+(
+	IOobject
+	(
+		"combustion::tauChem",
+		mesh.time().timeName(),
+		mesh,
+		IOobject::READ_IF_PRESENT,
+		IOobject::AUTO_WRITE,
+		false
+	),
+	mesh,
+	dimensionedScalar("zero", dimensionSet(0, 0, 1, 0, 0), 0.), 
+	zeroGradientFvPatchScalarField::typeName
+);
+
+// Damkholer number
+volScalarField Da
+(
+	IOobject
+	(
+		"combustion::Da",
+		mesh.time().timeName(),
+		mesh,
+		IOobject::NO_READ,
+		IOobject::AUTO_WRITE,
+		false
+	),
+	mesh,
+	dimensionedScalar("zero", dimensionSet(0, 0, 0, 0, 0), 0.), 
+	zeroGradientFvPatchScalarField::typeName
+);
+
+// Turbulent Reynolds number
+volScalarField ReT
+(
+	IOobject
+	(
+		"combustion::ReT",
+		mesh.time().timeName(),
+		mesh,
+		IOobject::NO_READ,
+		IOobject::AUTO_WRITE,
+		false
+	),
+	mesh,
+	dimensionedScalar("zero", dimensionSet(0, 0, 0, 0, 0), 0.), 
+	zeroGradientFvPatchScalarField::typeName
+);
+
+// PASR coefficient
+volScalarField kappa
+(
+	IOobject
+	(
+		"combustion::kappa",
+		mesh.time().timeName(),
+		mesh,
+		IOobject::NO_READ,
+		IOobject::AUTO_WRITE,
+		false
+	),
+	mesh,
+	dimensionedScalar("zero", dimensionSet(0, 0, 0, 0, 0), 0.), 
+	zeroGradientFvPatchScalarField::typeName
 );
 
 {
@@ -813,18 +959,18 @@ dimensionedScalar ksmall_("ksmall", dimensionSet(0,2,-2,0,0,0,0), SMALL );
 dimensionedScalar musmall_("musmall", dimensionSet(1,-1,-1,0,0,0,0), SMALL );
 dimensionedScalar epsilonsmall_("epsilonsmall", dimensionSet(0,2,-3,0,0,0,0), SMALL );
 
-volScalarField uTau_
+volScalarField one_over_tauStar
 (
     IOobject
     (
-        "uTau",
+        "one_over_tauStar",
         runTime.timeName(),
         mesh,
         IOobject::NO_READ,
         IOobject::AUTO_WRITE
     ),
     mesh,
-    dimensionedScalar("uTau", dimensionSet(0,0,-1,0,0,0,0), 0.0)
+    dimensionedScalar("one_over_tauStar", dimensionSet(0,0,-1,0,0,0,0), 0.0)
 );
 
 // Normalize the mass fractions (mean fields)
@@ -907,6 +1053,9 @@ if (combustionModel == "EDC" || combustionModel == "PaSR")
 ODE_PSR fine_structure_ode_psr(*thermodynamicsMapXML, *kineticsMapXML);
 if (odeParametersFineStructures.type() != OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_OPENSMOKE)
 	fine_structure_ode_psr.SetCheckMassFractions(true);
+
+// Fine Structure (reactor)
+NLS_PSR fine_structure_nls_psr(*thermodynamicsMapXML, *kineticsMapXML);
 
 // ODE Solvers
 typedef OdeSMOKE::KernelDense<OpenSMOKE::ODE_PSR_OpenSMOKE> denseOdePSR;

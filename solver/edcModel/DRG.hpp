@@ -22,6 +22,7 @@ namespace OpenSMOKE
                 important_reactions_.resize(NR_);
 
 		number_important_species_ = NS_;
+		number_unimportant_species_ = 0;
 		number_unimportant_reactions_ = 0;
 
 		ResetCounters();
@@ -299,18 +300,29 @@ namespace OpenSMOKE
 
 		// Count important species and reactions
 		number_important_species_ = std::count (important_species_.begin(), important_species_.end(), true);
+		number_unimportant_species_ = NS_ - number_important_species_;
 		number_unimportant_reactions_ = std::count (important_reactions_.begin(), important_reactions_.end(), false);
 
 		// Vector containing the indices of important species (zero-based)
 		{
 			indices_important_species_.resize(number_important_species_);
-			unsigned int count = 0;
+			indices_unimportant_species_.resize(number_unimportant_species_);
+
+			unsigned int count_important = 0;
+			unsigned int count_unimportant = 0;
 			for(unsigned int k = 0; k < NS_; k++)
+			{
 				if (important_species_[k] == true)
 				{
-					indices_important_species_[count] = k;
-					count++;
+					indices_important_species_[count_important] = k;
+					count_important++;
 				}
+				else
+				{
+					indices_unimportant_species_[count_unimportant] = k;
+					count_unimportant++;
+				}
+			}
                 }
 
 		// Vector containing the indices of unimportant species (zero-based)

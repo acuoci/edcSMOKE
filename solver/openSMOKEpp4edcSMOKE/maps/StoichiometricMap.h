@@ -166,7 +166,7 @@ namespace OpenSMOKE
 		const Eigen::SparseMatrix<double>& reactionorders_matrix_reactants() const { return reactionorders_matrix_reactants_; };
 		const Eigen::SparseMatrix<double>& reactionorders_matrix_products() const { return reactionorders_matrix_products_; };
 
-		
+		void GetSumOfStoichiometricCoefficientsOfProducts(Eigen::VectorXd& sum_nu) const;
 		
 	private:
 

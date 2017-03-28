@@ -8,6 +8,9 @@
         tmp<volScalarField> tmu(thermo.mu());
         const volScalarField& mu = tmu();
 
+	tmp<volScalarField> trho(thermo.rho());
+        const volScalarField& rho = trho();
+
 	if (combustionModel == "ED" || combustionModel == "EDFR")
 	{
 		if (iLES == true)	// LES

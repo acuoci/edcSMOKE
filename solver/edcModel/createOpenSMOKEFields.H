@@ -135,6 +135,27 @@ Switch iLES = false;
 	);
 
 
+	#if OPENFOAM_VERSION == 4
+	word simulationType(turbulencePropertiesDictionary.lookup("simulationType"));
+	if (simulationType == "RAS")
+	{
+		iLES = false;
+		Info << "This is a RANS simulation..." << endl;
+	}
+	else if (simulationType == "LES")
+	{
+		#if STEADYSTATE == 1
+		FatalError << "LES is available only for unsteady solvers!" << exit(FatalError);
+		#else
+		iLES = true;
+		Info << "This is a Large Eddy Simulation (LES)..." << endl;
+		#endif
+	}
+	else
+	{
+		FatalError << "The ED models require turbulent conditions (i.e. LES or RAS)" << exit(FatalError);
+	}
+	#else
 	word simulationType(turbulencePropertiesDictionary.lookup("simulationType"));
 	if (simulationType == "RASModel")
 	{
@@ -154,6 +175,7 @@ Switch iLES = false;
 	{
 		FatalError << "The ED models require turbulent conditions (i.e. LESModel or RASModel)" << exit(FatalError);
 	}
+	#endif
 }
 
 // Check if epsilon can be found (only for RAS)
@@ -936,11 +958,10 @@ volScalarField Qdot
     IOobject
     (
 	"Qdot",
-	mesh.time().timeName(),
-	mesh,
-	IOobject::READ_IF_PRESENT,
-	IOobject::AUTO_WRITE,
-	false
+	runTime.timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::AUTO_WRITE
     ),
     mesh,
     dimensionedScalar("Qdot", dimEnergy/dimVolume/dimTime, 0.0), 

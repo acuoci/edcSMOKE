@@ -48,5 +48,19 @@
 |                                                                         |
 \*-----------------------------------------------------------------------*/
 
-// User-defined utilities
+#if OPENFOAM_VERSION == 22
+#include "EEqn2x3x.H"
+#endif
+
+#if OPENFOAM_VERSION == 23
+#include "EEqn2x3x.H"
+#endif
+
+#if OPENFOAM_VERSION == 24
+#include "EEqn2x3x.H"
+#endif
+
+#if OPENFOAM_VERSION == 4
+#include "EEqn4x.H"
+#endif
 

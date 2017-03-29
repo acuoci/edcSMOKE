@@ -70,11 +70,23 @@
 
 // OpenFOAM
 #include "fvCFD.H"
+#if OPENFOAM_VERSION == 4
+#include "fluidThermo.H"
+#include "turbulentFluidThermoModel.H"
 #include "psiCombustionModel.H"
 #include "multivariateScheme.H"
-#include "RASModel.H"
+#else
+#include "psiCombustionModel.H"
+#include "multivariateScheme.H"
+#include "turbulenceModel.H"
+#endif
 #include "simpleControl.H"
+#if OPENFOAM_VERSION == 4
+#include "pressureControl.H"
+#include "fvOptions.H"
+#else
 #include "fvIOoptionList.H"
+#endif
 #include "radiationModel.H"
 
 // Utilities
@@ -108,18 +120,39 @@ int main(int argc, char *argv[])
 {
     unsigned int runTimeStep = 0;
 
-    #include "setRootCase.H"
-    #include "createTime.H"
-    #include "createMesh.H"
-    #include "readGravitationalAcceleration.H"
+    #if OPENFOAM_VERSION == 4
 
-    simpleControl simple(mesh);
+	#include "postProcess.H"
 
-    #include "createFields.H"
-    #include "createOpenSMOKEFields.H"
-    #include "createFvOptions.H"
-    #include "createRadiationModel.H"
-    #include "initContinuityErrs.H"
+	#include "setRootCase.H"
+	#include "createTime.H"
+	#include "createMesh.H"
+	#include "readGravitationalAcceleration.H"
+	#include "createControl.H"
+	#include "createFields.H"
+        #include "createOpenSMOKEFields.H"
+	#include "createFvOptions.H"
+	#include "createRadiationModel.H"
+	#include "initContinuityErrs.H"
+
+	turbulence->validate();
+
+    #else
+
+	#include "setRootCase.H"
+	#include "createTime.H"
+	#include "createMesh.H"
+	#include "readGravitationalAcceleration.H"
+
+	simpleControl simple(mesh);
+
+	#include "createFields.H"
+	#include "createOpenSMOKEFields.H"
+	#include "createFvOptions.H"
+	#include "createRadiationModel.H"
+	#include "initContinuityErrs.H"
+
+    #endif
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -136,7 +169,17 @@ int main(int argc, char *argv[])
 	    #include "properties.H"
             #include "YEqn.H"
             #include "EEqn.H"
-            #include "pEqn.H"
+
+            #if OPENFOAM_VERSION == 4
+	    if (simple.consistent())
+            {
+            	#include "pcEqn.H"
+            }
+            else
+	    #endif
+            {
+                #include "pEqn.H"
+            }
         }
 
         turbulence->correct();

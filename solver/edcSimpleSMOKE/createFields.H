@@ -48,19 +48,6 @@
 |                                                                         |
 \*-----------------------------------------------------------------------*/
 
-/*  
-  Info<< "Reading thermophysical properties\n" << endl;
-
-    autoPtr<psiThermo> pThermo
-    (
-        psiThermo::New(mesh)
-    );
-    psiThermo& thermo = pThermo();
-    thermo.validate(args.executable(), "h", "e");
-
-*/
-
-
 	Info<< "Creating reaction model\n" << endl;
 
 	autoPtr<combustionModels::psiCombustionModel> reaction
@@ -119,24 +106,48 @@
     dimensionedScalar rhoMax(simple.dict().lookup("rhoMax"));
     dimensionedScalar rhoMin(simple.dict().lookup("rhoMin"));
 
-    Info<< "Creating turbulence model\n" << endl;
-    autoPtr<compressible::RASModel> turbulence
-    (
-        compressible::RASModel::New
-        (
-            rho,
-            U,
-            phi,
-            thermo
-        )
-    );
+    #if OPENFOAM_VERSION == 4
 
-	// Set the turbulence into the reaction model
-	reaction->setTurbulence(turbulence());
+	pressureControl pressureControl(p, rho, simple.dict());
+
+	mesh.setFluxRequired(p.name());
+
+	Info<< "Creating turbulence model\n" << endl;
+	autoPtr<compressible::turbulenceModel> turbulence
+	(
+		compressible::turbulenceModel::New
+		(
+			rho,
+			U,
+			phi,
+			thermo
+		)
+	);
+
+	#include "createMRF.H"
+
+    #else
+
+	Info<< "Creating turbulence model\n" << endl;
+	autoPtr<compressible::turbulenceModel> turbulence
+	(
+		compressible::turbulenceModel::New
+		(
+			rho,
+			U,
+			phi,
+			thermo
+		)
+	);
+
+    #endif
+
+    // Set the turbulence into the reaction model
+    reaction->setTurbulence(turbulence());
 
     dimensionedScalar initialMass = fvc::domainIntegrate(rho);
 
-multivariateSurfaceInterpolationScheme<scalar>::fieldTable fields;
+    multivariateSurfaceInterpolationScheme<scalar>::fieldTable fields;
 
 forAll(Y, i)
 {

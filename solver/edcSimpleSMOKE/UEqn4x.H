@@ -48,63 +48,26 @@
 |                                                                         |
 \*-----------------------------------------------------------------------*/
 
-{
-	T.max(minT);
-	T.min(maxT);
+    // Solve the Momentum equation
 
-	if (combustionModel == "EDC")
-	{
-		TStar_[0].max(minT);
-		TStar_[0].min(maxT);
-	}
+    MRF.correctBoundaryVelocity(U);
 
-	volScalarField& he = thermo.he();
+    tmp<fvVectorMatrix> tUEqn
+    (
+        fvm::div(phi, U)
+      + MRF.DDt(rho, U)
+      + turbulence->divDevRhoReff(U)
+     ==
+	rho*g
+      + fvOptions(rho, U)
+    );
+    fvVectorMatrix& UEqn = tUEqn.ref();
 
-	if (laminarDiffusion == true)
-	{
-		forAll(Y, i)
-		{ 
-			volScalarField& Yi = Y[i];
-			volScalarField& Dmixi = Dmix_[i];
-			volScalarField& HeSpeciesi = HeSpecies_[i];
+    UEqn.relax();
 
-			massDiffusionInEnergyEquation += HeSpeciesi* (fvc::laplacian(rho*Dmixi, Yi)); 
-		}
-	}
+    fvOptions.constrain(UEqn);
 
+    solve(UEqn == -fvc::grad(p));
 
-	fvScalarMatrix EEqn
-	(
-		fvm::ddt(rho, he) + mvConvection->fvmDiv(phi, he)
-		+ fvc::ddt(rho, K) + fvc::div(phi, K)
-		+ (
-		    he.name() == "e"
-		  ? fvc::div
-		    (
-			fvc::absolute(phi/fvc::interpolate(rho), U),
-			p,
-			"div(phiv,p)"
-		    )
-		  : -dpdt
-		)
-		- fvm::laplacian(turbulence->alphaEff(), he)
-                + massDiffusionInEnergyEquation
-		==
-		Sh_
-		+ radiation->Sh(thermo)
-		+ fvOptions(rho, he)
-	);
-
-	EEqn.relax();
-	fvOptions.constrain(EEqn);
-	EEqn.solve();
-	fvOptions.correct(he);
-
-	radiation->correct();
-	thermo.correct();
-
-	Info<< "min/max(T) = " << min(T).value() << ", " << max(T).value() << endl;
-
-	#include "sparkPatch.H" 
-}
+    fvOptions.correct(U);
 

@@ -47,9 +47,15 @@
 
 				const scalarField& TCells = T.internalField();
 				const scalarField& pCells = p.internalField(); 
+				#if OPENFOAM_VERSION == 4
+				      scalarField& tauChemCells = tauChem.ref(); 
+				      scalarField& DaCells = Da.ref(); 
+				      scalarField& ReTCells = ReT.ref();
+				#else
 				      scalarField& tauChemCells = tauChem.internalField(); 
 				      scalarField& DaCells = Da.internalField(); 
-				      scalarField& ReTCells = ReT.internalField(); 
+				      scalarField& ReTCells = ReT.internalField();
+				#endif 
 
 				forAll(tauStar, i)
 				{
@@ -186,9 +192,16 @@
 			const scalarField& TCells = T.internalField();
 			const scalarField& pCells = p.internalField(); 
 			const scalarField& tauMixCells = tauMix.internalField(); 
+			#if OPENFOAM_VERSION == 4
+			      scalarField& tauChemCells = tauChem.ref(); 
+			      scalarField& DaCells = Da.ref(); 
+			      scalarField& kappaCells = kappa.ref(); 
+			#else
 			      scalarField& tauChemCells = tauChem.internalField(); 
 			      scalarField& DaCells = Da.internalField(); 
 			      scalarField& kappaCells = kappa.internalField(); 
+			#endif 
+			      
 
 			forAll(tauStar, i)
 			{

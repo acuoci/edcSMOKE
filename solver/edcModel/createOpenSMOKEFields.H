@@ -185,11 +185,12 @@ volScalarField tauStar
 (
     IOobject
     (
-        "tauStar",
-        runTime.timeName(),
-        mesh,
-        IOobject::NO_READ,
-        IOobject::AUTO_WRITE
+	"edc::tauStar",
+	mesh.time().timeName(),
+	mesh,
+	IOobject::NO_READ,
+	IOobject::AUTO_WRITE,
+	false
     ),
     mesh,
     dimensionedScalar("tauStar", dimensionSet(0,0,1,0,0,0,0), 0.0)
@@ -199,11 +200,12 @@ volScalarField epsilonSGS
 (
     IOobject
     (
-        "epsilonSGS",
-        runTime.timeName(),
-        mesh,
-        IOobject::NO_READ,
-        IOobject::NO_WRITE
+	"epsilonSGS",
+	mesh.time().timeName(),
+	mesh,
+	IOobject::NO_READ,
+	IOobject::AUTO_WRITE,
+	false
     ),
     mesh,
     dimensionedScalar("epsilonSGS", dimensionSet(0,2,-3,0,0,0,0), 0.0)
@@ -213,11 +215,12 @@ volScalarField gammaL
 (
     IOobject
     (
-        "gammaL",
-        runTime.timeName(),
-        mesh,
-        IOobject::NO_READ,
-        IOobject::AUTO_WRITE
+	"edc::gammaL",
+	mesh.time().timeName(),
+	mesh,
+	IOobject::NO_READ,
+	IOobject::AUTO_WRITE,
+	false
     ),
     mesh,
     dimensionedScalar("gammaL", dimensionSet(0,0,0,0,0,0,0), 0.0)
@@ -227,11 +230,12 @@ volScalarField massDiffusionInEnergyEquation
 (
     IOobject
     (
-        "massDiffusionInEnergyEquation",
-        runTime.timeName(),
-        mesh,
-        IOobject::NO_READ,
-        IOobject::NO_WRITE
+	"massDiffusionInEnergyEquation",
+	mesh.time().timeName(),
+	mesh,
+	IOobject::NO_READ,
+	IOobject::NO_WRITE,
+	false
     ),
     mesh,
     dimensionedScalar("massDiffusionInEnergyEquation", dimensionSet(1,-1,-3,0,0,0,0), 0.0)
@@ -629,7 +633,7 @@ PtrList<volScalarField> R_;
 PtrList<volScalarField> Dmix_;
 PtrList<volScalarField> HeSpecies_;
 
-//scalarField Tau(mesh.nCells(),0.);
+//- Scalar fields
 scalarField gammaStar(mesh.nCells(),0.);
 scalarField tfStar(mesh.nCells(),0.);
 scalarField mDotStar(mesh.nCells(),0.);
@@ -927,18 +931,20 @@ if (combustionModel == "EDC" || combustionModel == "PaSR")
 	}
 }
 
-volScalarField Sh_
+volScalarField Qdot
 (
     IOobject
     (
-        "Sh",
-        runTime.timeName(),
-        mesh,
-        IOobject::NO_READ,
-        IOobject::AUTO_WRITE
+	"Qdot",
+	mesh.time().timeName(),
+	mesh,
+	IOobject::READ_IF_PRESENT,
+	IOobject::AUTO_WRITE,
+	false
     ),
     mesh,
-    dimensionedScalar("Sh", dimEnergy/dimTime/dimVolume, 0.0)
+    dimensionedScalar("Qdot", dimEnergy/dimVolume/dimTime, 0.0), 
+    zeroGradientFvPatchScalarField::typeName
 );
 
 volScalarField dQ
@@ -952,7 +958,8 @@ volScalarField dQ
         	IOobject::AUTO_WRITE
 	),
 	mesh,
-	dimensionedScalar("dQ", dimEnergy/dimTime, 0.0)
+	dimensionedScalar("dQ", dimEnergy/dimTime, 0.0), 
+    	zeroGradientFvPatchScalarField::typeName
 );
 
 dimensionedScalar ksmall_("ksmall", dimensionSet(0,2,-2,0,0,0,0), SMALL );
@@ -994,8 +1001,13 @@ volScalarField one_over_tauStar
 		if ( e > maxSumMassFractionsError)
 			FatalError << "Fatal error: the sum of mass fractions in cell " << celli << " is equal to " << sum << " (error " << sum-1. << endl; 
 			
+		#if OPENFOAM_VERSION == 4
+		for (unsigned int i=0;i<thermodynamicsMapXML->NumberOfSpecies();i++)
+			Y[i].ref()[celli]/=sum;
+		#else
 		for (unsigned int i=0;i<thermodynamicsMapXML->NumberOfSpecies();i++)
 			Y[i].internalField()[celli]/=sum;
+		#endif
 
 		sumTotal += sum;
 		if (e>maxError) maxError = e;
@@ -1027,8 +1039,15 @@ if (combustionModel == "EDC" || combustionModel == "PaSR")
 		if ( e > maxSumMassFractionsError)
 			FatalError << "Fatal error: the sum of mass fractions in cell " << celli << " is equal to " << sum << " (error " << sum-1. << endl; 
 			
+		#if OPENFOAM_VERSION == 4
+		for (unsigned int i=0;i<thermodynamicsMapXML->NumberOfSpecies();i++)
+			YStar_[i].ref()[celli]/=sum;
+		#else
 		for (unsigned int i=0;i<thermodynamicsMapXML->NumberOfSpecies();i++)
 			YStar_[i].internalField()[celli]/=sum;
+		#endif
+
+		
 
 		sumTotal += sum;
 		if (e>maxError) maxError = e;

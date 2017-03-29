@@ -67,7 +67,13 @@
 	const scalarField& pCells = thermo.p().internalField();
 	const scalarField& rhoCells = rho.internalField();
 	const scalarField& TCells = thermo.T().internalField();
-	      scalarField& ShCells = Sh_.internalField();
+	#if OPENFOAM_VERSION == 4
+		scalarField& QdotCells = Qdot.ref();
+		scalarField& dQCells = dQ.ref();
+	#else
+		scalarField& QdotCells = Qdot.internalField();
+		scalarField& dQCells = dQ.internalField();
+	#endif
 
 	const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
 
@@ -77,8 +83,13 @@
 		const double rho_epsilon_over_k = rhoCells[celli]*one_over_tauStar.internalField()[celli];	
 
 		// Vector containing mass fractions and mole formation rates
+		#if OPENFOAM_VERSION == 4
+		for(unsigned int i=0;i<ns;i++)
+			omega(i) = Y[i].ref()[celli];
+		#else
 		for(unsigned int i=0;i<ns;i++)
 			omega(i) = Y[i].internalField()[celli];
+		#endif
 		R.setZero();
 
 		// Set spark
@@ -153,8 +164,14 @@
 		}
 
 		// Formation rates [kg/m3/s]
+		#if OPENFOAM_VERSION == 4
+		for(unsigned int j=0;j<ns;j++)
+			R_[j].ref()[celli] = R[j]*thermodynamicsMapXML->MW(j);
+		#else
 		for(unsigned int j=0;j<ns;j++)
 			R_[j].internalField()[celli] = R[j]*thermodynamicsMapXML->MW(j);
+		#endif
+
 
 		// Calculating the heat release
 		{
@@ -165,10 +182,15 @@
 			double HeatRelease = 0.;
 			for(unsigned int i=0;i<ns;i++)
 				HeatRelease += -h_species[i+1]*R[i];
-			ShCells[celli] = HeatRelease;
+			QdotCells[celli] = HeatRelease;
+			dQCells[celli] = HeatRelease * mesh.V()[celli];
 		}
 	}
 	const double tEnd = OpenSMOKE::OpenSMOKEGetCpuTime();
+
+	// Correct boundary conditions
+	Qdot.correctBoundaryConditions();
+	dQ.correctBoundaryConditions();
 			
 	Info << "CPU time for chemistry (" << combustionModel << ") : " << tEnd - tStart << " s " << "(" << (tEnd - tStart)/double(TCells.size())*1e3 << " ms per cell)" << endl;
 }

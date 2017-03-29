@@ -48,5 +48,62 @@
 |                                                                         |
 \*-----------------------------------------------------------------------*/
 
-// User-defined utilities
+{
+	T.max(minT);
+	T.min(maxT);
+
+	if (combustionModel == "EDC")
+	{
+		TStar_[0].max(minT);
+		TStar_[0].min(maxT);
+	}
+
+	if (laminarDiffusion == true)
+	{
+		forAll(Y, i)
+		{ 
+			volScalarField& Yi = Y[i];
+			volScalarField& Dmixi = Dmix_[i];
+			volScalarField& HeSpeciesi = HeSpecies_[i];
+
+			massDiffusionInEnergyEquation += HeSpeciesi* (fvc::laplacian(rho*Dmixi, Yi)); 
+		}
+	}
+
+	volScalarField& he = thermo.he();
+
+	fvScalarMatrix EEqn
+	(
+		fvm::ddt(rho, he) + mvConvection->fvmDiv(phi, he)
+		+ fvc::ddt(rho, K) + fvc::div(phi, K)
+		+ (
+		    he.name() == "e"
+		  ? fvc::div
+		    (
+			fvc::absolute(phi/fvc::interpolate(rho), U),
+			p,
+			"div(phiv,p)"
+		    )
+		  : -dpdt
+		)
+		- fvm::laplacian(turbulence->alphaEff(), he)
+                + massDiffusionInEnergyEquation
+		==
+		Qdot
+		+ radiation->Sh(thermo)
+		+ fvOptions(rho, he)
+	);
+
+	EEqn.relax();
+	fvOptions.constrain(EEqn);
+	EEqn.solve();
+	fvOptions.correct(he);
+
+	radiation->correct();
+	thermo.correct();
+
+	Info<< "min/max(T) = " << min(T).value() << ", " << max(T).value() << endl;
+
+	#include "sparkPatch.H" 
+}
 

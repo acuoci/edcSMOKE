@@ -69,16 +69,27 @@ if (laminarDiffusion == true)
 			thermodynamicsMapXML->MoleFractions_From_MassFractions(moleFractions.GetHandle(),MWmix,massFractions.GetHandle());
 			
 			transportMapXML->MassDiffusionCoefficients(Dmixvector.GetHandle(), moleFractions.GetHandle());
+
+			#if OPENFOAM_VERSION == 4
+			for(int i=0;i<thermodynamicsMapXML->NumberOfSpecies();i++)
+				Dmix_[i].ref()[celli] = Dmixvector[i+1];
+			#else
 			for(int i=0;i<thermodynamicsMapXML->NumberOfSpecies();i++)
 				Dmix_[i].internalField()[celli] = Dmixvector[i+1];
+			#endif
 		}
 	}
 
 	// Boundaries
 	forAll(T.boundaryField(), patchi)
 	{
+		#if OPENFOAM_VERSION == 4
+		fvPatchScalarField& pp = p.boundaryFieldRef()[patchi];
+		fvPatchScalarField& pT = T.boundaryFieldRef()[patchi];
+		#else
 		fvPatchScalarField& pp = p.boundaryField()[patchi];
 		fvPatchScalarField& pT = T.boundaryField()[patchi];
+		#endif
         
 		forAll(pT, facei)
 		{
@@ -95,8 +106,14 @@ if (laminarDiffusion == true)
 			thermodynamicsMapXML->MoleFractions_From_MassFractions(moleFractions.GetHandle(),MWmix,massFractions.GetHandle());
 
 			transportMapXML->MassDiffusionCoefficients(Dmixvector.GetHandle(),moleFractions.GetHandle());
+
+			#if OPENFOAM_VERSION == 4
+			for(int i=0;i<thermodynamicsMapXML->NumberOfSpecies();i++)
+				Dmix_[i].boundaryFieldRef()[patchi][facei] = Dmixvector[i+1];
+			#else
 			for(int i=0;i<thermodynamicsMapXML->NumberOfSpecies();i++)
 				Dmix_[i].boundaryField()[patchi][facei] = Dmixvector[i+1];
+			#endif
 		}
 	}
 	

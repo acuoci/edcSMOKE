@@ -48,6 +48,10 @@
 |                                                                         |
 \*-----------------------------------------------------------------------*/
 
+#if OPENFOAM_VERSION == 4
+#include "createRDeltaT.H"
+#endif
+
 Info<< "Creating reaction model\n" << endl;
 
 autoPtr<combustionModels::psiCombustionModel> reaction
@@ -61,7 +65,14 @@ thermo.validate(args.executable(), "h", "e");
 basicMultiComponentMixture& composition = thermo.composition();
 PtrList<volScalarField>& Y = composition.Y();
 
-word inertSpecie(thermo.lookup("inertSpecie"));
+const word inertSpecie(thermo.lookup("inertSpecie"));
+
+#if OPENFOAM_VERSION == 4
+if (!composition.species().found(inertSpecie))
+{
+    FatalIOErrorIn(args.executable().c_str(), thermo)	<< "Inert specie " << inertSpecie << " not found in available species " << composition.species() << exit(FatalIOError);
+}
+#endif
 
 volScalarField rho
 (
@@ -88,15 +99,45 @@ volVectorField U
     mesh
 );
 
-
 volScalarField& p = thermo.p();
 const volScalarField& psi = thermo.psi();
       volScalarField& T = thermo.T();
+const label inertIndex(composition.species()[inertSpecie]);
 
 #include "compressibleCreatePhi.H"
 
-dimensionedScalar rhoMax(pimple.dict().lookup("rhoMax"));
-dimensionedScalar rhoMin(pimple.dict().lookup("rhoMin"));
+#if OPENFOAM_VERSION == 4
+
+	dimensionedScalar rhoMax
+	(
+	    dimensionedScalar::lookupOrDefault
+	    (
+		"rhoMax",
+		pimple.dict(),
+		dimDensity,
+		GREAT
+	    )
+	);
+
+	dimensionedScalar rhoMin
+	(
+	    dimensionedScalar::lookupOrDefault
+	    (
+		"rhoMin",
+		pimple.dict(),
+		dimDensity,
+		0
+	    )
+	);
+
+	mesh.setFluxRequired(p.name());
+
+#else
+
+	dimensionedScalar rhoMax(pimple.dict().lookup("rhoMax"));
+	dimensionedScalar rhoMin(pimple.dict().lookup("rhoMin"));
+
+#endif
 
 Info << "Creating turbulence model.\n" << nl;
 autoPtr<compressible::turbulenceModel> turbulence
@@ -138,6 +179,10 @@ forAll(Y, i)
     fields.add(Y[i]);
 }
 fields.add(thermo.he());
+
+#if OPENFOAM_VERSION == 4
+#include "createMRF.H"
+#endif
 
 fileName path = args.rootPath()+"/"+args.globalCaseName();
 OFstream Pav(path+"/p.Vessel");

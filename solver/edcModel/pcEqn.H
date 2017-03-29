@@ -48,5 +48,7 @@
 |                                                                         |
 \*-----------------------------------------------------------------------*/
 
-// User-defined utilities
+#if OPENFOAM_VERSION == 4
+#include "pcEqn4x.H"
+#endif
 

@@ -70,13 +70,23 @@
 
 // OpenFOAM
 #include "fvCFD.H"
+#if OPENFOAM_VERSION == 4
+#include "turbulentFluidThermoModel.H"
+#else
 #include "turbulenceModel.H"
+#include "compressible/LES/LESModel/LESModel.H"
+#endif
 #include "psiCombustionModel.H"
 #include "multivariateScheme.H"
 #include "pimpleControl.H"
+#if OPENFOAM_VERSION == 4
+#include "fvOptions.H"
+#include "localEulerDdtScheme.H"
+#include "fvcSmooth.H"
+#else
 #include "fvIOoptionList.H"
+#endif
 #include "radiationModel.H"
-#include "compressible/LES/LESModel/LESModel.H"
 
 // Utilities
 #include "Utilities.H"
@@ -111,21 +121,49 @@ int main(int argc, char *argv[])
 {
     unsigned int runTimeStep = 0;
 
-    #include "setRootCase.H"
-    #include "createTime.H"
-    #include "createMesh.H"
-    #include "readGravitationalAcceleration.H"
+    #if OPENFOAM_VERSION == 4
 
-    pimpleControl pimple(mesh);
+	#include "postProcess.H"
 
-    #include "createFields.H"
-    #include "createOpenSMOKEFields.H"
-    #include "createFvOptions.H"
-    #include "createRadiationModel.H"
-    #include "initContinuityErrs.H"
-    #include "readTimeControls.H"
-    #include "compressibleCourantNo.H"
-    #include "setInitialDeltaT.H"
+	#include "setRootCase.H"
+	#include "createTime.H"
+	#include "createMesh.H"
+	#include "readGravitationalAcceleration.H"
+	#include "createControl.H"
+	#include "createTimeControls.H"
+	#include "initContinuityErrs.H"
+	#include "createFields.H"
+	#include "createOpenSMOKEFields.H"
+	#include "createFvOptions.H"
+	#include "createRadiationModel.H"
+
+	turbulence->validate();
+
+	if (!LTS)
+	{
+		#include "compressibleCourantNo.H"
+		#include "setInitialDeltaT.H"
+	}
+
+    #else
+
+	#include "setRootCase.H"
+	#include "createTime.H"
+	#include "createMesh.H"
+	#include "readGravitationalAcceleration.H"
+
+	pimpleControl pimple(mesh);
+
+	#include "createFields.H"
+	#include "createOpenSMOKEFields.H"
+	#include "createFvOptions.H"
+	#include "createRadiationModel.H"
+	#include "initContinuityErrs.H"
+	#include "readTimeControls.H"
+	#include "compressibleCourantNo.H"
+	#include "setInitialDeltaT.H"
+
+    #endif
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -153,7 +191,16 @@ int main(int argc, char *argv[])
             // --- Pressure corrector loop
             while (pimple.correct())
             {
-                #include "pEqn.H"
+		#if OPENFOAM_VERSION == 4
+                if (pimple.consistent())
+                {
+                    #include "pcEqn.H"
+                }
+                else
+		#endif
+                {
+                    #include "pEqn.H"
+                }
             }
 
             if (pimple.turbCorr())

@@ -1,0 +1,12 @@
+
+unset logscale y
+
+set title "Maximum temperature"
+
+set ylabel 'Maximum temperature [K]'
+set xlabel 'Iteration'
+
+plot "< cat log | grep 'min/max(T)' | cut -d ',' -f2 | tr -d ' '" title 'Tmax'  with lines
+
+pause(-1)
+

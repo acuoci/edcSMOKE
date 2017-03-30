@@ -1,0 +1,154 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  dev                                   |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      radiationProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Radiation model on/off
+radiation       on;
+
+// Radiation model
+radiationModel  P1;
+
+// Absorption coefficients model
+absorptionEmissionModel greyMeanAbsorptionEmission;
+
+// Number of flow iterations per radiation iteration
+solverFreq 5;
+
+//
+noRadiation
+{
+}
+
+// P1 Model
+P1Coeffs
+{
+
+}
+
+fvDOMCoeffs
+{
+    nPhi        2;          // azimuthal angles in PI/2 on X-Y.(from Y to X)
+    nTheta      2;          // polar angles in PI (from Z to X-Y plane)
+    convergence 1e-1;       // convergence criteria for radiation iteration
+    maxIter     1;          // maximum number of iterations
+    cacheDiv    true;       // cache the div of the RTE equation.
+
+//  NOTE: Caching div is "only" accurate if the upwind scheme is used in
+//  div(Ji,Ii_h)
+}
+
+constantAbsorptionEmissionCoeffs
+{
+    absorptivity    absorptivity    [ m^-1 ]       0.01;
+    emissivity      emissivity      [ m^-1 ]       0.01;
+    E               E               [ kg m^-1 s^-3 ]  0;
+}
+
+greyMeanAbsorptionEmissionCoeffs
+{
+    lookUpTableFileName      none;
+
+    EhrrCoeff                0.0;
+
+    H2O
+    {
+        Tcommon         200;
+        invTemp         true;
+        Tlow            200;
+        Thigh           3500;
+
+        loTcoeffs
+        (
+            0
+            0
+            0
+            0
+            0
+            0
+        );
+        hiTcoeffs
+        (
+            -0.23093
+            -1.12390e3
+             9.4153e6
+            -2.99885e9
+             0.51382e12
+            -1.868e10
+        );
+    }
+
+    O2
+    {
+        Tcommon         200;
+        invTemp         true;
+        Tlow            200;
+        Thigh           3500;
+
+        loTcoeffs
+        (
+            0
+            0
+            0
+            0
+            0
+            0
+        );
+        hiTcoeffs
+        (
+            0.1
+            0
+            0
+            0
+            0
+            0
+        );
+    }
+
+
+    N2
+    {
+        Tcommon         200;
+        invTemp         true;
+        Tlow            200;
+        Thigh           3500;
+
+        loTcoeffs
+        (
+            0
+            0
+            0
+            0
+            0
+            0
+        );
+        hiTcoeffs
+        (
+            0.1
+            0
+            0
+            0
+            0
+            0
+        );
+    }
+}
+
+scatterModel    none;
+
+sootModel       none;
+
+
+// ************************************************************************* //

@@ -1,0 +1,105 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.2.2                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      thermophysicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+homogeneousReactions 	on;		// chemistry on/off
+minT			280.;		// minimum temperature in K (useful for steady-state)
+maxT 			3500.;		// maximum temperature in K (useful for steady-state)
+
+combustionModel 	"EDC";		// combustion model: ED | EDFR | EDC | PaSR
+
+laminarDiffusion	off;		// laminar diffusion added to turbulent diffusion (default: off)
+Sct			0.70;		// Schmidt number for turbulent mass diffusion (default: 0.70)
+
+ED
+{
+	A	4.;		// A parameter (default 4)
+	B	0.5;		// B parameter (default 0.5)
+}
+
+EDFR
+{
+	A	4.;		// A parameter (default 4)
+	B	0.5;		// B parameter (default 0.5)
+}
+
+EDC
+{
+	version                                 "v2005";                // Version: v2005 (default) | v1981 | v2016
+        reactorType                             "PFR";                  // Reactor type: PFR (default) | PSR
+        Ccsi                                    2.1377;                 // EDC parameter (default 2.1377)
+        Ctau                                    0.40825;                // EDC parameter (default 0.40825)
+        maxGammaL                               0.87;                   // EDC parameter (default 0.87)
+        numberOfResidenceTimes                  100.;                   // ODE total integration time (inly in case of PSR, default 100)
+        numberIterationsToUpdateChemistry       1;                      // number of CFD iteration to solve the ODE system (default 1)
+        solverType                              "ODE";                  // solver type: ODE (default) | NLS
+
+	// Additional parameters (v2016)
+	CtauCoeff				0.750;			// EDC (v2016) parameter (default: 0.750)
+	CgammaCoeff				1.224;			// EDC (v2016) parameter (default: 1.224)
+	CReCoeff				0.090;			// EDC (v2016) parameter (default: 0.090)
+
+	// Calculation of chemical time (v2016)
+        ChemicalTimesThreshold                  0.10;                   // maximum chemical time (default 0.10 s)
+        ChemicalTimesTemperatureThreshold       300.;                   // minimum temperature for carrying out the analysis (default 300 K)
+        ChemicalTimesType                       "formationRates";       // type of analysis: formationRates (default) | reactionRates | eigenvalues
+}
+
+PaSR
+{
+        reactorType                             "PFR";			// Reactor type: PFR (default)
+        tauMixType                              globalScale;		// Calculation of mixing time: kolmogorovScale | geometriMeanScale | globalScale (default)
+        Cmix                                    0.1;			// PaSR parameter (default 0.1)
+        numberIterationsToUpdateChemistry       1;			// number of CFD iteration to solve the ODE system (default 1)
+
+	// Calculation of chemical time
+        ChemicalTimesThreshold                  0.10;                   // maximum chemical time [s], default 0.10 s
+        ChemicalTimesTemperatureThreshold       300.;                   // minimum temperature for carrying out the analysis [K], default 300 K
+        ChemicalTimesType                       "eigenvalues";          // type of analysis: formationRates (default) | reactionRates | eigenvalues
+}
+
+Ode
+{
+        odeSolver                               "OpenSMOKE";            // Ode Solver
+        relTolerance                            1e-5;                   // ODE relative tolerance (default: 1e-5)
+        absTolerance                            1e-10;                  // ODE absolute tolerance (default: 1e-10)
+        fullPivoting                            false;                  // full pivoting during LU factorization (default: false)
+        maximumOrder                            5;                      // maximum order of ODE integration (only for OpenSMOKE++ solver, default: 5)
+}
+
+Nls
+{
+        relTolerance                            1e-5;                   // NLS relative tolerance (default: 1e-5)
+        absTolerance                            1e-10;                  // NLS absolute tolerance (default: 1e-10)
+        thresholdResiduals                      1.;                     // threshold residuals (default: 1)
+        maxAttempts                             5;                      // maximum number of attempts (default: 5)
+}
+
+Spark
+{
+	spark           	off;
+	position        	(5e-3  0 5.e-3);
+	time            	0;
+	temperature     	2500;
+	duration        	50;
+	diameter        	5e-3;
+	additionalMassFraction	1e-3;
+}
+
+#include "isatOptions"
+#include "drgOptions"
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

@@ -1,0 +1,20 @@
+ELEMENTS
+H
+O
+HE
+N
+END
+
+SPECIES
+H2                            O2                            H2O                           
+HE                            N2                            
+END
+
+REACTIONS
+
+H2+0.5O2=>H2O                                           1.2100e+18   -1.000     40000.00
+ FORD /  H2  0.2500/
+ FORD /  O2  1.5000/
+
+END
+

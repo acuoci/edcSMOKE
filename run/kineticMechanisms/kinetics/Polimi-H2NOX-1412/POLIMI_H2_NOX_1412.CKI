@@ -1,0 +1,263 @@
+! 
+! CRECK Modeling Group (Politecnico di Milano)
+! http://creckmodeling.chem.polimi.it/
+!
+! H2/CO kinetic mechanism 
+! Version 1412, December 2014
+! Detailed mechanism of hydrogen oxidation.
+!
+! Kinetic scheme (with NOx): 32 species and 173 reactions
+!
+! References
+!
+! E. Ranzi, A. Frassoldati, R. Grana, A. Cuoci, T. Faravelli, A.P. Kelley, C.K. Law, Hierarchical and comparative kinetic modeling of laminar flame speeds of hydrocarbon and oxygenated fuels, 
+! Progress in Energy and Combustion Science, 38 (4), pp. 468-501 (2012), DOI: 10.1016/j.pecs.2012.03.004
+!
+! A. Frassoldati, T. Faravelli, E. Ranzi,
+! International Journal of Hydrogen Energy, 32: 3471-3485 (2007), doi:10.1016/j.ijhydene.2007.01.011 
+!
+! A. Cuoci, A. Frassoldati, G. Buzzi Ferraris, T. Faravelli, E. Ranzi, 
+! International Journal of Hydrogen Energy, 32: 3486-3500 (2007), doi:10.1016/j.ijhydene.2007.02.026 
+!
+!
+!
+ELEMENTS
+C 
+H 
+CL
+O 
+N 
+AR
+HE
+END
+SPECIES
+HE             AR             N2             NO             N2O            
+O2             NO2            HNO            HNNO           HONO           
+HNO2           HONO2          H2             N2H2           H2O            
+H2O2           NH3            N2H4           CO             CO2            
+N              O              NO3            H              NH             
+NNH            OH             HO2            NH2            H2NO           
+N2H3           HCO            
+END
+REACTIONS
+H+O2=OH+O                                .9600E+15   -.200  16625.0
+O+H2=OH+H                                .4330E+14    .000  10000.0
+H+O2(+M)=HO2(+M)                             .5580E+13   .400       .0
+ LOW/  .8400E+18   -.800       .0/
+TROE/     .5000        .1000E-29    .1000E+31            /
+H2O/ 18.00/H2/  2.50/N2/  1.26/AR/   .80/HE/   .80/CO/  1.20/CO2/  2.40/        
+OH+HO2=H2O+O2                            .5000E+14    .000   1000.0
+H+HO2=OH+OH                              .2500E+15    .000   1900.0             
+O+HO2=O2+OH                              .3250E+14    .000       .0
+OH+OH=O+H2O                              .3570E+05   2.400  -2110.0
+H2+M=H+H+M                               .1115E+15   .000  96081.0              
+H2/  2.50/H2O/ 12.00/AR/   .50/CO/  1.90/CO2/  3.80/                            
+O2+M=O+O+M                               .1550E+15   .000 115120.0
+H2/  2.50/H2O/ 12.00/AR/   .20/HE/   .20/CO/  1.90/CO2/  3.80/
+H+OH+M=H2O+M                             .4500E+23 -2.000       .0
+H2O/ 16.00/H2/  2.00/CO2/  1.90/
+H+HO2=H2+O2                              .2500E+14    .000    700.0                  
+HO2+HO2=H2O2+O2                          .2110E+13    .000       .0
+OH+OH(+M)=H2O2(+M)                           .7400E+14  -.370       .0
+ LOW/  .1300E+19   -.900  -1700.0/
+TROE/     .7346        94.00        1756.        5182.    /
+H2/  2.00/H2O/  6.00/CO/  1.50/CO2/  2.00/AR/   .70/HE/   .70/N2/   .90/
+O+OH+M=HO2+M                             .1000E+17    .000       .0
+O2+CO=CO2+O                              .2530E+13    .000  47700.0
+O2+HCO=HO2+CO                            .3000E+13    .000       .0
+CO+O(+M)=CO2(+M)                             .9640E+11   .000   3800.0
+ LOW/  .2070E+27  -3.340   7610.0/
+H2O/ 12.00/H2/  2.00/CO/  1.50/CO2/  2.00/AR/   .50/
+CO+OH=CO2+H                              .9600E+12    .140   7352.0
+ DUPLICATE
+CO+OH=CO2+H                              .7320E+11    .030    -16.0
+ DUPLICATE
+CO+HO2=CO2+OH                            .3000E+14    .000  23000.0
+CO+H2O=CO2+H2                            .2000E+12    .000  38000.0
+HCO+M=CO+H+M                             .1200E+18 -1.000  17000.0
+H2O/  5.00/CO2/  3.00/H2/  1.90/CO/  1.90/
+HCO+O=CO2+H                              .3000E+14    .000       .0
+HCO+H=H2+CO                              .5000E+14    .000       .0
+HCO+OH=H2O+CO                            .5000E+14    .000       .0
+HCO+HO2=H2O2+CO                          .4000E+12    .000       .0
+HCO+HO2=>H+OH+CO2                         .3000E+14    .000       .0
+H+H2O=H2+OH                              .4800E+11   1.000  19000.0
+H2O2+H=H2O+OH                            .2410E+14    .000   3970.0
+H2O2+H=H2+HO2                            .6025E+14    .000   7950.0
+NH3+M=NH2+H+M                            .2200E+17    .000  93470.0
+NH2+H=NH+H2                              .4000E+14    .000   3650.0
+NH2+O=HNO+H                              .6600E+15   -.500       .0
+NH2+O=NH+OH                              .6800E+13    .000       .0
+NH2+O=NO+H2                              .1300E+09   1.025   -627.0
+NH2+O2=HNO+OH                            .4500E+13    .000  25000.0
+NH2+OH=NH+H2O                            .4000E+07   2.000   1000.0
+NH2+HO2=H2NO+OH                          .5000E+14    .000       .0
+H2NO+O=NH2+O2                            .2000E+15    .000       .0
+NH2+N=N2+H+H                             .7000E+14    .000       .0
+NH2+NH=N2H2+H                            .5000E+14    .000       .0
+NH2+NH2=N2H2+H2                          .8500E+12    .000       .0
+NH2+NH2=NH3+NH                           .5000E+14    .000  10000.0
+NH2+NH2(+M)=N2H4(+M)                         .1500E+14   .000       .0
+ LOW/  .1000E+19    .000       .0/
+N2/  2.50/H2O/  5.00/NH3/ 10.00/
+NH2+NO=NNH+OH                            .8900E+13   -.350       .0
+NH2+NO=N2+H2O                            .1720E+20  -2.294   1058.0
+NH2+NO2=N2O+H2O                          .3200E+19  -2.200       .0
+NH2+NO2=H2NO+NO                          .3500E+13    .000       .0
+NH+H=N+H2                                .3000E+14    .000       .0
+NH+O=NO+H                                .9200E+14    .000       .0
+NH+OH=HNO+H                              .2000E+14    .000       .0
+NH+OH=N+H2O                              .5000E+12    .500   2000.0
+NH+OH=NO+H2                              .2000E+14    .000       .0
+NH+O2=HNO+O                              .4600E+06   2.000   6500.0
+NH+O2=NO+OH                              .1300E+07   1.500    100.0
+NH+NH=N2+H+H                             .2500E+14    .000       .0
+NH+N=N2+H                                .3000E+14    .000       .0
+NH+NO=N2+OH                              .2200E+14   -.230       .0
+NH+NO2=N2O+OH                            .1000E+14    .000       .0
+N+OH=NO+H                                .3800E+14    .000       .0
+N+O2=NO+O                                .6400E+10   1.000   6280.0
+N+NO=O+N2                                .3300E+13    .300       .0
+N2H4+H=N2H3+H2                           .1300E+14    .000   2500.0
+N2H4+O=N2H2+H2O                          .8500E+14    .000   1200.0
+N2H4+OH=N2H3+H2O                         .4000E+14    .000       .0
+N2H4+NH2=N2H3+NH3                        .3900E+13    .000   1500.0
+N2H3+M=N2H2+H+M                          .3500E+17    .000  46000.0
+N2H3+H=NH2+NH2                           .1600E+13    .000       .0
+N2H3+O=N2H2+OH                           .5000E+13    .000   5000.0
+N2H3+O=NH2+HNO                           .1000E+14    .000       .0
+N2H3+OH=N2H2+H2O                         .1000E+14    .000   1000.0
+N2H3+OH=NH3+HNO                          .1000E+13    .000  15000.0
+N2H3+NH=N2H2+NH2                         .2000E+14    .000       .0
+N2H2+M=NNH+H+M                           .5000E+17   .000  50000.0
+N2/  2.00/H2/  2.00/O2/  2.00/H2O/ 15.00/
+N2H2+H=NNH+H2                            .5000E+14    .000   1000.0
+N2H2+O=NH2+NO                            .1000E+14    .000   1000.0
+N2H2+O=NNH+OH                            .2000E+14    .000   1000.0
+N2H2+OH=NNH+H2O                          .1000E+14    .000   1000.0
+N2H2+NO=N2O+NH2                          .4000E+13    .000  11922.0
+N2H2+NH=NNH+NH2                          .1000E+14    .000   1000.0
+N2H2+NH2=NNH+NH3                         .1000E+14    .000   1000.0
+NNH=N2+H                                 .1000E+08    .000       .0
+NNH+H=N2+H2                              .1000E+15    .000       .0
+NNH+O=N2O+H                              .1000E+15    .000       .0
+NNH+O=NH+NO                              .5000E+14    .000       .0
+NNH+OH=N2+H2O                            .5000E+14    .000       .0
+NNH+O2=N2+HO2                            .6670E+14    .000       .0
+NNH+O2=N2+H+O2                           .5000E+14    .000       .0
+NNH+NH=N2+NH2                            .5000E+14    .000       .0
+NNH+NH2=N2+NH3                           .5000E+14    .000       .0
+NNH+NO=N2+HNO                            .5000E+14    .000       .0
+HNNO+M=N2O+H+M                           .2200E+16    .000  21600.0
+HNNO+M=N2+OH+M                           .1000E+16    .000  25600.0
+HNNO+H=N2O+H2                            .2000E+14    .000       .0
+HNNO+H=NNH+OH                            .1000E+14    .000       .0
+HNNO+O=N2O+OH                            .2000E+14    .000       .0
+HNNO+O=NNH+O2                            .1000E+14    .000       .0
+HNNO+OH=N2O+H2O                          .2000E+14    .000       .0
+HNNO+OH=NNH+HO2                          .1000E+14    .000       .0
+HNNO+NO=N2O+HNO                          .1000E+13    .000       .0
+HNNO+NO=NNH+NO2                          .3200E+13    .000    270.0
+HNNO+NO2=NNH+NO3                         .1000E+14    .000       .0
+HNNO+NO2=N2O+HONO                        .1000E+13    .000       .0
+NO+HO2=NO2+OH                            .2100E+13    .000   -480.0
+NO+O+M=NO2+M                             .7500E+20 -1.410       .0
+N2/  1.70/O2/  1.50/H2O/ 10.00/
+NO+OH(+M)=HONO(+M)                           .2000E+14   .000       .0
+ LOW/  .2330E+24  -2.400       .0/
+HCO+NO=CO+HNO                            .7200E+13    .000       .0
+H+NO+M=HNO+M                             .4000E+21 -1.750       .0
+N2/  1.00/H2O/  4.10/H2/  1.25/
+HNO+H=NO+H2                              .4400E+12    .720    650.0
+HNO+O=NO+OH                              .1000E+14    .000       .0
+HNO+OH=NO+H2O                            .3600E+14    .000       .0
+HNO+O2=NO+HO2                            .1000E+14    .000  25000.0
+HNO+NH2=NO+NH3                           .2000E+14    .000   1000.0
+HNO+NO=N2O+OH                            .2000E+13    .000  26000.0
+HNO+NO2=HONO+NO                          .6000E+12    .000   2000.0
+HNO+HNO=N2O+H2O                          .9000E+09    .000   3100.0
+NO2+H2=HONO+H                            .3000E+14    .000  29000.0
+HONO+O=NO2+OH                            .1200E+14    .000   6000.0
+HONO+OH=NO2+H2O                          .4000E+13    .000       .0
+HONO+NH=NH2+NO2                          .1000E+14    .000       .0
+HONO+NH2=NH3+NO2                         .5000E+13    .000       .0
+HONO+HONO=NO+NO2+H2O                     .1020E+14    .000   8540.0
+H2NO+M=HNO+H+M                           .1000E+17    .000  50000.0
+H2NO+H=HNO+H2                            .3000E+08   2.000   2000.0
+H2NO+H=NH2+OH                            .5000E+14    .000       .0
+H2NO+O=HNO+OH                            .3000E+08   2.000   2000.0
+H2NO+OH=HNO+H2O                          .2000E+08   2.000   1000.0
+H2NO+NO=HNO+HNO                          .2000E+05   2.000  13000.0
+H2NO+NH2=HNO+NH3                         .3000E+13    .000   1000.0
+H2NO+NO2=HONO+HNO                        .6000E+12    .000   2000.0
+NO3+H=NO2+OH                             .6000E+14    .000       .0
+NO3+O=NO2+O2                             .1000E+14    .000       .0
+NO3+OH=NO2+HO2                           .1400E+14    .000       .0
+NO3+HO2=NO2+O2+OH                        .1500E+13    .000       .0
+NO3+NO2=NO+NO2+O2                        .5000E+11    .000   2940.0
+NO3=NO+O2                                .2500E+07    .000  12000.0
+NO3+NO3=NO2+NO2+O2                       .5100E+12    .000   6750.0
+HCO+NO2=H+CO2+NO                         .8400E+16   -.750   1930.0
+NO2+H=NO+OH                              .1320E+15    .000    360.0
+NO2+O=NO+O2                              .3900E+13    .000   -238.0
+NO2+O+M=NO3+M                            .2940E+22  -2.000       .0
+NO2+HO2=HONO+O2                          .6310E+09   1.250   5000.0
+NO2+NO2=NO+NO+O2                         .1600E+13    .000  26123.0
+NO2+NO2=NO3+NO                           .9600E+10    .730  20923.0
+ DUPLICATE
+NO2+NO2=NO3+NO                           .1600E+13    .000  26123.0
+ DUPLICATE
+CO+NO2=CO2+NO                            .9040E+14    .000  33800.0
+HCO+NO2=CO+HONO                          .1200E+24  -3.290   2355.0
+CO2+N=NO+CO                              .1900E+12    .000   3400.0
+N2O+M=N2+O+M                             .4000E+15   .000  56100.0
+N2/  1.70/O2/  1.40/H2O/ 12.00/CO/  1.50/CO2/  3.00/
+N2O+H=N2+OH                              .3300E+11    .000   4729.0
+ DUPLICATE
+N2O+H=N2+OH                              .4400E+15    .000  19254.0
+ DUPLICATE
+NH+NO=N2O+H                              .3190E+15   -.455       .0
+N2O+O=NO+NO                              .2900E+14    .000  23150.0
+N2O+O=N2+O2                              .1400E+13    .000  10800.0
+N2O+OH=N2+HO2                            .2000E+13    .000  40000.0
+HNO2+H=NO2+H2                            .2400E+09   1.500   5087.0
+HNO2+O=NO2+OH                            .1700E+09   1.500   3020.0
+HNO2+OH=NO2+H2O                          .1200E+07   2.000   -596.0
+HNO2=HONO                                .1300E+30  -5.470  52814.0
+OH+NO2(+M)=HONO2(+M)                         .2400E+14   .000       .0
+ LOW/  .6420E+33  -5.490   2351.0/
+TROE/     .5250        .1000E-14    .1000E-14    .1000E+16/
+H2O/  5.00/
+HONO2+OH=NO3+H2O                         .1030E+11    .000  -1240.0
+ !
+ ! ABSTRACTION REACTIONS
+ !
+ ! ABSTRACTION REACTION N.   1
+ ! R+H2>RH+H
+ ! NUMBER OF H ABSTRACTED:   2.0
+ ! TYPE OF H ABSTRACTED:     3
+NH2     +H2=>NH3     +H  .1576E+06 2.0   3954.86
+ ! ABSTRACTION REACTION N.   2
+ ! R+H2O>RH+OH
+ ! NUMBER OF H ABSTRACTED:   2.0
+ ! TYPE OF H ABSTRACTED:     5
+HO2     +H2O=>H2O2    +OH  .5388E+06 2.0  28780.05
+NH2     +H2O=>NH3     +OH  .1126E+06 2.0   8169.13
+ ! ABSTRACTION REACTION N.   3
+ ! R+H2O2>RH+HO2
+ ! NUMBER OF H ABSTRACTED:   2.0
+ ! TYPE OF H ABSTRACTED:     6
+NO2     +H2O2=>HONO    +HO2  .6831E+06 2.0  14711.89
+OH      +H2O2=>H2O     +HO2  .3195E+06 2.0  -4169.95
+O       +H2O2=>OH      +HO2  .1083E+07 2.0  -1657.32
+NH2     +H2O2=>NH3     +HO2  .9005E+04 2.0  -1507.20
+ ! ABSTRACTION REACTION N.   4
+ ! R+NH3>RH+NH2
+ ! NUMBER OF H ABSTRACTED:   6.0
+ ! TYPE OF H ABSTRACTED:     5
+O2      +NH3=>HO2     +NH2  .5111E+08 2.0  60086.33
+H       +NH3=>H2      +NH2  .7220E+08 2.0  15302.86
+OH      +NH3=>H2O     +NH2  .1198E+08 2.0   4067.13
+O       +NH3=>OH      +NH2  .4060E+08 2.0  13586.66
+HO2     +NH3=>H2O2    +NH2  .1616E+07 2.0  27340.80
+END

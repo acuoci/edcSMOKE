@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<opensmoke version="0.1a">
+<reaction-number>
+4
+</reaction-number>
+<reaction-names>
+CH4+0.5O2=>2H2+CO
+CH4+H2O=>3H2+CO
+H2+0.5O2=>H2O
+CO+H2O=>H2+CO2
+</reaction-names>
+</opensmoke>

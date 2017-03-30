@@ -1,0 +1,11 @@
+ELEMENTS
+C  H  O N AR HE
+END
+SPECIES
+HE             AR             N2             O2             H2             
+H2O            H2O2           CO             CO2            
+O              H              OH             HO2            HCO            
+END
+REACTIONS
+N2=>N2 1 0 0
+END

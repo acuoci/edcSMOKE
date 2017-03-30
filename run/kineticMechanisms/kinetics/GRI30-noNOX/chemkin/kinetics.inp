@@ -1,0 +1,19 @@
+! GRI-Mech Version 3.0 7/30/99  CHEMKIN-II format
+! See README30 file at anonymous FTP site unix.sri.com, directory gri;
+! WorldWideWeb home page http://www.me.berkeley.edu/gri_mech/ or
+! through http://www.gri.org , under 'Basic  Research',
+! for additional information, contacts, and disclaimer
+ELEMENTS
+O  H  C  N  AR
+END
+SPECIES
+H2      H       O       O2      OH      H2O     HO2     H2O2
+C       CH      CH2     CH2(S)  CH3     CH4     CO      CO2
+HCO     CH2O    CH2OH   CH3O    CH3OH   C2H     C2H2    C2H3
+C2H4    C2H5    C2H6    HCCO    CH2CO   HCCOH   C3H7    C3H8    
+CH2CHO  CH3CHO
+AR      N2
+END
+REACTIONS
+N2=>N2 1 0 0
+END

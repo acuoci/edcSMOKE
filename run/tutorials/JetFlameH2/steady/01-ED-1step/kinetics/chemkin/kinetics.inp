@@ -1,0 +1,14 @@
+ELEMENTS
+H  O  N
+END
+SPECIES
+H2 O2 H2O HE N2   
+END
+THERMO
+END
+REACTIONS		
+!Units are cal/mole, mole,  cm-3,  s, K
+
+N2=>N2 1 0 0
+
+END

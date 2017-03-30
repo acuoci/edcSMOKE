@@ -1,0 +1,85 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.3.x                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    location    "0";
+    object      zMix;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [1 0 -3 0 0 0 0];
+
+internalField   uniform 0;
+
+boundaryField
+{
+    inletfuel           
+    {
+	type            MarshakRadiation;
+        T               T;
+        emissivityMode  lookup;
+        emissivity      uniform 1.0;
+        value           uniform 0;
+    }
+
+    inletair           
+    {
+	type            MarshakRadiation;
+        T               T;
+        emissivityMode  lookup;
+        emissivity      uniform 1.0;
+        value           uniform 0;
+    }
+
+    outlet          
+    {
+	type            MarshakRadiation;
+        T               T;
+        emissivityMode  lookup;
+        emissivity      uniform 1.0;
+        value           uniform 0;
+    }
+
+    leftside      
+    {
+	type            MarshakRadiation;
+        T               T;
+        emissivityMode  lookup;
+        emissivity      uniform 1.0;
+        value           uniform 0;
+    }
+
+    burnerwall
+    {
+	type            MarshakRadiation;
+        T               T;
+        emissivityMode  lookup;
+        emissivity      uniform 1.0;
+        value           uniform 0;
+    }
+
+    front
+    {
+        type            wedge;
+    }
+
+    back
+    {
+        type            wedge;
+    }
+
+    axis
+    {
+        type            empty;
+    }
+}
+
+// ************************************************************************* //

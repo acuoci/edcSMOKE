@@ -2,8 +2,13 @@ edcSMOKE
 ========
 
 EDC (Eddy Dissipation Concept) for OpenFOAM based on the OpenSMOKE++ Library
+The edcSMOKE requires one of the following OpenFOAM versions:
+- OpenFOAM-4.x
+- OpenFOAM-2.4
+- OpenFOAM-2.3
+- OpenFOAM-2.2
 
-If you use edcSMOKE for your publications, we kindly ask you to cite the following papers:
+If you use edcSMOKE for your publications, we kindly ask you to cite the following two papers:
 
 > Parente, A., Malik, R.M., Contino, F., Cuoci, A., Dally, B., 
 > Extension of the Eddy Dissipation Concept for turbulence/chemistry interactions to MILD combustion
@@ -15,7 +20,7 @@ If you use edcSMOKE for your publications, we kindly ask you to cite the followi
 
 Compulsory libraries
 --------------------
-- OpenSMOKE++ (provided with edcSMOKE)
+- OpenSMOKE++ (already included in edcSMOKE)
 - Eigen (http://eigen.tuxfamily.org/index.php?title=Main_Page)
 - RapidXML (http://rapidxml.sourceforge.net/)
 - Boost C++ (http://www.boost.org/)
@@ -39,21 +44,21 @@ Three different options are available to compile the code, according to the leve
 
 1. Instructions to compile the Minimalist version
 -------------------------------------------------
-1. Open the `mybashrc.minimalist` and adjust the paths to the compulsory external libraries
+1. Open the `mybashrc.minimalist` and adjust the paths to the compulsory external libraries (in particular choose the OpenFOAM version you are working with)
 2. Type: `source mybashrc.minimalist`
 3. Compile the steady-state solver: from the `solver/edcSimpleSMOKE` folder type `wmake`
 4. Compile the unsteady solver: from the `solver/edcPimpleSMOKE` folder type `wmake`
 
 2. Instructions to compile the Minimalist+MKL version
 -----------------------------------------------------
-1. Open the `mybashrc.minimalist.mkl` and adjust the paths to the compulsory external libraries and the paths to the Intel MKL library
+1. Open the `mybashrc.minimalist.mkl` and adjust the paths to the compulsory external libraries and the paths to the Intel MKL library (in particular choose the OpenFOAM version you are working with)
 2. Type: `source mybashrc.minimalist.mkl`
 3. Compile the steady-state solver: from the `solver/edcSimpleSMOKE` folder type `wmake`
 4. Compile the unsteady solver: from the `solver/edcPimpleSMOKE` folder type `wmake`
 
 3. Instructions to compile the Complete version
 -----------------------------------------------------
-1. Open the `mybashrc.complete` and adjust the paths to the compulsory external libraries and the Intel MKL library. You can choose the additional external libraries you want to add to edcSMOKE, by modifying the `EXTERNAL_ODE_SOLVERS` variable: in particular `1` means that the support is requested, while `0` means that no support is requested. Obviously, for each requested library, you need to provide the correct path.
+1. Open the `mybashrc.complete` and adjust the paths to the compulsory external libraries and the Intel MKL library (in particular choose the OpenFOAM version you are working with). You can choose the additional external libraries you want to add to edcSMOKE, by modifying the `EXTERNAL_ODE_SOLVERS` variable: in particular `1` means that the support is requested, while `0` means that no support is requested. Obviously, for each requested library, you need to provide the correct path.
 2. Type: `source mybashrc.complete`
 3. Compile the steady-state solver: from the `solver/edcSimpleSMOKE` folder type `wmake`
 4. Compile the unsteady solver: from the `solver/edcPimpleSMOKE` folder type `wmake`

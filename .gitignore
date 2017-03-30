@@ -5,11 +5,22 @@
 .*.sw[op]
 *~
 linux64GccDPOpt/
+linux64GccDPInt32Opt/
 lnInclude/
 
 #OpenSMOKE++
 ############
 Thermodynamics_Coefficients.out
+Thermodynamics_Tables.out
+Kinetics_Summary.out
+
+#OpenFOAM
+#########
+**/polyMesh/boundary
+**/polyMesh/faces
+**/polyMesh/neighbour
+**/polyMesh/owner
+**/polyMesh/points
 
 # Compiled source #
 ###################

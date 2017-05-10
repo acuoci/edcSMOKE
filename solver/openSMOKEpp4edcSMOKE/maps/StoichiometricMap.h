@@ -16,7 +16,7 @@
 |                                                                         |
 |   This file is part of OpenSMOKE++ framework.                           |
 |                                                                         |
-|	License                                                           |
+|	License                                                               |
 |                                                                         |
 |   Copyright(C) 2014, 2013, 2012  Alberto Cuoci                          |
 |   OpenSMOKE++ is free software: you can redistribute it and/or modify   |
@@ -166,7 +166,16 @@ namespace OpenSMOKE
 		const Eigen::SparseMatrix<double>& reactionorders_matrix_reactants() const { return reactionorders_matrix_reactants_; };
 		const Eigen::SparseMatrix<double>& reactionorders_matrix_products() const { return reactionorders_matrix_products_; };
 
+		/**
+		*@brief Return the sum of stoichiometric coefficients of reactant species (i.e. left side)
+		*/
+		void GetSumOfStoichiometricCoefficientsOfReactants(Eigen::VectorXd& sum_nu) const;
+
+		/**
+		*@brief Return the sum of stoichiometric coefficients of product species (i.e. right side)
+		*/
 		void GetSumOfStoichiometricCoefficientsOfProducts(Eigen::VectorXd& sum_nu) const;
+
 		
 	private:
 

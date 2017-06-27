@@ -59,7 +59,7 @@
 	{
 		if (iLES == true)	// LES
 		{
-			tauStar = Ctau * sqrt( mu/rho / (epsilon+epsilonsmall_) );
+			tauStar = Ctau * sqrt( (mu+musmall_)/rho / (epsilon+epsilonsmall_) );
 			one_over_tauStar = 1./tauStar;
 		}
 		else			// RANS
@@ -113,7 +113,7 @@
 					const double tauLocal = chemicalTimes->CalculateCharacteristicChemicalTime(Ti,pi,yStar);
 					
 					// Coefficients
-					const scalar nu = mu[i]/(rho[i] + SMALL);
+					const scalar nu = (mu[i]+SMALL)/(rho[i] + SMALL);
 					const scalar DaLocal = max(min(Foam::sqrt(nu/(epsilon[i] + SMALL))/tauLocal, maximum_Da), minimum_Da);
 					const scalar ReTLocal = CRe_coefficient*sqr(k[i])/(nu*epsilon[i] + SMALL);
 
@@ -150,20 +150,20 @@
 		}
 		else
 		{
+
 			// Fine structures: characteristic time [s]
-			tauStar = Ctau * sqrt( mu/rho / (epsilon+epsilonsmall_) );
+			tauStar = Ctau * sqrt( (mu+musmall_)/rho / (epsilon+epsilonsmall_) );
 			mDotStar = 1./tauStar;
 
 			// Fine structure properties: volumetric fraction
-			gammaL = Ccsi * pow025(  mu/rho * epsilon / sqr(k+ksmall_));	
+			gammaL = Ccsi * pow025( (mu+musmall_)/rho * epsilon / sqr(k+ksmall_));	
 			gammaL = min(maxGammaL, gammaL);
 			gammaStar = pow(gammaL,edc_exp);
 		}
 
 		// EDC coefficient
 		edc_coefficient = rho * mDotStar * gammaStar / (1.-gammaStar);
-		tfStar = (1.-gammaStar)/(mDotStar);
-			
+		tfStar = (1.-gammaStar)/(mDotStar);		
 
 		// Info
 		Info<< " * min/max(epsilon)   = " << min(epsilon).value() 	<< ", " << max(epsilon).value() 	<< endl;
@@ -203,12 +203,12 @@
 			if ( tauMixType == SCALE_KOLMOGOROV)
 			{
 				Info << " * using Kolmogorov mixing time scale..." << endl;
-				tauMix =  sqrt( mu/rho/(epsilon+epsilonsmall_) );	// Kolmogorov mixing scale
+				tauMix =  sqrt( (mu+musmall_)/rho/(epsilon+epsilonsmall_) );	// Kolmogorov mixing scale
 			}
 			else if ( tauMixType == SCALE_MEAN)
 			{
 				Info << " * using geometrical mean of integral scale and Kolmogorov scale as mixing time scale..." << endl;
-				tauMix =  sqrt( ((k+ksmall_)/(epsilon+epsilonsmall_))*sqrt(mu/rho/(epsilon+epsilonsmall_)) ); //geometrical mean of integral scale and Kolmogorov scale
+				tauMix =  sqrt( ((k+ksmall_)/(epsilon+epsilonsmall_))*sqrt((mu+musmall_)/rho/(epsilon+epsilonsmall_)) ); //geometrical mean of integral scale and Kolmogorov scale
 			}
 			else if ( tauMixType == SCALE_GLOBAL)
 			{

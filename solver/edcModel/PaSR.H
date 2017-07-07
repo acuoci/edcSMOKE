@@ -400,7 +400,7 @@
 
 			if (debug == true)
 			{
-				Info << celli << " " << TCells[celli] << " " << gammaStar[celli] << " " << mDotStar[celli] << " " << HeatRelease << endl;
+				Info << celli << " " << TCells[celli] << " " << gammaStarDen[celli] << " " << mDotStar[celli] << " " << HeatRelease << endl;
 				for(unsigned int i=0;i<ns;i++)
 				{
 					Info << Y[i].name() << " " << yStar0[i] << " " << yStarf[i] << " " << omegaMean[i+1] << " " << R_[i].internalField()[celli] << endl;

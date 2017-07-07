@@ -268,7 +268,8 @@ word   edc_version = "v2005";
 scalar maxGammaL = 0.9;
 scalar numberOfResidenceTimes = 100.;
 label  numberIterationsToUpdateChemistry = 1;
-scalar edc_exp = 2.;
+scalar edc_exp_1 = 2.;
+scalar edc_exp_2 = 2.;
 
 // EDC v2016: Coefficients revised by A. Parente
 scalar Ctau_coefficient   = 0.75;
@@ -341,19 +342,27 @@ enum { SCALE_KOLMOGOROV, SCALE_MEAN, SCALE_GLOBAL } tauMixType;
 		// Version
 		if (edc_version == "v2005")
 		{
-			edc_exp = 2.;
+			edc_exp_1 = 2.;
+			edc_exp_2 = 2.;
 		}
 		else if (edc_version == "v1981")
 		{
-			edc_exp = 3.;
+			edc_exp_1 = 3.;
+			edc_exp_2 = 3.;
 		}
 		else if (edc_version == "v2016")
 		{
-			edc_exp = 2.;
+			edc_exp_1 = 2.;
+			edc_exp_2 = 2.;
+		}
+		else if (edc_version == "v1996")
+		{
+			edc_exp_1 = 2.;
+			edc_exp_2 = 3.;
 		}
 		else
 		{
-			Info << "Wrong EDC version: v1981 || v2005 || v2016" << endl;
+			Info << "Wrong EDC version: v1981 || v1996 || v2005 || v2016" << endl;
 			abort();
 		}
 
@@ -650,7 +659,8 @@ PtrList<volScalarField> Dmix_;
 PtrList<volScalarField> HeSpecies_;
 
 //- Scalar fields
-scalarField gammaStar(mesh.nCells(),0.);
+scalarField gammaStarNum(mesh.nCells(),0.);
+scalarField gammaStarDen(mesh.nCells(),0.);
 scalarField tfStar(mesh.nCells(),0.);
 scalarField mDotStar(mesh.nCells(),0.);
 scalarField edc_coefficient(mesh.nCells(),0.);

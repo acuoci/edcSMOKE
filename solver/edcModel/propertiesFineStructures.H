@@ -146,7 +146,8 @@
 
 			// Fine structure properties: volumetric fraction
 			gammaL = min(maxGammaL, gammaL);
-			gammaStar = pow(gammaL,edc_exp);
+			gammaStarNum = pow(gammaL,edc_exp_1);
+			gammaStarDen = pow(gammaL,edc_exp_2);
 		}
 		else
 		{
@@ -158,18 +159,19 @@
 			// Fine structure properties: volumetric fraction
 			gammaL = Ccsi * pow025( (mu+musmall_)/rho * epsilon / sqr(k+ksmall_));	
 			gammaL = min(maxGammaL, gammaL);
-			gammaStar = pow(gammaL,edc_exp);
+			gammaStarNum = pow(gammaL,edc_exp_1);
+			gammaStarDen = pow(gammaL,edc_exp_2);
 		}
 
 		// EDC coefficient
-		edc_coefficient = rho * mDotStar * gammaStar / (1.-gammaStar);
-		tfStar = (1.-gammaStar)/(mDotStar);		
+		edc_coefficient = rho * mDotStar * gammaStarNum / (1.-gammaStarDen);
+		tfStar = (1.-gammaStarDen)/(mDotStar);		
 
 		// Info
 		Info<< " * min/max(epsilon)   = " << min(epsilon).value() 	<< ", " << max(epsilon).value() 	<< endl;
 		Info<< " * min/max(k)         = " << min(k).value()		<< ", " << max(k).value()		<< endl;
 		Info<< " * min/max(gammaL)    = " << min(gammaL).value()	<< ", " << max(gammaL).value()		<< endl;
-		Info<< " * min/max(gammaStar) = " << min(gammaStar)		<< ", " << max(gammaStar) 		<< endl;
+		Info<< " * min/max(gammaStar) = " << min(gammaStarDen)		<< ", " << max(gammaStarDen) 		<< endl;
 		Info<< " * min/max(tauStar)   = " << min(tauStar).value()	<< ", " << max(tauStar).value() 	<< endl;
 		Info<< " * min/max(tfStar)    = " << min(tfStar)	 	<< ", " << max(tfStar)	 		<< endl;
 

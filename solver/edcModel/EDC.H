@@ -142,8 +142,8 @@
 					for(unsigned int i=0;i<ns;i++)
 						yStar0(i) = YStar_[i].internalField()[celli];
 					yStar0(ne-3) = TStar_[0].internalField()[celli];
-					yStar0(ne-2) = (1.-gammaStar[celli])/max(mDotStar[celli], SMALL);
-					yStar0(ne-1) = gammaStar[celli];
+					yStar0(ne-2) = (1.-gammaStarDen[celli])/max(mDotStar[celli], SMALL);
+					yStar0(ne-1) = gammaStarNum[celli];
 
 					// Extract the star mass fractions
 					for(unsigned int i=1;i<=ns;i++)
@@ -155,12 +155,12 @@
 					hMean = thermodynamicsMapXML->hMolar_Mixture_From_MoleFractions(xMean.GetHandle());
 					hMean/=MWMean;	
 			
-					fine_structure_ode_psr.Set(TCells[celli], pCells[celli], omegaMean, omegaStar, hMean, gammaStar[celli], mDotStar[celli]);
+					fine_structure_ode_psr.Set(TCells[celli], pCells[celli], omegaMean, omegaStar, hMean, gammaStarDen[celli], mDotStar[celli]);
 					if(solverType == SOLVERTYPE_NLS)
 					{
 						int index_max;
 						omegaStar.Max(&index_max);
-						fine_structure_nls_psr.Set(TCells[celli], pCells[celli], omegaMean, omegaStar, hMean, gammaStar[celli], mDotStar[celli], index_max);
+						fine_structure_nls_psr.Set(TCells[celli], pCells[celli], omegaMean, omegaStar, hMean, gammaStarDen[celli], mDotStar[celli], index_max);
 					}
 
 					tf = numberOfResidenceTimes/max(mDotStar[celli], SMALL);
@@ -220,7 +220,7 @@
 					hMean = thermodynamicsMapXML->hMolar_Mixture_From_MoleFractions(xMean.GetHandle());
 					hMean/=MWMean;	
 
-					fine_structure_ode_psr.Set(TCells[celli], pCells[celli], omegaMean, omegaStar, hMean, gammaStar[celli], mDotStar[celli]);
+					fine_structure_ode_psr.Set(TCells[celli], pCells[celli], omegaMean, omegaStar, hMean, gammaStarDen[celli], mDotStar[celli]);
 					if(solverType == SOLVERTYPE_NLS)
 					{
 						// The species with the highest mass fraction is selected among the important species
@@ -236,7 +236,7 @@
 							}
 						}
 
-						fine_structure_nls_psr.Set(TCells[celli], pCells[celli], omegaMean, omegaStar, hMean, gammaStar[celli], mDotStar[celli], index_max);
+						fine_structure_nls_psr.Set(TCells[celli], pCells[celli], omegaMean, omegaStar, hMean, gammaStarDen[celli], mDotStar[celli], index_max);
 					}
 
 					tf = numberOfResidenceTimes/max(mDotStar[celli], SMALL);
@@ -246,7 +246,7 @@
 			{
 				if (drg_analysis == false)
 				{
-					tf = (1.-gammaStar[celli])/max(mDotStar[celli], SMALL);
+					tf = (1.-gammaStarDen[celli])/max(mDotStar[celli], SMALL);
 
 					for(unsigned int i=0;i<ns;i++)
 						yStar0(i) = omegaMean[i+1];
@@ -287,7 +287,7 @@
 					}
 
 					// Set integration time
-					tf = (1.-gammaStar[celli])/max(mDotStar[celli], SMALL);
+					tf = (1.-gammaStarDen[celli])/max(mDotStar[celli], SMALL);
 
 					// Set initial condition
 					for (unsigned int i=0;i<drg->number_important_species();++i)	
@@ -590,7 +590,7 @@
 
 			if (debug == true)
 			{
-				Info << celli << " " << TCells[celli] << " " << gammaStar[celli] << " " << mDotStar[celli] << " " << HeatRelease << endl;
+				Info << celli << " " << TCells[celli] << " " << gammaStarNum[celli] << " " << mDotStar[celli] << " " << HeatRelease << endl;
 				for(unsigned int i=0;i<ns;i++)
 				{
 					Info << Y[i].name() << " " << yStar0[i] << " " << yStarf[i] << " " << omegaMean[i+1] << " " << R_[i].internalField()[celli] << endl;

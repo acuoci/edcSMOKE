@@ -188,8 +188,12 @@
 		#if STEADYSTATE == 0
 		if (iLES == true)
 		{
+			#if OPENFOAM_VERSION == 4
+			const Foam::compressible::LESModel& lesModel = U.db().lookupObject<Foam::compressible::LESModel>("turbulenceProperties");
+			#else
 			const Foam::compressible::LESModel& lesModel = U.db().lookupObject<Foam::compressible::LESModel>("LESProperties");
-	
+			#endif
+
 		        epsilonSGS = 0.54433*pow((k+ksmall_), 1.5)/lesModel.delta();
 		        tauMix =  sqrt( (1.2247*lesModel.delta()/sqrt(k+ksmall_))*sqrt(mu/rho/epsilonSGS) ); //geometrical mean of Kolmogorov scale and filter size scale
 

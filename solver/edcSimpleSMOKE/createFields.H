@@ -102,7 +102,9 @@
 
     #if OPENFOAM_VERSION == 4
 
+	#if DEVVERSION == 1
 	pressureControl pressureControl(p, rho, simple.dict());
+	#endif
 
 	mesh.setFluxRequired(p.name());
 

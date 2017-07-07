@@ -45,6 +45,9 @@
 // This is a steady state simulation
 #define STEADYSTATE 1
 
+// In case you are using the dev version this must be equal to 1
+#define DEVVERSION 0
+
 // OpenSMOKE++ Definitions
 #include "OpenSMOKEpp"
 
@@ -76,7 +79,9 @@
 #endif
 #include "simpleControl.H"
 #if OPENFOAM_VERSION == 4
+#if DEVVERSION == 1
 #include "pressureControl.H"
+#endif
 #include "fvOptions.H"
 #else
 #include "fvIOoptionList.H"

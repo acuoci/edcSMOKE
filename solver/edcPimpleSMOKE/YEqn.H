@@ -86,7 +86,12 @@ tmp<fv::convectionScheme<scalar> > mvConvection
 
 				fvOptions.constrain(YiEqn);
 
-				YiEqn.solve(mesh.solver("Yi"));
+				//YiEqn.solve(mesh.solver("Yi"));
+                                const double tStartSolve = OpenSMOKE::OpenSMOKEGetCpuTime();
+                                YiEqn.solve(mesh.solver("Yi"));
+                                const double tEndSolve = OpenSMOKE::OpenSMOKEGetCpuTime();
+
+                                Info << "CPU time for species solve : " << tEndSolve - tStartSolve << endl;
 
 				fvOptions.correct(Yi);
 
@@ -122,7 +127,11 @@ tmp<fv::convectionScheme<scalar> > mvConvection
 
 				fvOptions.constrain(YiEqn);
 
+				const double tStartSolve = OpenSMOKE::OpenSMOKEGetCpuTime();
 				YiEqn.solve(mesh.solver("Yi"));
+                                const double tEndSolve = OpenSMOKE::OpenSMOKEGetCpuTime();
+
+                                Info << "CPU time for species solve : " << tEndSolve - tStartSolve << endl;
 
 				fvOptions.correct(Yi);
 

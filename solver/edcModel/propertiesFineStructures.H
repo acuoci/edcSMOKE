@@ -119,8 +119,8 @@
 
 					const scalar C1 = Foam::sqrt(Ctau_coefficient/3.);
 		        		const scalar CtauLocal = max( min(C1/(DaLocal*Foam::sqrt(ReTLocal + 1)), 5), 0.40825);
-					const scalar CgammaLocal = min( Cgamma_coefficient *Foam::sqrt(DaLocal*(ReTLocal+1.)), 2.1377);
-
+					const scalar CgammaLocal = max( min( Cgamma_coefficient *Foam::sqrt(DaLocal*(ReTLocal+1.)), 2.1377), 0.5);
+					
 					// Fill fields
 					tauChemCells[i] = tauLocal;
 					DaCells[i] = DaLocal;

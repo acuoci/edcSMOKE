@@ -84,7 +84,11 @@
                 + massDiffusionInEnergyEquation
 		==
 		Qdot
+		#if DEVVERSION == 1
 		+ radiation->Sh(thermo, he)
+		#else
+		+ radiation->Sh(thermo)
+		#endif
 		+ fvOptions(rho, he)
 	);
 

@@ -77,7 +77,11 @@
 					: fvc::div(phi, volScalarField("K", 0.5*magSqr(U)))
 			)
 			- fvm::laplacian(turbulence->alphaEff(), he)
-           	     	- radiation->Sh(thermo, he)
+			#if DEVVERSION == 1
+			- radiation->Sh(thermo, he)
+			#else
+			- radiation->Sh(thermo)
+			#endif
                         + massDiffusionInEnergyEquation
 			==
 			Qdot +

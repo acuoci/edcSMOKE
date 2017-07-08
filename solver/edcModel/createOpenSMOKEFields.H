@@ -788,7 +788,11 @@ volScalarField kappa
 		// check if field exists and can be read
 		if (combustionModel == "EDC" || combustionModel == "PaSR")
 		{
+			#if DEVVERSION == 1
+			if (header.typeHeaderOk<volScalarField>(true))
+			#else
 			if (header.headerOk())
+			#endif
 			{
 				std::cout << "from file..." << std::endl;
 				YStar_.set
@@ -911,7 +915,11 @@ if (combustionModel == "EDC" || combustionModel == "PaSR")
 		);
 
 		// check if field exists and can be read
+		#if DEVVERSION == 1
+		if (header.typeHeaderOk<volScalarField>(true))
+		#else
 		if (header.headerOk())
+		#endif
 		{
 			std::cout << "from file..." << std::endl;
 			TStar_.set

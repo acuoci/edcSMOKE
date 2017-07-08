@@ -74,6 +74,9 @@
 #include "multivariateScheme.H"
 #include "pimpleControl.H"
 #if OPENFOAM_VERSION == 4
+#if DEVVERSION == 1
+#include "pressureControl.H"
+#endif
 #include "fvOptions.H"
 #include "localEulerDdtScheme.H"
 #include "fvcSmooth.H"
@@ -107,6 +110,16 @@
     #include "numericalJacobian4ISAT.H"
     #include "mappingGradients/mappingGradient4OpenFOAM.h"
 #endif
+
+#include "fvCFD.H"
+#include "turbulentFluidThermoModel.H"
+#include "psiCombustionModel.H"
+#include "multivariateScheme.H"
+#include "pimpleControl.H"
+#include "pressureControl.H"
+#include "fvOptions.H"
+#include "localEulerDdtScheme.H"
+#include "fvcSmooth.H"
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

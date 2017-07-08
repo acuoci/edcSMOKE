@@ -45,9 +45,6 @@
 // This is a steady state simulation
 #define STEADYSTATE 1
 
-// In case you are using the dev version this must be equal to 1
-#define DEVVERSION 0
-
 // OpenSMOKE++ Definitions
 #include "OpenSMOKEpp"
 

@@ -604,7 +604,7 @@
 					Info << "   Accomplished: " << counter << "/" << mesh.nCells() << endl;
 				else
 				{
-					Info 	<< "   Accomplished: " 		<< counter << "/" << mesh.nCells() << " ";
+					Info 	<< "  Accomplished: " 		<< counter << "/" << mesh.nCells() << " ";
 					Info 	<< "  Norm2(avg): " 		<< nls_norm2_cumulative_/static_cast<double>(counter+1) 	
 						<< "  Norm2(max): " 		<< nls_norm2_max_ 
 						<< "  Iterations(avg): " 	<< nls_number_iterations_cumulative_/static_cast<double>(counter+1) 

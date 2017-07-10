@@ -60,6 +60,8 @@ tmp<fv::convectionScheme<scalar> > mvConvection
 	label inertIndex = -1;
 	volScalarField Yt(0.0*Y[0]);
 
+	scalar cpuTimeSolve = 0.;
+
 	const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
 
 	if (laminarDiffusion == true)
@@ -85,7 +87,12 @@ tmp<fv::convectionScheme<scalar> > mvConvection
 
 				fvOptions.constrain(YiEqn);
 
+				const double tStartSolve = OpenSMOKE::OpenSMOKEGetCpuTime();
 				YiEqn.solve(mesh.solver("Yi"));
+                                const double tEndSolve = OpenSMOKE::OpenSMOKEGetCpuTime();
+
+				cpuTimeSolve += tEndSolve - tStartSolve;
+                                Info << " * CPU time for species solve : " << tEndSolve - tStartSolve << endl;
 
 				fvOptions.correct(Yi);
 
@@ -119,7 +126,12 @@ tmp<fv::convectionScheme<scalar> > mvConvection
 
 				fvOptions.constrain(YiEqn);
 
+				const double tStartSolve = OpenSMOKE::OpenSMOKEGetCpuTime();
 				YiEqn.solve(mesh.solver("Yi"));
+                                const double tEndSolve = OpenSMOKE::OpenSMOKEGetCpuTime();
+
+				cpuTimeSolve += tEndSolve - tStartSolve;
+                                Info << " * CPU time for species solve : " << tEndSolve - tStartSolve << endl;
 
 				fvOptions.correct(Yi);
 
@@ -138,5 +150,6 @@ tmp<fv::convectionScheme<scalar> > mvConvection
 
 	const double tEnd = OpenSMOKE::OpenSMOKEGetCpuTime();
 
-	Info << "CPU time for species transport : " << tEnd - tStart << " s " << "(" << (tEnd - tStart)/double(mesh.C().size())*1e3 << " ms per cell)" << endl;
+        Info << "CPU time for species transport (overall): " << tEnd - tStart << " s " << "(" << (tEnd - tStart)/double(mesh.C().size())*1e3 << " ms per cell)" << endl;
+        Info << "CPU time for species transport (solve):   " << cpuTimeSolve << " s " << "(" << (cpuTimeSolve)/double(mesh.C().size())*1e3 << " ms per cell)" << endl;
 }

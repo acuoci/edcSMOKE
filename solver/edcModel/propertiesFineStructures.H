@@ -91,7 +91,7 @@
 
 				const scalarField& TCells = T.internalField();
 				const scalarField& pCells = p.internalField(); 
-				#if OPENFOAM_VERSION == 4
+				#if OPENFOAM_VERSION >= 40
 				      scalarField& tauChemCells = tauChem.ref(); 
 				      scalarField& DaCells = Da.ref(); 
 				      scalarField& ReTCells = ReT.ref();
@@ -188,7 +188,7 @@
 		#if STEADYSTATE == 0
 		if (iLES == true)
 		{
-			#if OPENFOAM_VERSION == 4
+			#if OPENFOAM_VERSION >= 40
 			const Foam::compressible::LESModel& lesModel = U.db().lookupObject<Foam::compressible::LESModel>("turbulenceProperties");
 			#else
 			const Foam::compressible::LESModel& lesModel = U.db().lookupObject<Foam::compressible::LESModel>("LESProperties");
@@ -242,7 +242,7 @@
 			const scalarField& TCells = T.internalField();
 			const scalarField& pCells = p.internalField(); 
 			const scalarField& tauMixCells = tauMix.internalField(); 
-			#if OPENFOAM_VERSION == 4
+			#if OPENFOAM_VERSION >= 40
 			      scalarField& tauChemCells = tauChem.ref(); 
 			      scalarField& DaCells = Da.ref(); 
 			      scalarField& kappaCells = kappa.ref(); 

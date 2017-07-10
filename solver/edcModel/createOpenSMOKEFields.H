@@ -129,7 +129,7 @@ Switch iLES = false;
 	);
 
 
-	#if OPENFOAM_VERSION == 4
+	#if OPENFOAM_VERSION >= 40
 	word simulationType(turbulencePropertiesDictionary.lookup("simulationType"));
 	if (simulationType == "RAS")
 	{
@@ -1034,7 +1034,7 @@ volScalarField one_over_tauStar
 		if ( e > maxSumMassFractionsError)
 			FatalError << "Fatal error: the sum of mass fractions in cell " << celli << " is equal to " << sum << " (error " << sum-1. << endl; 
 			
-		#if OPENFOAM_VERSION == 4
+		#if OPENFOAM_VERSION >= 40
 		for (unsigned int i=0;i<thermodynamicsMapXML->NumberOfSpecies();i++)
 			Y[i].ref()[celli]/=sum;
 		#else
@@ -1072,7 +1072,7 @@ if (combustionModel == "EDC" || combustionModel == "PaSR")
 		if ( e > maxSumMassFractionsError)
 			FatalError << "Fatal error: the sum of mass fractions in cell " << celli << " is equal to " << sum << " (error " << sum-1. << endl; 
 			
-		#if OPENFOAM_VERSION == 4
+		#if OPENFOAM_VERSION >= 40
 		for (unsigned int i=0;i<thermodynamicsMapXML->NumberOfSpecies();i++)
 			YStar_[i].ref()[celli]/=sum;
 		#else

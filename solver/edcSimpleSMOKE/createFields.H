@@ -100,7 +100,7 @@
     dimensionedScalar rhoMax(simple.dict().lookup("rhoMax"));
     dimensionedScalar rhoMin(simple.dict().lookup("rhoMin"));
 
-    #if OPENFOAM_VERSION == 4
+    #if OPENFOAM_VERSION >= 40
 
 	#if DEVVERSION == 1
 	pressureControl pressureControl(p, rho, simple.dict());

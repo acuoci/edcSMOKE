@@ -75,7 +75,7 @@
 		double hMean, MWMean;
 		const scalarField& pCells = thermo.p().internalField();
 		const scalarField& TCells = thermo.T().internalField();
-		#if OPENFOAM_VERSION == 4
+		#if OPENFOAM_VERSION >= 40
 		scalarField& QdotCells = Qdot.ref();
 		scalarField& dQCells = dQ.ref();
 		#else
@@ -84,7 +84,7 @@
 		#endif
 
 		// DRG Fields
-		#if OPENFOAM_VERSION == 4
+		#if OPENFOAM_VERSION >= 40
 		scalarField& drgSpeciesCells = drg_important_species.ref();
 		scalarField& drgReactionsCells = drg_important_reactions.ref();
 		scalarField& cpuReactionsCells = cpu_reaction_times.ref();
@@ -509,7 +509,7 @@
 	
 			if (drg_analysis == false)
 			{		
-				#if OPENFOAM_VERSION == 4
+				#if OPENFOAM_VERSION >= 40
 						for(unsigned int i=0;i<ns;i++)
 							YStar_[i].ref()[celli] = yStarf(i);
 						TStar_[0].ref()[celli] = yStarf(ne-3);
@@ -527,7 +527,7 @@
 			}
 			else
 			{
-				#if OPENFOAM_VERSION == 4
+				#if OPENFOAM_VERSION >= 40
 					for(unsigned int i=0;i<ne_drg-1;i++)
 					{
 			       			const unsigned int j = drg->indices_important_species()[i];
@@ -579,7 +579,7 @@
 
 			if (laminarDiffusion == true)
 			{
-				#if OPENFOAM_VERSION == 4
+				#if OPENFOAM_VERSION >= 40
 				for(unsigned int i=0;i<ns;i++)
 					HeSpecies_[i].ref()[celli] = -h_species[i+1]/thermodynamicsMapXML->MW(i);
 				#else

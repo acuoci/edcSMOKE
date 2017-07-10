@@ -42,7 +42,7 @@
 |                                                                         |
 \*-----------------------------------------------------------------------*/
 
-#if OPENFOAM_VERSION == 4
+#if OPENFOAM_VERSION >= 40
 
 	#include "createRDeltaT.H"
 
@@ -107,7 +107,7 @@ const label inertIndex(composition.species()[inertSpecie]);
 
 #include "compressibleCreatePhi.H"
 
-#if OPENFOAM_VERSION == 4
+#if OPENFOAM_VERSION >= 40
 
 	dimensionedScalar rhoMax
 	(
@@ -181,7 +181,7 @@ forAll(Y, i)
 }
 fields.add(thermo.he());
 
-#if OPENFOAM_VERSION == 4
+#if OPENFOAM_VERSION >= 40
 #include "createMRF.H"
 #endif
 

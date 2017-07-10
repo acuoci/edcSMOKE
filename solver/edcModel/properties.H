@@ -74,7 +74,7 @@ if (laminarDiffusion == true)
 			
 			transportMapXML->MassDiffusionCoefficients(Dmixvector.GetHandle(), moleFractions.GetHandle());
 
-			#if OPENFOAM_VERSION == 4
+			#if OPENFOAM_VERSION >= 40
 			for(int i=0;i<thermodynamicsMapXML->NumberOfSpecies();i++)
 				Dmix_[i].ref()[celli] = Dmixvector[i+1];
 			#else
@@ -87,7 +87,7 @@ if (laminarDiffusion == true)
 	// Boundaries
 	forAll(T.boundaryField(), patchi)
 	{
-		#if OPENFOAM_VERSION == 4
+		#if OPENFOAM_VERSION >= 40
 		fvPatchScalarField& pp = p.boundaryFieldRef()[patchi];
 		fvPatchScalarField& pT = T.boundaryFieldRef()[patchi];
 		#else
@@ -111,7 +111,7 @@ if (laminarDiffusion == true)
 
 			transportMapXML->MassDiffusionCoefficients(Dmixvector.GetHandle(),moleFractions.GetHandle());
 
-			#if OPENFOAM_VERSION == 4
+			#if OPENFOAM_VERSION >= 40
 			for(int i=0;i<thermodynamicsMapXML->NumberOfSpecies();i++)
 				Dmix_[i].boundaryFieldRef()[patchi][facei] = Dmixvector[i+1];
 			#else

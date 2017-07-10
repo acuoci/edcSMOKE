@@ -43,7 +43,7 @@
 \*-----------------------------------------------------------------------*/
 
 // Patch temperature field for ignition
-#if OPENFOAM_VERSION == 4
+#if OPENFOAM_VERSION >= 40
 {
 	if( 	(spark == true) && (runTime.value() >= ignitionTime)&&(runTime.value() <= (ignitionTime+ignitionDuration)) )
 	{

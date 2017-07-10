@@ -64,7 +64,7 @@
 
 // OpenFOAM
 #include "fvCFD.H"
-#if OPENFOAM_VERSION == 4
+#if OPENFOAM_VERSION >= 40
 #include "fluidThermo.H"
 #include "turbulentFluidThermoModel.H"
 #include "psiCombustionModel.H"
@@ -75,7 +75,7 @@
 #include "turbulenceModel.H"
 #endif
 #include "simpleControl.H"
-#if OPENFOAM_VERSION == 4
+#if OPENFOAM_VERSION >= 40
 #if DEVVERSION == 1
 #include "pressureControl.H"
 #endif
@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
 {
     unsigned int runTimeStep = 0;
 
-    #if OPENFOAM_VERSION == 4
+    #if OPENFOAM_VERSION >= 40
 
 	#include "postProcess.H"
 
@@ -166,7 +166,7 @@ int main(int argc, char *argv[])
             #include "YEqn.H"
             #include "EEqn.H"
 
-            #if OPENFOAM_VERSION == 4
+            #if OPENFOAM_VERSION >= 40
 	    if (simple.consistent())
             {
             	#include "pcEqn.H"

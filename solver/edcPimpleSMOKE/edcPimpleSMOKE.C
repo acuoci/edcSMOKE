@@ -64,7 +64,7 @@
 
 // OpenFOAM
 #include "fvCFD.H"
-#if OPENFOAM_VERSION == 4
+#if OPENFOAM_VERSION >= 40
 #include "turbulentFluidThermoModel.H"
 #else
 #include "turbulenceModel.H"
@@ -73,7 +73,7 @@
 #include "psiCombustionModel.H"
 #include "multivariateScheme.H"
 #include "pimpleControl.H"
-#if OPENFOAM_VERSION == 4
+#if OPENFOAM_VERSION >= 40
 #if DEVVERSION == 1
 #include "pressureControl.H"
 #endif
@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
 {
     unsigned int runTimeStep = 0;
 
-    #if OPENFOAM_VERSION == 4
+    #if OPENFOAM_VERSION >= 40
 
 	#include "postProcess.H"
 
@@ -198,7 +198,7 @@ int main(int argc, char *argv[])
             // --- Pressure corrector loop
             while (pimple.correct())
             {
-		#if OPENFOAM_VERSION == 4
+		#if OPENFOAM_VERSION >= 40
                 if (pimple.consistent())
                 {
                     #include "pcEqn.H"

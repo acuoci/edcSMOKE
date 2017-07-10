@@ -1,13 +1,13 @@
-#OpenFOAM VERSION (22, 23, 24, 4)
+#OpenFOAM VERSION (22, 23, 24, 40)
 export OPENFOAM_VERSION='-DOPENFOAM_VERSION=24'
 
 #If OpenFOAM dev version is used, this must be equal to 1
 export DEVVERSION='-DDEVVERSION=0'
 
 #Shared libraries (please select according to the OpenFOAM version)
-#OpenFOAM <=3
+#OpenFOAM <=30
 export OF_SHARED_LIBS=' -lcompressibleTurbulenceModel -lcompressibleRASModels -lcompressibleLESModels -lreactionThermophysicalModels -lspecie -lfluidThermophysicalModels '
-#OpenFOAM >=4
+#OpenFOAM >=40
 #export OF_SHARED_LIBS=' -lturbulenceModels -lcompressibleTurbulenceModels -lreactionThermophysicalModels -lspecie -lcompressibleTransportModels -lfluidThermophysicalModels '
 
 #Compulsory path

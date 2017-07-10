@@ -54,7 +54,7 @@
 #include "pEqn24.H"
 #endif
 
-#if OPENFOAM_VERSION == 4
+#if OPENFOAM_VERSION >= 40
 #include "pEqn4x.H"
 #endif
 

@@ -54,7 +54,7 @@
 #include "UEqn2x3x.H"
 #endif
 
-#if OPENFOAM_VERSION == 4
+#if OPENFOAM_VERSION >= 40
 #include "UEqn4x.H"
 #endif
 

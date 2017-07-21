@@ -194,6 +194,7 @@ const scalar maxT = readScalar(combustionOptionsDictionary.lookup("maxT"));
 const scalar minT = readScalar(combustionOptionsDictionary.lookup("minT"));
 Switch laminarDiffusion(combustionOptionsDictionary.lookup("laminarDiffusion"));
 scalar Sct = readScalar(combustionOptionsDictionary.lookup("Sct"));
+scalar Prt = readScalar(combustionOptionsDictionary.lookup("Prt"));
 
 Info<< "Creating additional terms for EDC-LES\n" << endl;
 
@@ -650,6 +651,22 @@ if (combustionModel == "EDC")
 		#endif
 	}			
 }
+
+//- Thermal conductivity (laminar)
+Info<< "Creating field lambda\n" << endl;
+volScalarField lambda
+(
+    IOobject
+    (
+        "gas::lambda",
+        runTime.timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::NO_WRITE
+    ),
+    mesh,
+    dimensionSet(1, 1, -3, -1, 0)
+);
 		
 //- Species mass fractions
 PtrList<volScalarField> YStar_;

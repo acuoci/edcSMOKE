@@ -2,7 +2,7 @@
 export OPENFOAM_VERSION='-DOPENFOAM_VERSION=40'
 
 #If OpenFOAM dev version is used, this must be equal to 1
-export DEVVERSION='-DDEVVERSION=0'
+export DEVVERSION='-DDEVVERSION=1'
 
 #Shared libraries (please select according to the OpenFOAM version)
 #OpenFOAM <=30

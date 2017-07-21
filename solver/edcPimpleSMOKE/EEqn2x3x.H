@@ -54,6 +54,9 @@
 
 	if (laminarDiffusion == true)
 	{
+		dimensionedScalar zero("zero", dimensionSet(1,-1,-3,0,0,0,0), scalar(0.)); 
+		massDiffusionInEnergyEquation = zero;
+
 		forAll(Y, i)
 		{ 
 			volScalarField& Yi = Y[i];
@@ -80,7 +83,7 @@
 		    )
 		  : -dpdt
 		)
-		- fvm::laplacian(turbulence->alphaEff(), he)
+		- fvm::laplacian(turbulence->mut()/Prt, he)
                 + massDiffusionInEnergyEquation
 		==
 		Qdot

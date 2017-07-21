@@ -97,9 +97,6 @@
     scalar pRefValue = 0.0;
     setRefCell(p, simple.dict(), pRefCell, pRefValue);
 
-    dimensionedScalar rhoMax(simple.dict().lookup("rhoMax"));
-    dimensionedScalar rhoMin(simple.dict().lookup("rhoMin"));
-
     #if OPENFOAM_VERSION >= 40
 
 	#if DEVVERSION == 1
@@ -123,6 +120,9 @@
 	#include "createMRF.H"
 
     #else
+
+	dimensionedScalar rhoMax(simple.dict().lookup("rhoMax"));
+    	dimensionedScalar rhoMin(simple.dict().lookup("rhoMin"));
 
 	Info<< "Creating turbulence model\n" << endl;
 	autoPtr<compressible::turbulenceModel> turbulence

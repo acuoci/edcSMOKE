@@ -39,16 +39,12 @@ divSchemes
 
 laplacianSchemes
 {
-    default         			Gauss linear corrected;
+    default         Gauss linear corrected;
 }
 
 interpolationSchemes
 {
-	default         	    none;
-	interpolate((rho*HbyA))     linear;
-	interpolate(rho)  	    linear;
-	interpolate((rho*(1|A(U)))) linear;
-        flux((rho*HbyA))            linear;
+    default         linear;
 }
 
 snGradSchemes

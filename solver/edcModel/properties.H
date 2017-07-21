@@ -56,7 +56,12 @@ if (laminarDiffusion == true)
 	// Internal fields
 	{
 		const scalarField& TCells = T.internalField();
-		const scalarField& pCells = p.internalField(); 
+		const scalarField& pCells = p.internalField();
+		#if OPENFOAM_VERSION >= 40
+		scalarField& lambdaCells = lambda.ref();
+		#else
+		scalarField& lambdaCells = lambda.internalField(); 
+		#endif
 
 		forAll(TCells, celli)
 		{
@@ -72,6 +77,7 @@ if (laminarDiffusion == true)
 			double MWmix;
 			thermodynamicsMapXML->MoleFractions_From_MassFractions(moleFractions.GetHandle(),MWmix,massFractions.GetHandle());
 			
+			lambdaCells[celli] = transportMapXML->ThermalConductivity(moleFractions.GetHandle());
 			transportMapXML->MassDiffusionCoefficients(Dmixvector.GetHandle(), moleFractions.GetHandle());
 
 			#if OPENFOAM_VERSION >= 40
@@ -90,9 +96,11 @@ if (laminarDiffusion == true)
 		#if OPENFOAM_VERSION >= 40
 		fvPatchScalarField& pp = p.boundaryFieldRef()[patchi];
 		fvPatchScalarField& pT = T.boundaryFieldRef()[patchi];
+		fvPatchScalarField& plambda = lambda.boundaryFieldRef()[patchi];
 		#else
 		fvPatchScalarField& pp = p.boundaryField()[patchi];
 		fvPatchScalarField& pT = T.boundaryField()[patchi];
+		fvPatchScalarField& plambda = lambda.boundaryField()[patchi];
 		#endif
         
 		forAll(pT, facei)
@@ -109,6 +117,7 @@ if (laminarDiffusion == true)
 			double MWmix;
 			thermodynamicsMapXML->MoleFractions_From_MassFractions(moleFractions.GetHandle(),MWmix,massFractions.GetHandle());
 
+			plambda[facei] = transportMapXML->ThermalConductivity(moleFractions.GetHandle());
 			transportMapXML->MassDiffusionCoefficients(Dmixvector.GetHandle(),moleFractions.GetHandle());
 
 			#if OPENFOAM_VERSION >= 40

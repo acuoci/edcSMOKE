@@ -23,6 +23,7 @@ combustionModel 	"EDC";		// combustion model: ED | EDFR | EDC | PaSR
 
 laminarDiffusion	off;		// laminar diffusion added to turbulent diffusion (default: off)
 Sct			0.70;		// Schmidt number for turbulent mass diffusion (default: 0.70)
+Prt                     0.85;           // Schmidt number for turbulent mass diffusion (default: 0.85)
 
 ED
 {
@@ -38,7 +39,7 @@ EDFR
 
 EDC
 {
-	version                                 "v2005";                // Version: v2005 (default) | v1981 | v2016
+	version                                 "v2005";                // Version: v2005 (default) | v1981 | v1996 | v2016
         reactorType                             "PFR";                  // Reactor type: PFR (default) | PSR
         Ccsi                                    2.1377;                 // EDC parameter (default 2.1377)
         Ctau                                    0.40825;                // EDC parameter (default 0.40825)

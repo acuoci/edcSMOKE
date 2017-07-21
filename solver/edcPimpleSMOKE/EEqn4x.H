@@ -83,7 +83,7 @@
 		    )
 		  : -dpdt
 		)
-		- fvm::laplacian(turbulence->alphaEff(), he)
+		- fvm::laplacian(turbulence->mut()/Prt, he)
                 + massDiffusionInEnergyEquation
 		==
 		Qdot

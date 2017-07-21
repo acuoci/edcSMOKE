@@ -23,6 +23,7 @@ combustionModel 	"EDC";		// combustion model: ED | EDFR | EDC | PaSR
 
 laminarDiffusion	off;		// laminar diffusion added to turbulent diffusion (default: off)
 Sct			0.70;		// Schmidt number for turbulent mass diffusion (default: 0.70)
+Prt			0.85;		// Prandtl number for turbulent mass diffusion (default: 0.85)
 
 ED
 {

@@ -215,7 +215,7 @@ int ODE_PSR::Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y
 		}
 
 		const double Q = 0.; // radiation contribution
-		dy[index_TStar] = mDotStar_/cpStar_*(hSurr_-hStar_) - Q/(rhoStar_*cpStar_);	
+		dy[index_TStar] = mDotStar_/cpStar_*(hSurr_-hStar_) - Q/(rhoStar_*cpStar_);
 	}
 }
 

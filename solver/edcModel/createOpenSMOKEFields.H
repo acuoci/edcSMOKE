@@ -383,6 +383,12 @@ enum { SCALE_KOLMOGOROV, SCALE_MEAN, SCALE_GLOBAL } tauMixType;
 				Info << "Wrong reactor type: PSR || PFR" << endl;
 				abort();
 			}
+
+			if (energyEquation == false && reactorType != REACTORTYPE_PFR)
+			{
+				Info << "The energy equation can be turned off only if the PFR model is adopted for the fine structures!" << endl;
+				abort();
+			}
 		}
 
 		// Solver type options
@@ -395,6 +401,12 @@ enum { SCALE_KOLMOGOROV, SCALE_MEAN, SCALE_GLOBAL } tauMixType;
 			else
 			{
 				Info << "Wrong solver type: ODE || NLS" << endl;
+				abort();
+			}
+
+			if (energyEquation == false && solverType != SOLVERTYPE_ODE)
+			{
+				Info << "The energy equation can be turned off only if the ODE solver is adopted for the fine structures!" << endl;
 				abort();
 			}
 		}

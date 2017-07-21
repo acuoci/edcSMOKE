@@ -66,10 +66,12 @@ public:
 
 	// This is the version adopted when DRG is turned on
 	void Set(	const double P0_Pa, 
-			const OpenSMOKE::OpenSMOKEVectorDouble& omegaStar )
+			const OpenSMOKE::OpenSMOKEVectorDouble& omegaStar,
+			const bool energyEquation )
 	{
 		P_Pa_ 		= P0_Pa;
 		omegaStar_	= omegaStar;
+		energyEquation_ = energyEquation;
 	}
 
 	void SetCheckMassFractions( const bool flag ) { checkMassFractions_ = flag; };
@@ -102,6 +104,7 @@ private:
 	OpenSMOKE::OpenSMOKEVectorDouble rStar_;
 
 	bool checkMassFractions_;
+	bool energyEquation_;
 
 	OpenSMOKE::DRG* drg_;
 	bool drgAnalysis_;

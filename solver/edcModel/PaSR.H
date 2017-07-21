@@ -191,7 +191,7 @@
 					fine_structure_ode_pfr.SetDRG(drg);
 
 					// Set the PFR solver
-					fine_structure_ode_pfr.Set(pCells[celli], omegaStar);
+					fine_structure_ode_pfr.Set(pCells[celli], omegaStar, energyEquation);
 				}
 			}			
 

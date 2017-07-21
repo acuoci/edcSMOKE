@@ -81,6 +81,7 @@ ODE_PFR::ODE_PFR(
 
 	checkMassFractions_ = false;	
 	drgAnalysis_ = false;
+	energyEquation_ = true;
 }
 
 int ODE_PFR::Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y, OpenSMOKE::OpenSMOKEVectorDouble& dy)
@@ -122,14 +123,21 @@ int ODE_PFR::Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y
 		kineticsMapXML_.KineticConstants();
 		kineticsMapXML_.ReactionRates(cStar_.GetHandle());
 		kineticsMapXML_.FormationRates(RStar_.GetHandle());
-		const double QRStar_ = kineticsMapXML_.HeatRelease(RStar_.GetHandle());
 
 		// Recovering residuals
 		for (unsigned int i=1;i<=number_of_gas_species_;++i)	
 			dy[i] = thermodynamicsMapXML_.MW(i-1)*RStar_[i]/rhoStar_;
-	
-		const double Q = 0.; // radiation contribution
-		dy[number_of_gas_species_+1] = (QRStar_ - Q)/(rhoStar_*cpStar_);
+
+		if (energyEquation_ == true)
+		{	
+			const double Q = 0.; // radiation contribution
+			const double QRStar_ = kineticsMapXML_.HeatRelease(RStar_.GetHandle());
+			dy[number_of_gas_species_+1] = (QRStar_ - Q)/(rhoStar_*cpStar_);
+		}
+		else		
+		{
+			dy[number_of_gas_species_+1] = 0.;
+		}
 
 		// Dummy equations
 		dy[number_of_gas_species_+2] = 0.;
@@ -186,7 +194,7 @@ int ODE_PFR::Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y
 
 		// Formation rates
 		kineticsMapXML_.stoichiometry().FormationRatesFromReactionRates(RStar_.GetHandle(), rStar_.GetHandle());
-		const double QRStar_ = kineticsMapXML_.HeatRelease(RStar_.GetHandle());
+		
 
 		// Recovering residuals
 		for (unsigned int i=0;i<drg_->number_important_species();++i)	
@@ -195,8 +203,16 @@ int ODE_PFR::Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y
 			dy[i+1] = thermodynamicsMapXML_.MW(j-1)*RStar_[j]/rhoStar_;
 		}
 
-		const double Q = 0.; // radiation contribution
-		dy[index_TStar] = (QRStar_ - Q)/(rhoStar_*cpStar_);
+		if (energyEquation_ == true)
+		{	
+			const double Q = 0.; // radiation contribution
+			const double QRStar_ = kineticsMapXML_.HeatRelease(RStar_.GetHandle());
+			dy[index_TStar] = (QRStar_ - Q)/(rhoStar_*cpStar_);
+		}
+		else
+		{
+			dy[index_TStar] = 0.;
+		}
 
 		return 0;
 	}

@@ -16,6 +16,8 @@ FoamFile
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 homogeneousReactions 	on;		// chemistry on/off
+momentumEquations       on;		// momentum equations on/off
+energyEquation		on;		// energy equation on/off
 minT			280.;		// minimum temperature in K (useful for steady-state)
 maxT 			3500.;		// maximum temperature in K (useful for steady-state)
 

@@ -159,24 +159,33 @@ int main(int argc, char *argv[])
 	runTimeStep++;
         Info<< "Time = " << runTime.timeName() << nl << endl;
 
-        // Pressure-velocity SIMPLE corrector
-        {
-            #include "UEqn.H"
-	    #include "properties.H"
-            #include "YEqn.H"
-            #include "EEqn.H"
+	if (momentumEquations == true)
+	{
+		// Pressure-velocity SIMPLE corrector
+		{
+		    #include "UEqn.H"
+		    #include "properties.H"
+		    #include "YEqn.H"
+		    #include "EEqn.H"
 
-            #if OPENFOAM_VERSION >= 40
-	    if (simple.consistent())
-            {
-            	#include "pcEqn.H"
-            }
-            else
-	    #endif
-            {
-                #include "pEqn.H"
-            }
-        }
+		    #if OPENFOAM_VERSION >= 40
+		    if (simple.consistent())
+		    {
+		    	#include "pcEqn.H"
+		    }
+		    else
+		    #endif
+		    {
+		        #include "pEqn.H"
+		    }
+		}
+	}
+	else
+	{
+		#include "properties.H"
+		#include "YEqn.H"
+		#include "EEqn.H"
+	}
 
         turbulence->correct();
 

@@ -111,6 +111,8 @@ const dictionary& drgDictionary = combustionOptionsDictionary.subDict("DRG");
 
 // Selecting combustion model
 Switch homogeneousReactions(combustionOptionsDictionary.lookup("homogeneousReactions"));
+Switch momentumEquations(combustionOptionsDictionary.lookup("momentumEquations"));
+Switch energyEquation(combustionOptionsDictionary.lookup("energyEquation"));
 
 // RAS or LES
 Switch iLES = false;

@@ -91,7 +91,15 @@ solvers
 	minIter		1;
     }
 
-    "(G)Final"
+    G
+    {
+        solver          PCG;
+        preconditioner  DIC;
+        tolerance       1e-04;
+        relTol          0;
+    }
+
+    GFinal
     {
         solver          PCG;
         preconditioner  DIC;

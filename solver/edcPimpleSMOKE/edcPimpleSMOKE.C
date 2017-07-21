@@ -186,35 +186,45 @@ int main(int argc, char *argv[])
 	runTimeStep++;
         Info<< "Time = " << runTime.timeName() << nl << endl;
 
-        #include "rhoEqn.H"
+	if (momentumEquations == true)
+	{
+		#include "rhoEqn.H"
 
-        while (pimple.loop())
-        {
-            #include "UEqn.H"
-	    #include "properties.H"
-            #include "YEqn.H"
-            #include "EEqn.H"
+		while (pimple.loop())
+		{
+		    #include "UEqn.H"
+		    #include "properties.H"
+		    #include "YEqn.H"
+		    #include "EEqn.H"
 
-            // --- Pressure corrector loop
-            while (pimple.correct())
-            {
-		#if OPENFOAM_VERSION >= 40
-                if (pimple.consistent())
-                {
-                    #include "pcEqn.H"
-                }
-                else
-		#endif
-                {
-                    #include "pEqn.H"
-                }
-            }
+		    // --- Pressure corrector loop
+		    while (pimple.correct())
+		    {
+			#if OPENFOAM_VERSION >= 40
+		        if (pimple.consistent())
+		        {
+		            #include "pcEqn.H"
+		        }
+		        else
+			#endif
+		        {
+		            #include "pEqn.H"
+		        }
+		    }
 
-            if (pimple.turbCorr())
-            {
-                turbulence->correct();
-            }
-        }
+		    if (pimple.turbCorr())
+		    {
+		        turbulence->correct();
+		    }
+		}
+	}
+	else
+	{
+		    #include "properties.H"
+		    #include "YEqn.H"
+		    #include "EEqn.H"
+		    turbulence->correct();
+	}
 
         runTime.write();
 

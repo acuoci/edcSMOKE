@@ -87,19 +87,19 @@ SIMPLE
     residualControl
     {
 	// species
-        default         1e-5;
+        default         1e-6;
 
 	// fluid dynamics fields
-        p               1e-2;
-        U               1e-4;
-        h               1e-3;
-	e               1e-3;
-	G		1e-3;
+        p               1e-6;
+        U               1e-6;
+        h               1e-6;
+	e               1e-6;
+	G		1e-6;
 
         // turbulence fields
-        k 		1e-3;
-        epsilon 	1e-3;
-        omega 		1e-3;
+        k 		1e-6;
+        epsilon 	1e-6;
+        omega 		1e-6;
     }
 }
 

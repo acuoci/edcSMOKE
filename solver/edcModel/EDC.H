@@ -63,8 +63,8 @@
 		Eigen::VectorXd yMin(ne);
 		Eigen::VectorXd yMax(ne);
 	
-		for(unsigned int i=0;i<ns;i++)	yMin(i) = 0.; yMin(ne-3) = 200.;	yMin(ne-2) = 0.;	yMin(ne-1) = 0.;
-		for(unsigned int i=0;i<ns;i++)	yMax(i) = 1.; yMax(ne-3) = 5000.;	yMax(ne-2) = 1.e16;	yMax(ne-1) = 1.e16;
+		for(unsigned int i=0;i<ns;i++)	yMin(i) = 0.; yMin(ne-3) = minT;	yMin(ne-2) = 0.;	yMin(ne-1) = 0.;
+		for(unsigned int i=0;i<ns;i++)	yMax(i) = 1.; yMax(ne-3) = maxT;	yMax(ne-2) = 1.e16;	yMax(ne-1) = 1.e16;
 
 		OpenSMOKE::OpenSMOKEVectorDouble omegaMean(ns);
 		OpenSMOKE::OpenSMOKEVectorDouble omegaStar(ns);

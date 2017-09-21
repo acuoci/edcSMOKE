@@ -104,6 +104,9 @@ if (energyEquation == true)
     		radiation->correct();
 	}
 
+	T.max(minT);
+    	T.min(maxT);
+	
 	Info<< "min/max(T) = " << min(T).value() << ", " << max(T).value() << endl;
 
 	#include "sparkPatch.H"

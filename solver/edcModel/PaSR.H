@@ -132,7 +132,10 @@
 			{
 				if (drg_analysis == false)
 				{
-					tf = tauMix[celli]*(1.-kappaCells[celli]);
+					if (pasrOldIntegrationTime == true)
+						tf = tauMix[celli];
+					else
+						tf = tauMix[celli]*(1.-kappaCells[celli]);
 
 					for(unsigned int i=0;i<ns;i++)
 						yStar0(i) = omegaMean[i+1];
@@ -173,7 +176,11 @@
 					}
 
 					// Set integration time
-					tf = tauMix[celli]*(1.-kappaCells[celli]);
+					if (pasrOldIntegrationTime == true)
+						tf = tauMix[celli];
+					else
+						tf = tauMix[celli]*(1.-kappaCells[celli]);
+
 
 					// Set initial condition
 					for (unsigned int i=0;i<drg->number_important_species();++i)	

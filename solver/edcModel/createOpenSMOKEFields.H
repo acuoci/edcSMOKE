@@ -304,6 +304,7 @@ enum { SOLVERTYPE_ODE, SOLVERTYPE_NLS} solverType;
 
 // Reactor type: PSR or PFR
 enum { SCALE_KOLMOGOROV, SCALE_MEAN, SCALE_GLOBAL } tauMixType;
+Switch pasrOldIntegrationTime = true;
 
 // Reading constants from file
 {
@@ -500,6 +501,9 @@ enum { SCALE_KOLMOGOROV, SCALE_MEAN, SCALE_GLOBAL } tauMixType;
 				abort();
 			}
 		}
+
+		// Characteristic chemical type options
+		pasrOldIntegrationTime = Switch(PaSRSubDictionary.lookupOrDefault(word("pasrOldIntegrationTime"), word("on")));
 	}
 	// Error Message
 	else

@@ -12,7 +12,7 @@ export DEVVERSION='-DDEVVERSION=1'
 export OF_SHARED_LIBS=' -lturbulenceModels -lcompressibleTurbulenceModels -lreactionThermophysicalModels -lspecie -lcompressibleTransportModels -lfluidThermophysicalModels '
 
 #Compulsory path
-export EIGEN_LIBRARY_PATH=/software/chimica2/libraries/eigen/eigen-3.3.3
+export EIGEN_LIBRARY_PATH=/software/chimica2/libraries/eigen/eigen-3.3.7
 export BOOST_LIBRARY_PATH=/software/chimica2/libraries/boost/boost-1.69.0-gcc-4.8.5
 export RAPIDXML_LIBRARY_PATH=/software/chimica2/libraries/rapidxml/rapidxml-1.13
 

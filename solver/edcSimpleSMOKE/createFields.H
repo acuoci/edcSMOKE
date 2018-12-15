@@ -44,12 +44,20 @@
 
 	Info<< "Creating reaction model\n" << endl;
 
+	#if OPENFOAM_VERSION >=60
+	autoPtr<psiReactionThermo> pThermo
+	(
+		psiReactionThermo::New(mesh)
+	);
+	psiReactionThermo& thermo = pThermo();
+	#else
 	autoPtr<combustionModels::psiCombustionModel> reaction
 	(
 	    combustionModels::psiCombustionModel::New(mesh)
 	);
-
 	psiReactionThermo& thermo = reaction->thermo();
+	#endif
+
 	thermo.validate(args.executable(), "h", "e");
 
 	basicMultiComponentMixture& composition = thermo.composition();
@@ -138,8 +146,16 @@
 
     #endif
 
-    // Set the turbulence into the reaction model
-    reaction->setTurbulence(turbulence());
+	#if OPENFOAM_VERSION >=60
+	Info<< "Creating reaction model\n" << endl;
+	autoPtr<CombustionModel<psiReactionThermo>> reaction
+	(
+	    CombustionModel<psiReactionThermo>::New(thermo, turbulence())
+	);
+	#else
+	// Set the turbulence into the reaction model
+	reaction->setTurbulence(turbulence());
+	#endif
 
     dimensionedScalar initialMass = fvc::domainIntegrate(rho);
 

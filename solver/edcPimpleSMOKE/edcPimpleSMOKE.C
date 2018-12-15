@@ -70,11 +70,16 @@
 #include "turbulenceModel.H"
 #include "compressible/LES/LESModel/LESModel.H"
 #endif
+#if OPENFOAM_VERSION >=60
+#include "psiReactionThermo.H"
+#include "CombustionModel.H"
+#else
 #include "psiCombustionModel.H"
+#endif
 #include "multivariateScheme.H"
 #include "pimpleControl.H"
 #if OPENFOAM_VERSION >= 40
-#if DEVVERSION == 1
+#if DEVVERSION==1
 #include "pressureControl.H"
 #endif
 #include "fvOptions.H"
@@ -110,17 +115,6 @@
     #include "numericalJacobian4ISAT.H"
     #include "mappingGradients/mappingGradient4OpenFOAM.h"
 #endif
-
-#include "fvCFD.H"
-#include "turbulentFluidThermoModel.H"
-#include "psiCombustionModel.H"
-#include "multivariateScheme.H"
-#include "pimpleControl.H"
-#include "pressureControl.H"
-#include "fvOptions.H"
-#include "localEulerDdtScheme.H"
-#include "fvcSmooth.H"
-
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

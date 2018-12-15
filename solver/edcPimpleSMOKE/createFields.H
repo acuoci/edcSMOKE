@@ -48,12 +48,19 @@
 
 	Info<< nl << "Reading thermophysicalProperties" << endl;
 
+	#if OPENFOAM_VERSION >=60
+	autoPtr<psiReactionThermo> pThermo
+	(
+		psiReactionThermo::New(mesh)
+	);
+	psiReactionThermo& thermo = pThermo();
+	#else
 	autoPtr<combustionModels::psiCombustionModel> reaction
 	(
 	    combustionModels::psiCombustionModel::New(mesh)
 	);
-
-        psiReactionThermo& thermo = reaction->thermo();
+	psiReactionThermo& thermo = reaction->thermo();
+	#endif
 
 #else
 
@@ -152,9 +159,16 @@ autoPtr<compressible::turbulenceModel> turbulence
     )
 );
 
+#if OPENFOAM_VERSION >=60
+Info<< "Creating reaction model\n" << endl;
+autoPtr<CombustionModel<psiReactionThermo>> reaction
+(
+    CombustionModel<psiReactionThermo>::New(thermo, turbulence())
+);
+#else
 // Set the turbulence into the reaction model
 reaction->setTurbulence(turbulence());
-
+#endif
 
 Info<< "Creating field dpdt\n" << endl;
 volScalarField dpdt

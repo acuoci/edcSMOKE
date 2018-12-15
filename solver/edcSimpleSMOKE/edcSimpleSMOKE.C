@@ -67,10 +67,14 @@
 #if OPENFOAM_VERSION >= 40
 #include "fluidThermo.H"
 #include "turbulentFluidThermoModel.H"
-#include "psiCombustionModel.H"
 #include "multivariateScheme.H"
+#if OPENFOAM_VERSION >=60
+#include "psiReactionThermo.H"
+#include "CombustionModel.H"
 #else
 #include "psiCombustionModel.H"
+#endif
+#else
 #include "multivariateScheme.H"
 #include "turbulenceModel.H"
 #endif
@@ -154,7 +158,11 @@ int main(int argc, char *argv[])
 
     Info<< "\nStarting time loop\n" << endl;
 
+    #if OPENFOAM_VERSION >=60
+    while (simple.loop(runTime))
+    #else
     while (simple.loop())
+    #endif
     {
 	runTimeStep++;
         Info<< "Time = " << runTime.timeName() << nl << endl;

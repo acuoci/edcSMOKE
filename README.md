@@ -1,7 +1,7 @@
 edcSMOKE
 ========
 
-EDC (Eddy Dissipation Concept) for OpenFOAM based on the OpenSMOKE++ Library
+EDC (Eddy Dissipation Concept) for OpenFOAM based on the [OpenSMOKE++ framework][1]
 The edcSMOKE requires one of the following OpenFOAM versions:
 - OpenFOAM-4.x
 - OpenFOAM-2.4
@@ -63,4 +63,4 @@ Three different options are available to compile the code, according to the leve
 3. Compile the steady-state solver: from the `solver/edcSimpleSMOKE` folder type `wmake`
 4. Compile the unsteady solver: from the `solver/edcPimpleSMOKE` folder type `wmake`
 
-
+[1]: https://www.opensmokepp.polimi.it/

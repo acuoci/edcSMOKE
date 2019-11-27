@@ -40,6 +40,27 @@
 
 namespace OpenSMOKE
 {
+	FluxAnalysisMap::FluxAnalysisMap(	OpenSMOKE::ThermodynamicsMap_CHEMKIN& thermodynamicsMapXML,
+										OpenSMOKE::KineticsMap_CHEMKIN& kineticsMapXML) :
+		thermodynamicsMapXML_(thermodynamicsMapXML), 
+		kineticsMapXML_(kineticsMapXML)
+	{
+		NC = thermodynamicsMapXML_.NumberOfSpecies();
+		NR = kineticsMapXML_.NumberOfReactions();
+
+		max_width_ = 5;
+		max_depth_ = 3;
+		min_percentage_threshold_ = 0.01;
+		normal_thickness_ = false;
+		normal_tags_ = true;
+		destruction_analysis_ = true;
+		logarithmic_thickness_ = true;
+		global_important_indices_.resize(NC);
+		global_important_normal_fluxes_.resize(NC);
+		global_important_fluxes_.resize(NC);
+		global_relative_thickness_.resize(NC);
+	}
+
 	void FluxAnalysisMap::AnalyzeNetFluxes(	const unsigned int index_j,
 													std::vector<unsigned int>& important_indices,
 													std::vector<double>& important_normal_fluxes,
@@ -239,8 +260,12 @@ namespace OpenSMOKE
 				std::string name1 = thermodynamicsMapXML_.NamesOfSpecies()[index_j];
 				std::string name2 = thermodynamicsMapXML_.NamesOfSpecies()[local_indices[j]];
 				boost::replace_all(name1, "-", "_");
+				boost::replace_all(name1, "(", "_");
+				boost::replace_all(name1, ")", "");
 				boost::replace_all(name2, "-", "_");
-				fOut << "edge [color=red, penwidth = " + thickness.str() << "];" << std::endl; 
+				boost::replace_all(name2, "(", "_");
+				boost::replace_all(name2, ")", "");
+				fOut << "edge [color=red, penwidth = " + thickness.str() << "];" << std::endl;
 				fOut << name1 << "->" << name2 << " " << attributes << std::endl;
 			}
 			else
@@ -248,7 +273,11 @@ namespace OpenSMOKE
 				std::string name1 = thermodynamicsMapXML_.NamesOfSpecies()[local_indices[j]];
 				std::string name2 = thermodynamicsMapXML_.NamesOfSpecies()[index_j];
 				boost::replace_all(name1, "-", "_");
+				boost::replace_all(name1, "(", "_");
+				boost::replace_all(name1, ")", "");
 				boost::replace_all(name2, "-", "_");
+				boost::replace_all(name2, "(", "_");
+				boost::replace_all(name2, ")", "");
 				fOut << "edge [color=blue, penwidth = " + thickness.str() << "];" << std::endl; 
 				fOut << name1 << "->" << name2 << " " << attributes << std::endl;
 			}

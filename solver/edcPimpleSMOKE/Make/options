@@ -1,6 +1,7 @@
 EXE_INC = \
     $(OPENFOAM_VERSION) \
     -w \
+    -I../ \
     -I../edcModel \
     $(MKL_SUPPORT) \
     $(ISAT_SUPPORT) \

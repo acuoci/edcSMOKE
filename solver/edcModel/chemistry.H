@@ -47,7 +47,11 @@ if (homogeneousReactions == true)
 	if (combustionModel == "ED" || combustionModel == "EDFR")
 		#include "EDFR.H"
 	else if (combustionModel == "EDC")
+	#if SPARC==1	
+		#include "extensions/sparc/EDC_SPARC.H"
+	#else
 		#include "EDC.H"
+	#endif
 	else if (combustionModel == "PaSR")
 		#include "PaSR.H"
 }

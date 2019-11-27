@@ -247,4 +247,5 @@ volScalarField cpu_reaction_times
     dimensionedScalar("cpu::reaction_times", dimensionSet(0, 0, 0, 0, 0), 0.0)
 );
 
+#include "extensions/sparc/SPARC_create_fields.H"
 

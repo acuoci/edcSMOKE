@@ -1,0 +1,4 @@
+edcPimpleSMOKE.SPARC.C
+
+EXE = $(FOAM_USER_APPBIN)/edcPimpleSMOKE.SPARC.template
+

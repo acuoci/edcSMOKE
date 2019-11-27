@@ -77,14 +77,24 @@ namespace OpenSMOKE
 		void Setup(std::vector<double> coefficients_, std::vector<double> pressures_, std::vector<double> temperatures_);
 
 		/**
+		*@brief Sets the policy to be used for managing temperatures and pressures outside the limits
+		*/
+		void SetViolationAllowed(const bool flag);
+
+		/**
 		*@brief Evaluates the kinetic constant
 		*/
 		double KineticConstant(const double T, const double P);
 
 		/**
+		*@brief Evaluates the kinetic constant
+		*/
+		void FitttingArrheniusLaw(std::ostream& fOutput);
+
+		/**
 		*@brief Writes on a file the data about the Chebyshev Polynomial 
 		*/
-                void WriteStatus(std::ostream& fOutput) const;
+        void WriteStatus(std::ostream& fOutput) const;
 		
 		/**
 		*@brief Writes on a file the data about the Chebyshev Polynomial (compatibility with previous version of OpenSMOKE)
@@ -135,6 +145,8 @@ namespace OpenSMOKE
 
 		double log10_Pmin;				//!< log of minimum pressure (only for effciency reasons)
 		double log10_Pmax;				//!< log of maximum pressure (only for effciency reasons)
+
+		bool is_violation_allowed_;		//!< if true, the polynomials are used also outside the limits
 	};
 
 }

@@ -579,6 +579,34 @@ namespace OpenSMOKE
 		fOut << std::endl << std::endl;
 	}
 
+	void ThermoPolicy_CHEMKIN::ThermodynamicsStatus(std::ostream& fOut) const
+	{
+		const double mw = MolecularWeight();
+		double conv_h = mw / Conversions::J_from_kcal / 1000.;
+		double conv_s = mw / Conversions::J_from_kcal;
+		double conv_cp = mw / Conversions::J_from_kcal;
+
+		// Species name
+		fOut << std::setw(22) << std::left << std::setprecision(4) << std::fixed << name_thermo_;
+
+		// Molecular weight
+		fOut << std::setw(14) << std::right << std::setprecision(4) << std::fixed << mw;
+
+		// Thermo data @ 298K
+		fOut << std::setw(14) << std::right << std::setprecision(4) << std::fixed << cp(298.)*conv_cp;
+		fOut << std::setw(14) << std::right << std::setprecision(4) << std::fixed << enthalpy(298.)*conv_h;
+		fOut << std::setw(14) << std::right << std::setprecision(4) << std::fixed << gibbs_energy(298.)*conv_h;
+		fOut << std::setw(14) << std::right << std::setprecision(4) << std::fixed << entropy(298.)*conv_s;
+
+		// Thermo data @ 1000K
+		fOut << std::setw(14) << std::right << std::setprecision(4) << std::fixed << cp(1000.)*conv_cp;
+		fOut << std::setw(14) << std::right << std::setprecision(4) << std::fixed << enthalpy(1000.)*conv_h;
+		fOut << std::setw(14) << std::right << std::setprecision(4) << std::fixed << gibbs_energy(1000.)*conv_h;
+		fOut << std::setw(14) << std::right << std::setprecision(4) << std::fixed << entropy(1000.)*conv_s;
+
+		fOut << std::endl;
+	}
+
 	int ThermoPolicy_CHEMKIN::CheckThermodynamicConsistency(std::ostream& fout)
 	{
 		double RGAS_over_MW_=PhysicalConstants::R_J_mol/(MolecularWeight()*1.e-3);
@@ -1170,6 +1198,16 @@ namespace OpenSMOKE
 				fout << "&";
 			fout << std::endl;
 
+			if (list_of_nonstandard_atomic_composition.size() != 0)
+			{
+				for (unsigned int j = 0; j<list_of_nonstandard_atomic_composition.size(); j++)
+				{
+					unsigned int i = list_of_nonstandard_atomic_composition[j];
+					fout << atomic_composition_.element_names()[i] << " " << atomic_composition_.element_coefficients()[i] << " ";
+				}
+				fout << std::endl;
+			}
+
 			fout << std::setw(15) << std::right << ScientificNotationWithFixedExponentDigits(AHT,2);
 			fout << std::setw(15) << std::right << ScientificNotationWithFixedExponentDigits(BHT,2);
 			fout << std::setw(15) << std::right << ScientificNotationWithFixedExponentDigits(CHT,2);
@@ -1188,16 +1226,6 @@ namespace OpenSMOKE
 			fout << std::setw(15) << std::right << ScientificNotationWithFixedExponentDigits(GLT,2);
 			fout << std::setw(15) << " ";
 			fout << "    4" << std::endl;
-
-			if (list_of_nonstandard_atomic_composition.size() != 0)
-			{
-				for(unsigned int j=0;j<list_of_nonstandard_atomic_composition.size();j++)
-				{
-					unsigned int i = list_of_standard_atomic_composition[j];
-					fout << atomic_composition_.element_names()[i] << " " << atomic_composition_.element_coefficients()[i] << " ";
-				}
-				fout << std::endl;
-			}
 		}
 	}
 
@@ -1377,6 +1405,16 @@ namespace OpenSMOKE
 				fout << "&";
 			fout << std::endl;
 
+			if (list_of_nonstandard_atomic_composition.size() != 0)
+			{
+				for (unsigned int j = 0; j<list_of_nonstandard_atomic_composition.size(); j++)
+				{
+					unsigned int i = list_of_nonstandard_atomic_composition[j];
+					fout << atomic_composition_.element_names()[i] << " " << atomic_composition_.element_coefficients()[i] << " ";
+				}
+				fout << std::endl;
+			}
+
 			fout << std::setw(15) << std::right << ScientificNotationWithFixedExponentDigits(AHT, 2);
 			fout << std::setw(15) << std::right << ScientificNotationWithFixedExponentDigits(BHT, 2);
 			fout << std::setw(15) << std::right << ScientificNotationWithFixedExponentDigits(CHT, 2);
@@ -1395,16 +1433,6 @@ namespace OpenSMOKE
 			fout << std::setw(15) << std::right << ScientificNotationWithFixedExponentDigits(GLT, 2);
 			fout << std::setw(15) << " ";
 			fout << "    4" << std::endl;
-
-			if (list_of_nonstandard_atomic_composition.size() != 0)
-			{
-				for (unsigned int j = 0; j<list_of_nonstandard_atomic_composition.size(); j++)
-				{
-					unsigned int i = list_of_standard_atomic_composition[j];
-					fout << atomic_composition_.element_names()[i] << " " << atomic_composition_.element_coefficients()[i] << " ";
-				}
-				fout << std::endl;
-			}
 		}
 	}
 }

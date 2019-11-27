@@ -1,0 +1,77 @@
+NEURAL_NETWORK=neuralNetworkOpenSMOKE++.template
+
+FITCTREE=fitctreeOpenSMOKE++.template
+
+
+EXE_INC = \
+    $(OPENFOAM_VERSION) \
+    -w \
+    -I../ \
+    -I../edcPimpleSMOKE/ \
+    -I../edcModel \
+    $(MKL_SUPPORT) \
+    $(ISAT_SUPPORT) \
+    $(SPARC_SUPPORT) \
+    $(DEVVERSION) \
+    $(EXTERNAL_ODE_SOLVERS) \
+    -I../openSMOKEpp4edcSMOKE \
+    -I$(BOOST_LIBRARY_PATH)/include \
+    -I$(EIGEN_LIBRARY_PATH) \
+    -I$(RAPIDXML_LIBRARY_PATH) \
+    -I$(SUNDIALS_PATH)/include \
+    -I$(MKL_PATH)/include \
+    -I/$(ISAT_INCLUDE) \
+    -I/$(SPARC_INCLUDE)/include \
+    -I../../libs/$(NEURAL_NETWORK)/lnInclude \
+    -I../../libs/$(FITCTREE)/lnInclude \
+    -I$(LIB_SRC)/finiteVolume/lnInclude \
+    -I$(LIB_SRC)/fvOptions/lnInclude \
+    -I$(LIB_SRC)/meshTools/lnInclude \
+    -I$(LIB_SRC)/sampling/lnInclude \
+    -I$(LIB_SRC)/turbulenceModels/compressible/turbulenceModel \
+    -I$(LIB_SRC)/turbulenceModels/LES/LESdeltas/lnInclude \
+    -I$(LIB_SRC)/turbulenceModels/compressible/RAS/RASModel/lnInclude \
+    -I$(LIB_SRC)/TurbulenceModels/turbulenceModels/lnInclude \
+    -I$(LIB_SRC)/TurbulenceModels/compressible/lnInclude \
+    -I$(LIB_SRC)/thermophysicalModels/specie/lnInclude \
+    -I$(LIB_SRC)/thermophysicalModels/reactionThermo/lnInclude \
+    -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude \
+    -I$(LIB_SRC)/thermophysicalModels/chemistryModel/lnInclude \
+    -I$(LIB_SRC)/transportModels/compressible/lnInclude \
+    -I$(LIB_SRC)/turbulenceModels \
+    -I$(LIB_SRC)/ODE/lnInclude \
+    -I$(LIB_SRC)/combustionModels/lnInclude \
+    -I$(LIB_SRC)/thermophysicalModels/radiation/lnInclude \
+    -I$(LIB_SRC)/thermophysicalModels/radiationModels/lnInclude
+
+EXE_LIBS = \
+    -L$(FOAM_USER_LIBBIN) \
+    -L$(BOOST_LIBRARY_PATH)/lib \
+    $(MKL_LIBS) \
+    -l$(NEURAL_NETWORK) \
+    -l$(FITCTREE) \
+    -lfiniteVolume \
+    -lfvOptions \
+    -lmeshTools \
+    -lsampling \
+    $(OF_SHARED_LIBS) \
+    -lchemistryModel \
+    $(FOAM_LIBBIN)/libradiationModels.so \
+    -lODE \
+    -lcombustionModels \
+    $(SUNDIALS_LIBS) \
+    $(MEBDF_LIBS) \
+    $(RADAU_LIBS) \
+    $(DASPK_LIBS) \
+    $(ODEPACK_LIBS) \
+    $(LINPACK_LIBS) \
+    $(ISAT_LIBS) \
+    -L$(SPARC_INCLUDE)/lib64 \
+    -lgfortran \
+    $(MKL_LIBS) \
+    -larmadillo \
+    -lboost_date_time \
+    -lboost_filesystem \
+    -lboost_system \
+    -lboost_regex
+

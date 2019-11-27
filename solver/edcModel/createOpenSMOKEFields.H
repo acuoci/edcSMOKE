@@ -279,6 +279,7 @@ scalar Ctau_coefficient   = 0.75;
 scalar Cgamma_coefficient = std::sqrt(3./2.);
 scalar CRe_coefficient    = 0.09;
 
+scalar direct_integration_minimum_temperature_for_chemistry = 200.;
 scalar threshold_temperature_chemical_time = 300.;
 scalar threshold_chemical_time = 0.1;
 CharacteristicChemicalTimes::CharacteristicChemicalTimesType characteristic_chemical_times_type = CharacteristicChemicalTimes::CHEMICAL_TIMES_FORMATION_RATES;
@@ -335,12 +336,13 @@ Switch pasrOldIntegrationTime = true;
 
 		dictionary edcSubDictionary(combustionOptionsDictionary.subDict("EDC"));
 
-		edc_version = word(edcSubDictionary.lookup("version"));								// default: v2005
-		Ccsi = readScalar(edcSubDictionary.lookup("Ccsi"));								// default: 2.1377
-		Ctau = readScalar(edcSubDictionary.lookup("Ctau"));								// default: 0.40825
-		maxGammaL = readScalar(edcSubDictionary.lookup("maxGammaL"));							// default: 0.9
-		numberOfResidenceTimes = readScalar(edcSubDictionary.lookup("numberOfResidenceTimes"));				// default: 100.
-		numberIterationsToUpdateChemistry = readLabel(edcSubDictionary.lookup("numberIterationsToUpdateChemistry")); 	// default 1
+		edc_version = word(edcSubDictionary.lookup("version"));										// default: v2005
+		Ccsi = readScalar(edcSubDictionary.lookup("Ccsi"));										// default: 2.1377
+		Ctau = readScalar(edcSubDictionary.lookup("Ctau"));										// default: 0.40825
+		maxGammaL = readScalar(edcSubDictionary.lookup("maxGammaL"));									// default: 0.9
+		numberOfResidenceTimes = readScalar(edcSubDictionary.lookup("numberOfResidenceTimes"));						// default: 100.
+		direct_integration_minimum_temperature_for_chemistry  = readScalar(edcSubDictionary.lookup("minTemperature4Chemistry"));	// default: 200 K
+		numberIterationsToUpdateChemistry = readLabel(edcSubDictionary.lookup("numberIterationsToUpdateChemistry")); 			// default 1
 		counterToUpdateChemistry = numberIterationsToUpdateChemistry;
 
 		// Version
@@ -1129,6 +1131,9 @@ if (combustionModel == "EDC" || combustionModel == "PaSR")
     #include "readOptions_ISAT.H"
 #endif
 
+// SPARC preprocessing
+#include "extensions/sparc/SPARC_setup.H"
+
 // Spark (to ignite the mixture)
 #include "spark.H"
 
@@ -1385,6 +1390,8 @@ if (odeParametersFineStructures.type() == OpenSMOKE::ODE_Parameters::ODE_INTEGRA
 	SolverMEBDFPFR->SetAnalyticalJacobian(false);
 }
 #endif
+
+#include "extensions/sparc/SPARC_memory_allocation.H"
 
 #if EDCSMOKE_USE_ISAT == 1
     #include "memoryAllocation_ISAT.H"

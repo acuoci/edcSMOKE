@@ -1,0 +1,13 @@
+ELEMENTS
+O  H  C  N
+END
+SPECIES
+H2      H       O       O2      OH      H2O     HO2                             
+CH2     CH2(S)  CH3     CH4     CO      CO2     HCO                             
+CH2O    CH3O    C2H4    C2H5    C2H6                                            
+N2
+END                                                                  
+REACTIONS                                                                       
+N2=>N2 1 0 0          
+END
+

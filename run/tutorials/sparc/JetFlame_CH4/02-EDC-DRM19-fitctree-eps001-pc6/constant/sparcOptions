@@ -1,0 +1,40 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.2.2                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      thermophysicalProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+FitCTree
+{
+	fitctree	on;
+	xml		"/home/chimica2/cuoci/OpenFOAM/cuoci-dev/mySolvers/edcSMOKE/run/tutorials/sparc/databases/ch4_100/fitctree.drm19.cfdf.clustered.eps.0.01.pca.6/data.of.pca.xml";
+	folder		"/home/chimica2/cuoci/OpenFOAM/cuoci-dev/mySolvers/edcSMOKE/run/tutorials/sparc/databases/ch4_100/fitctree.drm19.cfdf.clustered.eps.0.01.pca.6/";
+}
+
+VQ2
+{
+	vq2		off;
+	debug  	 	off;
+}
+
+SOFTMAX
+{
+	SOFTMAX		off;
+}
+
+SelfOrganizingMap
+{
+	som		off;
+}
+

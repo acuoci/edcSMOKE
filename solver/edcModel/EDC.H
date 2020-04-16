@@ -64,7 +64,7 @@
 		Eigen::VectorXd yMax(ne);
 	
 		for(unsigned int i=0;i<ns;i++)	yMin(i) = 0.; yMin(ne-3) = minT;	yMin(ne-2) = 0.;	yMin(ne-1) = 0.;
-		for(unsigned int i=0;i<ns;i++)	yMax(i) = 1.; yMax(ne-3) = maxT;	yMax(ne-2) = 1.e16;	yMax(ne-1) = 1.e16;
+		for(unsigned int i=0;i<ns;i++)	yMax(i) = 1.+1e-6; yMax(ne-3) = maxT;	yMax(ne-2) = 1.e16;	yMax(ne-1) = 1.e16;
 
 		OpenSMOKE::OpenSMOKEVectorDouble omegaMean(ns);
 		OpenSMOKE::OpenSMOKEVectorDouble omegaStar(ns);
@@ -191,8 +191,8 @@
 					{
 						yStar0.resize(ne_drg);
 						yStarf.resize(ne_drg);
-						yMax.resize(ne_drg);	yMax.setConstant(1.); yMax(ne_drg-1) = 5000.;
-						yMin.resize(ne_drg);	yMin.setConstant(0.); yMin(ne_drg-1) = 280.;
+						yMax.resize(ne_drg);	yMax.setConstant(1.+1e-6); yMax(ne_drg-1) = 5000.;
+						yMin.resize(ne_drg);	yMin.setConstant(0.);      yMin(ne_drg-1) = 280.;
 					}
 
 					// Set initial condition
@@ -282,8 +282,8 @@
 					{
 						yStar0.resize(ne_drg);
 						yStarf.resize(ne_drg);
-						yMax.resize(ne_drg);	yMax.setConstant(1.); yMax(ne_drg-1) = 5000.;
-						yMin.resize(ne_drg);	yMin.setConstant(0.); yMin(ne_drg-1) = 280.;
+						yMax.resize(ne_drg);	yMax.setConstant(1.+1e-6); yMax(ne_drg-1) = 5000.;
+						yMin.resize(ne_drg);	yMin.setConstant(0.);      yMin(ne_drg-1) = 280.;
 					}
 
 					// Set integration time

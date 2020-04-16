@@ -55,6 +55,9 @@
 #endif
 
 #if OPENFOAM_VERSION >= 40
+#if OPENFOAM_VERSION >= 70
+#include "pEqn7x.H"
+#else
 #include "pEqn4x.H"
 #endif
-
+#endif

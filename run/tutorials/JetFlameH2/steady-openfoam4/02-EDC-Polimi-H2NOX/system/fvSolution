@@ -40,7 +40,7 @@ solvers
 
     h
     {
-        solver          PBiCG;
+        solver          PBiCGStab;
         preconditioner  DILU;
         tolerance       1e-08;
         relTol          0.001;
@@ -48,7 +48,7 @@ solvers
 
     e
     {
-        solver          PBiCG;
+        solver          PBiCGStab;
         preconditioner  DILU;
         tolerance       1e-08;
         relTol          0.001;
@@ -63,7 +63,7 @@ solvers
 
     Yi
     {
-        solver          PBiCG;
+        solver          PBiCGStab;
         preconditioner  DILU;
         tolerance       1e-08;
         relTol          0.001;

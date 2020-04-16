@@ -88,7 +88,7 @@ tmp<fv::convectionScheme<scalar> > mvConvection
 				fvOptions.constrain(YiEqn);
 
 				const double tStartSolve = OpenSMOKE::OpenSMOKEGetCpuTime();
-				#if OPENFOAM_VERSION >=60
+				#if OPENFOAM_VERSION >=70
                                 YiEqn.solve("Yi");
 				#else
 				YiEqn.solve(mesh.solver("Yi"));
@@ -131,7 +131,7 @@ tmp<fv::convectionScheme<scalar> > mvConvection
 				fvOptions.constrain(YiEqn);
 
 				const double tStartSolve = OpenSMOKE::OpenSMOKEGetCpuTime();
-				#if OPENFOAM_VERSION >=60
+				#if OPENFOAM_VERSION >=70
                                 YiEqn.solve("Yi");
 				#else
 				YiEqn.solve(mesh.solver("Yi"));

@@ -44,7 +44,7 @@ EXE_LIBS = \
     -lsampling \
     $(OF_SHARED_LIBS) \
     -lchemistryModel \
-    $(FOAM_LIBBIN)/libradiationModels.so \
+    -lradiationModels \
     -lODE \
     -lcombustionModels \
     $(SUNDIALS_LIBS) \

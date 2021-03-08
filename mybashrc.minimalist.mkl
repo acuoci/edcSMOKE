@@ -26,7 +26,7 @@ export MKL_SUPPORT='-DOPENSMOKE_USE_MKL=1'
 export EXTERNAL_ODE_SOLVERS=
 
 #Only if the OPENSMOKE_USE_MKL is turned on
-export MKL_PATH=$HOME/intel/mkl
+export MKL_PATH=$HOME/intel-2019/mkl
 export MKL_LIBS='-Wl,--start-group $(MKL_PATH)/lib/intel64/libmkl_intel_lp64.a $(MKL_PATH)/lib/intel64/libmkl_core.a $(MKL_PATH)/lib/intel64/libmkl_sequential.a -Wl,--end-group -lpthread -lm'
 
 #Optional external ODE solvers

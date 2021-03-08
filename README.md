@@ -3,6 +3,7 @@ edcSMOKE
 
 EDC (Eddy Dissipation Concept) for OpenFOAM based on the [OpenSMOKE++ framework][1]
 The edcSMOKE requires one of the following OpenFOAM versions:
+- OpenFOAM-7
 - OpenFOAM-4.x
 - OpenFOAM-2.4
 - OpenFOAM-2.3

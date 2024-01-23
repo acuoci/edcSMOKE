@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------*\
+/*-----------------------------------------------------------------------*\
 |    ___                   ____  __  __  ___  _  _______                  |
 |   / _ \ _ __   ___ _ __ / ___||  \/  |/ _ \| |/ / ____| _     _         |
 |  | | | | '_ \ / _ \ '_ \\___ \| |\/| | | | | ' /|  _| _| |_ _| |_       |
@@ -16,7 +16,7 @@
 |                                                                         |
 |   This file is part of OpenSMOKE++ framework.                           |
 |                                                                         |
-|	License                                                               |
+|   License                                                               |
 |                                                                         |
 |   Copyright(C) 2014, 2013, 2012  Alberto Cuoci                          |
 |   OpenSMOKE++ is free software: you can redistribute it and/or modify   |
@@ -206,11 +206,11 @@ namespace OdeSMOKE
 			{
 				y_plus_(j) = y(j);
 
-				double* col_j = BAND_COL(J_, j);
+				double* col_j = OS_BAND_COL(J_, j);
 				int i1 = std::max(0, j - J_->nUpper());
 				int i2 = std::min(j + J_->nLower(), static_cast<int>(this->ne_ - 1));
 				for (int i = i1; i <= i2; i++)
-					BAND_COL_ELEM(col_j, i, j) = (f_plus_[i] - f[i]) / hJ_(j);
+					OS_BAND_COL_ELEM(col_j, i, j) = (f_plus_[i] - f[i]) / hJ_(j);
 			}
 		}
 
@@ -243,9 +243,7 @@ namespace OdeSMOKE
 	void KernelBand<ODESystemObject>::SolveLinearSystem(Eigen::VectorXd& db)
 	{
 		const double tstart = OpenSMOKE::OpenSMOKEGetCpuTime();
-
 		G_->Solve(db.data());
-
 		const double tend = OpenSMOKE::OpenSMOKEGetCpuTime();
 
 		cpuTimeSingleLinearSystemSolution_ = tend - tstart;

@@ -283,11 +283,13 @@ namespace OpenSMOKE
 			}
 		}
 
+		/*
 		std::cout << "Jacobian sparsity pattern " << std::endl;
 		std::cout << " * black elements:  " << jacobian_matrix_->nonZeros() << " (" << jacobian_matrix_->nonZeros() / double(nc*nc)*100. << "%)" << std::endl;
 		std::cout << " * white elements:  " << nc*nc - jacobian_matrix_->nonZeros() << " (" << (nc*nc - jacobian_matrix_->nonZeros()) / double(nc*nc)*100. << "%)" << std::endl;
 		std::cout << " * blacks per row:  " << jacobian_matrix_->nonZeros() / double(nc) << std::endl;
 		std::cout << std::endl;
+		*/
 	}
 
 	template<typename map>
@@ -416,7 +418,7 @@ namespace OpenSMOKE
 				kinetics_map_.FormationRates(analytical_RStar_.data());
 
 				for (Eigen::SparseMatrix<double>::InnerIterator it(J, k); it; ++it)
-					it.valueRef() = analytical_RStar_[it.row()];// *thermodynamics_.MW()[index] / rhoStar;
+					it.valueRef() = analytical_RStar_[it.row()];// *thermodynamics_.MW(index-1) / rhoStar;
 			}
 		}
 	}
@@ -480,8 +482,8 @@ namespace OpenSMOKE
 				for (Eigen::SparseMatrix<double>::InnerIterator it(*dthirdbody_over_domega_, k); it; ++it)
 				{
 					it.valueRef() = (analytical_rf_(it.row()) - analytical_rb_(it.row())) * analytical_cStar_(it.col()) / analytical_omegaStar_(it.col()) *
-						kinetics_map_.indices_of_thirdbody_efficiencies()[analytical_thirdbody_reactions_(count) - 1][analytical_thirdbody_species_(count)] /
-						kinetics_map_.Meff()[analytical_thirdbody_reactions_(count)];
+						kinetics_map_.IndicesOfThirdbodyEfficiencies()[analytical_thirdbody_reactions_(count) - 1][analytical_thirdbody_species_(count)-1] /
+						kinetics_map_.M()[analytical_thirdbody_reactions_(count)-1];
 
 					count++;
 				}
@@ -499,12 +501,12 @@ namespace OpenSMOKE
 			{
 				for (Eigen::SparseMatrix<double>::InnerIterator it(*dfalloff_over_domega_, k); it; ++it)
 				{
-					cStarPlus(it.col()) = (analytical_omegaStar_(it.col()) + eps) * rhoStar / kinetics_map_.thermodynamics().MW()[it.col() + 1];
+					cStarPlus(it.col()) = (analytical_omegaStar_(it.col()) + eps) * rhoStar / kinetics_map_.thermodynamics().MW(it.col());
 
 					const double GammaFallOff = kinetics_map_.FallOffReactionsCorrection(analytical_falloff_reactions_(count), cTotStar, analytical_cStar_.data());
 					const double GammaFallOffPlus = kinetics_map_.FallOffReactionsCorrection(analytical_falloff_reactions_(count), cTotStar, cStarPlus.data());
 					const double dGammaFallOff = (GammaFallOffPlus - GammaFallOff) / eps;
-					cStarPlus(it.col()) = analytical_omegaStar_(it.col()) * rhoStar / kinetics_map_.thermodynamics().MW()[it.col() + 1];
+					cStarPlus(it.col()) = analytical_omegaStar_(it.col()) * rhoStar / kinetics_map_.thermodynamics().MW(it.col());
 
 					it.valueRef() = (analytical_rf_(it.row()) - analytical_rb_(it.row())) * dGammaFallOff / GammaFallOff;
 

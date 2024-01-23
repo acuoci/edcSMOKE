@@ -1,52 +1,51 @@
 EXE_INC = \
-    $(OPENFOAM_VERSION) \
     -w \
     -I../edcModel \
     $(MKL_SUPPORT) \
     $(ISAT_SUPPORT) \
-    $(DEVVERSION) \
     $(EXTERNAL_ODE_SOLVERS) \
     -I../openSMOKEpp4edcSMOKE \
     -I$(BOOST_LIBRARY_PATH)/include \
     -I$(EIGEN_LIBRARY_PATH) \
-    -I$(RAPIDXML_LIBRARY_PATH) \
     -I$(SUNDIALS_PATH)/include \
     -I$(MKL_PATH)/include \
-    -I/$(ISAT_INCLUDE) \
-    -I$(LIB_SRC)/finiteVolume/lnInclude \
-    -I$(LIB_SRC)/fvOptions/lnInclude \
-    -I$(LIB_SRC)/meshTools/lnInclude \
-    -I$(LIB_SRC)/sampling/lnInclude \
-    -I$(LIB_SRC)/turbulenceModels/compressible/turbulenceModel \
-    -I$(LIB_SRC)/turbulenceModels/LES/LESdeltas/lnInclude \
-    -I$(LIB_SRC)/turbulenceModels/compressible/RAS/RASModel/lnInclude \
-    -I$(LIB_SRC)/TurbulenceModels/turbulenceModels/lnInclude \
-    -I$(LIB_SRC)/TurbulenceModels/compressible/lnInclude \
+    -I$(ISAT_INCLUDE) \
+    -I$(LIB_SRC)/MomentumTransportModels/momentumTransportModels/lnInclude \
+    -I$(LIB_SRC)/MomentumTransportModels/compressible/lnInclude \
+    -I$(LIB_SRC)/ThermophysicalTransportModels/lnInclude \
+    -I$(LIB_SRC)/ThermophysicalTransportModels/fluidReactionThermo/lnInclude \
+    -I$(LIB_SRC)/physicalProperties/lnInclude \
     -I$(LIB_SRC)/thermophysicalModels/specie/lnInclude \
     -I$(LIB_SRC)/thermophysicalModels/reactionThermo/lnInclude \
     -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude \
     -I$(LIB_SRC)/thermophysicalModels/chemistryModel/lnInclude \
-    -I$(LIB_SRC)/transportModels/compressible/lnInclude \
-    -I$(LIB_SRC)/turbulenceModels \
     -I$(LIB_SRC)/ODE/lnInclude \
     -I$(LIB_SRC)/combustionModels/lnInclude \
-    -I$(LIB_SRC)/thermophysicalModels/radiation/lnInclude \
-    -I$(LIB_SRC)/thermophysicalModels/radiationModels/lnInclude \
-    -I$(LIB_SRC)/radiationModels/lnInclude
+    -I$(LIB_SRC)/radiationModels/lnInclude \
+    -I$(LIB_SRC)/finiteVolume/lnInclude \
+    -I$(LIB_SRC)/finiteVolume/cfdTools \
+    -I$(LIB_SRC)/meshTools/lnInclude \
+    -I$(LIB_SRC)/sampling/lnInclude
 
 EXE_LIBS = \
-    -L$(FOAM_USER_LIBBIN) \
     -L$(BOOST_LIBRARY_PATH)/lib \
+    -L$(FOAM_USER_LIBBIN) \
     $(MKL_LIBS) \
-    -lfiniteVolume \
-    -lfvOptions \
-    -lmeshTools \
-    -lsampling \
-    $(OF_SHARED_LIBS) \
+    -lfluidThermophysicalModels \
+    -lspecie \
     -lchemistryModel \
-    -lradiationModels \
     -lODE \
     -lcombustionModels \
+    -lreactionThermophysicalModels \
+    -lmomentumTransportModels \
+    -lcompressibleMomentumTransportModels \
+    -lthermophysicalTransportModels \
+    -lfluidReactionThermophysicalTransportModels \
+    -lfiniteVolume \
+    -lfvModels \
+    -lfvConstraints \
+    -lmeshTools \
+    -lsampling  \
     $(SUNDIALS_LIBS) \
     $(MEBDF_LIBS) \
     $(RADAU_LIBS) \

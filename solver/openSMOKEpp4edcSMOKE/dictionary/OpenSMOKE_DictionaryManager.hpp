@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------*\
+/*-----------------------------------------------------------------------*\
 |    ___                   ____  __  __  ___  _  _______                  |
 |   / _ \ _ __   ___ _ __ / ___||  \/  |/ _ \| |/ / ____| _     _         |
 |  | | | | '_ \ / _ \ '_ \\___ \| |\/| | | | | ' /|  _| _| |_ _| |_       |
@@ -16,7 +16,7 @@
 |                                                                         |
 |   This file is part of OpenSMOKE++ framework.                           |
 |                                                                         |
-|	License                                                               |
+|   License                                                               |
 |                                                                         |
 |   Copyright(C) 2014, 2013, 2012  Alberto Cuoci                          |
 |   OpenSMOKE++ is free software: you can redistribute it and/or modify   |
@@ -75,18 +75,21 @@ namespace OpenSMOKE
 			exit(OPENSMOKE_FATAL_ERROR_EXIT);
 		}
 
-		std::vector<OpenSMOKE_DictionaryFile> dictionaries(n_dictionaries);
-		for (unsigned int i=0;i<n_dictionaries;i++)
+		for (unsigned int i = 0; i<n_dictionaries; i++)
 		{
-			dictionaries[i].SetFileName(file_name);
-			dictionaries[i].SetFirstLine(line_dictionaries[i]);
-			for(unsigned int j=line_dictionaries[i]-1;j<line_dictionaries[i+1]-1;j++)
-				dictionaries[i].AddLine(dict_file.clean_lines()[j]);
-			dictionaries[i].Analyze();
+			OpenSMOKE_DictionaryFile dictionary_file;
+			
+			dictionary_file.SetFileName(file_name);
+			dictionary_file.SetFirstLine(line_dictionaries[i]);
+			for (unsigned int j = line_dictionaries[i] - 1; j<line_dictionaries[i + 1] - 1; j++)
+				dictionary_file.AddLine(dict_file.clean_lines()[j]);
+			dictionary_file.Analyze();
 
 			OpenSMOKE_Dictionary dictionary;
-			dictionaries[i].Transfer(dictionary);
-			map_of_dictionaries_.insert ( std::make_pair(dictionary.name(), dictionary) );
+			dictionary_file.Transfer(dictionary);
+
+			if (map_of_dictionaries_.insert(std::pair<std::string, OpenSMOKE_Dictionary>(dictionary.name(), dictionary)).second == false)
+				std::cout << "Insertion of new dictionary failed. Key was present." << std::endl;
 		}
 	}
 

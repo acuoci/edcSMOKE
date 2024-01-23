@@ -16,8 +16,9 @@ FoamFile
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 kineticMechanism 	"kinetics";
-CHEMKINFile             "../kinetics/chemkin/kinetics.inp";
-CHEMKINThermoFile       "../kinetics/chemkin/thermo.dat";
+CHEMKINFile             "/home/chimica2/cuoci/OpenFOAM/cuoci-7/applications/edcSMOKE++/run/tutorials/JetFlameH2/unsteady/02-EDC-Polimi-H2NOX/kinetics/chemkin/kinetics.inp";
+CHEMKINThermoFile       "/home/chimica2/cuoci/OpenFOAM/cuoci-7/applications/edcSMOKE++/run/tutorials/JetFlameH2/unsteady/02-EDC-Polimi-H2NOX/kinetics/chemkin/thermo.dat";
+CHEMKINTransportFile	"/home/chimica2/cuoci/OpenFOAM/cuoci-7/applications/edcSMOKE++/run/tutorials/JetFlameH2/unsteady/02-EDC-Polimi-H2NOX/kinetics/chemkin/tran.foam";
 
 inertSpecie N2;
 

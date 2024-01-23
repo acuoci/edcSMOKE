@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------*\
+/*-----------------------------------------------------------------------*\
 |    ___                   ____  __  __  ___  _  _______                  |
 |   / _ \ _ __   ___ _ __ / ___||  \/  |/ _ \| |/ / ____| _     _         |
 |  | | | | '_ \ / _ \ '_ \\___ \| |\/| | | | | ' /|  _| _| |_ _| |_       |
@@ -16,7 +16,7 @@
 |                                                                         |
 |   This file is part of OpenSMOKE++ framework.                           |
 |                                                                         |
-|	License                                                               |
+|   License                                                               |
 |                                                                         |
 |   Copyright(C) 2014, 2013, 2012  Alberto Cuoci                          |
 |   OpenSMOKE++ is free software: you can redistribute it and/or modify   |
@@ -34,8 +34,8 @@
 |                                                                         |
 \*-----------------------------------------------------------------------*/
 
-#ifndef OpenSMOKE_ODE_Parameters_H
-#define	OpenSMOKE_ODE_Parameters_H
+#ifndef OpenSMOKE_OdeSolver_Parameters_H
+#define	OpenSMOKE_OdeSolver_Parameters_H
 
 #include <string>
 #include <vector>
@@ -196,6 +196,11 @@ namespace OdeSMOKE
 		OpenSMOKE::SparseSolverType jacobian_solver() const { return jacobian_solver_; }
 
 		/**
+		*@brief Returns the Jacobian structure adopted
+		*/
+		OpenSMOKE::JacobianStructureType jacobian_structure() const { return jacobian_structure_; }
+
+		/**
 		*@brief Returns the preconditioner to be used for solving the linear systems associated to the Jacobian matrix
 		*/
 		OpenSMOKE::SparsePreconditionerType preconditioner() const { return preconditioner_; }
@@ -303,6 +308,7 @@ namespace OdeSMOKE
 		int maximum_err_test_fails_;							//!< maximum number of error test failures
 		int maximum_conv_fails_;								//!< maximum number of convergence failures
 		int maximum_nl_iter_;									//!< maximum number of non linear iterations
+		OpenSMOKE::JacobianStructureType jacobian_structure_;			//!< Jacobian structure type
 		OpenSMOKE::SparseSolverType jacobian_solver_;			//!< solver to be used for solving linear systems associated to the Jacobian matrix
 		OpenSMOKE::SparsePreconditionerType preconditioner_;	//!< preconditioner to be used for solving linear systems associated to the Jacobian matrix
 		bool sparse_linear_algebra_;							//!< true if sparse linear solvers have to be used
@@ -319,5 +325,5 @@ namespace OdeSMOKE
 
 #include "OdeSolver_Parameters.hpp"
 
-#endif	/* OdeSolver_Parameters_H */
+#endif	/* OpenSMOKE_OdeSolver_Parameters_H */
 

@@ -23,6 +23,13 @@
 #include <boost/math/constants/constants.hpp> 
 #include <boost/date_time.hpp>
 #include "boost/date_time/gregorian/gregorian.hpp"
+#include <boost/property_tree/xml_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/foreach.hpp>
+
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
 
 #if OPENSMOKE_USE_MKL == 1
 	#include <mkl.h>
@@ -319,32 +326,6 @@ namespace OpenSMOKE
 		}
 	}
 
-	void OpenInputFileXML(rapidxml::xml_document<>& doc, std::vector<char>& xml_copy, const boost::filesystem::path& file_name)
-	{
-		if (!boost::filesystem::exists(file_name))
-		{
-			std::string message = "The " + file_name.string() + " file does not exist";
-			FatalErrorMessage(message);
-		}
-
-		std::ifstream fInput;
-		fInput.open(std::string(file_name.string()).c_str(), std::ios::in);
-
-		if (!fInput.is_open())
-		{
-			std::string msg = std::string("The ") + std::string(file_name.string()).c_str() + std::string(" file cannot be open!");
-			FatalErrorMessage(msg.c_str());
-		}
-
-		const std::string string_file = std::string(std::istreambuf_iterator<char>(fInput), std::istreambuf_iterator<char>());
-		fInput.close();
-
-		xml_copy.assign(string_file.begin(), string_file.end());
-		xml_copy.push_back('\0');
-
-		doc.parse<rapidxml::parse_declaration_node | rapidxml::parse_no_data_nodes>(&xml_copy[0]);
-	}
-
 	void OpenInputFileASCII(std::ifstream &fASCII, const boost::filesystem::path input_file_ascii)
 	{
 		if (!boost::filesystem::exists(input_file_ascii))
@@ -582,26 +563,26 @@ namespace OpenSMOKE
 
 	void ImportReactionNames(const boost::filesystem::path file_name, const unsigned int n, std::vector<std::string>& reaction_strings)
 	{
+		// Check if the file exists
 		if (!boost::filesystem::exists(file_name))
 		{
 			std::string message = "The " + file_name.string() + " file does not exist";
 			FatalErrorMessage(message);
 		}
-
-		rapidxml::xml_document<> local_xml;
-		std::vector<char> local_xml_input_string;
-		OpenSMOKE::OpenInputFileXML(local_xml, local_xml_input_string, file_name);
-
-		// Names of reactions
+		
+		// Read names of reactions
 		{
-			rapidxml::xml_node<>* reaction_names_node = local_xml.first_node("opensmoke")->first_node("reaction-names");
-			std::stringstream values(reaction_names_node->value());
+			boost::property_tree::ptree ptree;
+	  	  	boost::property_tree::read_xml( file_name.string(), ptree );
 
+			std::stringstream stream;
+			stream.str( ptree.get< std::string >("opensmoke.reaction-names") );  
+			
 			reaction_strings.reserve(n);
 			for (unsigned int j = 0; j<n; j++)
 			{
 				std::string reaction_string;
-				values >> reaction_string;
+				stream >> reaction_string;
 				reaction_strings.push_back(reaction_string);
 			}
 		}
@@ -623,14 +604,14 @@ namespace OpenSMOKE
 		if (D > 0.)
 		{
 			solution.resize(1);
-			solution[0] = cbrt(-0.5 * q + std::sqrt(D)) +
-				cbrt(-0.5 * q - std::sqrt(D)) - alfa / 3.;
+			solution[0] = std::cbrt(-0.5 * q + std::sqrt(D)) +
+				std::cbrt(-0.5 * q - std::sqrt(D)) - alfa / 3.;
 		}
 		else if (D == 0.)
 		{
 			solution.resize(2);
-			solution[0] = -2. * cbrt(q / 2.) - alfa / 3.;
-			solution[1] = cbrt(q / 2.) - alfa / 3.;
+			solution[0] = -2. * std::cbrt(q / 2.) - alfa / 3.;
+			solution[1] = std::cbrt(q / 2.) - alfa / 3.;
 		}
 		else if (D < 0.)
 		{
@@ -638,9 +619,9 @@ namespace OpenSMOKE
 			double r = std::sqrt(-p * p * p / 27.);
 			double costheta = -q / (2. * r);
 			double theta = std::acos(costheta);
-			solution[0] = 2. * cbrt(r) * std::cos(theta / 3.) - alfa / 3.;
-			solution[1] = 2. * cbrt(r) * std::cos((2. * boost::math::constants::pi<double>() + theta) / 3.) - alfa / 3.;
-			solution[2] = 2. * cbrt(r) * std::cos((4. * boost::math::constants::pi<double>() + theta) / 3.) - alfa / 3.;
+			solution[0] = 2. * std::cbrt(r) * std::cos(theta / 3.) - alfa / 3.;
+			solution[1] = 2. * std::cbrt(r) * std::cos((2. * boost::math::constants::pi<double>() + theta) / 3.) - alfa / 3.;
+			solution[2] = 2. * std::cbrt(r) * std::cos((4. * boost::math::constants::pi<double>() + theta) / 3.) - alfa / 3.;
 		}
 
 		return solution;
@@ -828,7 +809,7 @@ namespace OpenSMOKE
 								std::vector<unsigned int>& rows, std::vector<unsigned int>& cols)
 	{
 		const unsigned int block_squared = block_size*block_size;
-		const unsigned int nonzeros = rows_single.size()*block_squared;
+		const unsigned int nonzeros = static_cast<unsigned int>(rows_single.size())*block_squared;
 		rows.resize(nonzeros);
 		cols.resize(nonzeros);
 

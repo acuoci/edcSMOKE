@@ -1,35 +1,23 @@
-#OpenFOAM VERSION (22, 23, 24, 40, 50, 60)
-#dev version is equivalent to 60
-export OPENFOAM_VERSION='-DOPENFOAM_VERSION=70'
-
-#This must be equal to 1 if 5.x, 6.x or dev versions are used
-export DEVVERSION='-DDEVVERSION=1'
-
-#Shared libraries (please select according to the OpenFOAM version)
-#OpenFOAM <=30
-#export OF_SHARED_LIBS=' -lcompressibleTurbulenceModel -lcompressibleRASModels -lcompressibleLESModels -lreactionThermophysicalModels -lspecie -lfluidThermophysicalModels '
-#OpenFOAM >=40
-export OF_SHARED_LIBS=' -lturbulenceModels -lcompressibleTurbulenceModels -lreactionThermophysicalModels -lspecie -lcompressibleTransportModels -lfluidThermophysicalModels '
-
 #Compulsory path
-export EIGEN_LIBRARY_PATH=/software/chimica2/libraries/eigen/eigen-3.3.7
-export BOOST_LIBRARY_PATH=/software/chimica2/libraries/boost/boost-1.72.0-gcc-9.2.0
-export RAPIDXML_LIBRARY_PATH=/software/chimica2/libraries/rapidxml/rapidxml-1.13
+export EIGEN_LIBRARY_PATH=/software/chimica2/libraries/eigen/eigen-3.4.0
+export BOOST_LIBRARY_PATH=/software/chimica2/libraries/boost/boost-1.78.0-gcc-9.2.0/
+export OPENSMOKEPP_LIBRARY_PATH=../../src/opensmokepp4laminarsmokepp
+
+#Options: 1+M diffusion model
+export ONEPLUSM_SUPPORT='-DONEPLUSM=0'
 
 #Options: ISAT support
 export ISAT_SUPPORT='-DEDCSMOKE_USE_ISAT=1'
 export ISAT_INCLUDE=$HOME/Development/ExternalNumericalLibraries/ISATLib/ISATLib-1.1/src
 export ISAT_LIBS=-lISATLib4OpenFOAM
 
-#Options
+#Options: Intel MKL (strongly suggested)
 export MKL_SUPPORT='-DOPENSMOKE_USE_MKL=1'
-export EXTERNAL_ODE_SOLVERS=
-
-#Only if the OPENSMOKE_USE_MKL is turned on
-export MKL_PATH=$HOME/intel-2019/mkl
+export MKL_PATH=/home/chimica2/cuoci/intel/oneapi/mkl/latest/
 export MKL_LIBS='-Wl,--start-group $(MKL_PATH)/lib/intel64/libmkl_intel_lp64.a $(MKL_PATH)/lib/intel64/libmkl_core.a $(MKL_PATH)/lib/intel64/libmkl_sequential.a -Wl,--end-group -lpthread -lm'
 
 #Optional external ODE solvers
+export EXTERNAL_ODE_SOLVERS=
 export MEBDF_LIBS=
 export RADAU_LIBS=
 export DASPK_LIBS=

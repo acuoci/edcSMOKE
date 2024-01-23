@@ -16,7 +16,7 @@
 |                                                                         |
 |   This file is part of OpenSMOKE++ framework.                           |
 |                                                                         |
-|	License                                                               |
+|   License                                                               |
 |                                                                         |
 |   Copyright(C) 2014, 2013, 2012  Alberto Cuoci                          |
 |   OpenSMOKE++ is free software: you can redistribute it and/or modify   |
@@ -49,7 +49,8 @@ namespace OdeSMOKE
 		ERROR_STATUS_OK
 	};
 
-	extern bool stopOdeIntegration = false;
+	static bool stopOdeIntegration = false;
+	extern bool stopOdeIntegration;
 
 	//!  A class to solve ODE systems using a multivalue method
 	/*!

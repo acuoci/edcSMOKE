@@ -119,14 +119,6 @@ namespace OpenSMOKE
 	void CheckKineticsFolder(const boost::filesystem::path& path_output);
 
 	/**
-	*@brief Open a XML file
-	*@param doc the XML class
-	*@param xml_copy the content of XML file
-	*@param file_name the path to the XML file
-	*/
-	void OpenInputFileXML(rapidxml::xml_document<>& doc, std::vector<char>& xml_copy, const boost::filesystem::path& file_name);
-
-	/**
 	*@brief Open a ASCII file
 	*@param fASCII the file stream
 	*@param input_file_ascii the path to the ASCII file

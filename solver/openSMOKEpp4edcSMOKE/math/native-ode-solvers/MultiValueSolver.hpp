@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------*\
+/*-----------------------------------------------------------------------*\
 |    ___                   ____  __  __  ___  _  _______                  |
 |   / _ \ _ __   ___ _ __ / ___||  \/  |/ _ \| |/ / ____| _     _         |
 |  | | | | '_ \ / _ \ '_ \\___ \| |\/| | | | | ' /|  _| _| |_ _| |_       |
@@ -16,7 +16,7 @@
 |                                                                         |
 |   This file is part of OpenSMOKE++ framework.                           |
 |                                                                         |
-|	License                                                           |
+|   License                                                               |
 |                                                                         |
 |   Copyright(C) 2014, 2013, 2012  Alberto Cuoci                          |
 |   OpenSMOKE++ is free software: you can redistribute it and/or modify   |
@@ -64,7 +64,7 @@ namespace OdeSMOKE
 	void MultiValueSolver<Method>::SetDefaultValues()
 	{
 		// Maximum integration order
-		this->maximum_order_ = this->MAX_ORDER;
+		this->maximum_order_ = this->MAX_ORDER_ODE;
 
 		// Maximum number of steps
 		max_number_steps_ = DEFAULT_MAXIMUM_NUMBER_OF_STEPS;
@@ -144,10 +144,10 @@ namespace OdeSMOKE
 	void MultiValueSolver<Method>::SetMaximumOrder(const unsigned int maximum_order)
 	{
 		this->maximum_order_ = maximum_order;
-		if (maximum_order > this->MAX_ORDER)
-			this->maximum_order_ = this->MAX_ORDER;
+		if (maximum_order > this->MAX_ORDER_ODE)
+			this->maximum_order_ = this->MAX_ORDER_ODE;
 		if (maximum_order < 1)
-			this->maximum_order_ = this->MAX_ORDER;
+			this->maximum_order_ = this->MAX_ORDER_ODE;
 	}
 
 	template <typename Method>
@@ -345,7 +345,7 @@ namespace OdeSMOKE
 	void MultiValueSolver<Method>::ErrorEstimation(Eigen::VectorXd& error_estimation)
 	{
 		for (unsigned int j = 0; j < this->ne_; j++)
-			error_estimation(j) = this->Ep_(this->p_)*this->z_[this->p_+1](j);
+			error_estimation(j) = this->Ep_[this->p_]*this->z_[this->p_+1](j);
 	}
 
 	template <typename Method>
@@ -875,7 +875,7 @@ namespace OdeSMOKE
 
 				// Buzzi-Ferraris eq. 29.171: hScaleCurrent = E(p)*v(p+1)/eps
 				// where eps = tolAbs + tolRel*y
-				double hScaleCurrent = this->Ep_(this->p_) * OpenSMOKE::ErrorControl(this->v_[this->p_ + 1], one_over_epsilon_);
+				double hScaleCurrent = this->Ep_[this->p_] * OpenSMOKE::ErrorControl(this->v_[this->p_ + 1], one_over_epsilon_);
 			
 				// The step must be decreased if the error is too large
 				if (hScaleCurrent > 1.)
@@ -915,9 +915,9 @@ namespace OdeSMOKE
 					// A safety coefficient equal to 0.8 is included
 					{
 						double hScaleMinus = 0.;
-						if (this->p_ > this->MIN_ORDER)
+						if (this->p_ > this->MIN_ORDER_ODE)
 						{
-							hScaleMinus = this->Ep_(this->p_ - 1) * OpenSMOKE::ErrorControl(this->v_[this->p_], one_over_epsilon_);
+							hScaleMinus = this->Ep_[this->p_ - 1] * OpenSMOKE::ErrorControl(this->v_[this->p_], one_over_epsilon_);
 							hScaleMinus = 1. / (hScaleMinus + OpenSMOKE::OPENSMOKE_MACH_EPS_FLOAT);
 							hScaleMinus = 0.8*std::pow(hScaleMinus, 1. / double(this->p_));
 
@@ -1049,36 +1049,36 @@ namespace OdeSMOKE
 		double alfa3 = 0.;
 
 		// Order p-1
-		if (this->p_ > this->MIN_ORDER && this->odeOrderStatus_ != ORDER_STATUS_INCREASED)
+		if (this->p_ > this->MIN_ORDER_ODE && this->odeOrderStatus_ != ORDER_STATUS_INCREASED)
 		{
 			// Estimate the error e corresponding to order p-1
-			hScaleMinus = this->Ep_(this->p_ - 1) * OpenSMOKE::ErrorControl(this->v_[this->p_], one_over_epsilon_) + OpenSMOKE::OPENSMOKE_MACH_EPS_FLOAT;
+			hScaleMinus = this->Ep_[this->p_ - 1] * OpenSMOKE::ErrorControl(this->v_[this->p_], one_over_epsilon_) + OpenSMOKE::OPENSMOKE_MACH_EPS_FLOAT;
 			hScaleMinus = 1. / hScaleMinus;
 		
 			// Estimate the new step using a safetyfactor (alfa1)
-			alfa1 = this->alfa2_(this->p_ - 1) - this->deltaAlfa1_;
+			alfa1 = this->alfa2_[this->p_ - 1] - this->deltaAlfa1_;
 			hScaleMinus = alfa1*std::pow(hScaleMinus, 1. / double(this->p_));
 		}
 
 		// Order p
 		{
 			// Estimate the error e corresponding to order p
-			hScaleCurrent = this->Ep_(this->p_) * OpenSMOKE::ErrorControl(this->v_[this->p_ + 1], one_over_epsilon_) + OpenSMOKE::OPENSMOKE_MACH_EPS_FLOAT;
+			hScaleCurrent = this->Ep_[this->p_] * OpenSMOKE::ErrorControl(this->v_[this->p_ + 1], one_over_epsilon_) + OpenSMOKE::OPENSMOKE_MACH_EPS_FLOAT;
 			hScaleCurrent = 1. / hScaleCurrent;
 
 			// Estimate the new step using a safetyfactor (alfa2)
-			hScaleCurrent = this->alfa2_(this->p_) * std::pow(hScaleCurrent, 1. / double(this->p_ + 1));
+			hScaleCurrent = this->alfa2_[this->p_] * std::pow(hScaleCurrent, 1. / double(this->p_ + 1));
 		}
 
 		// Order p+1
 		if (this->p_ < this->maximum_order_ &&	this->odeOrderStatus_ != ORDER_STATUS_DECREASED)
 		{
 			// Estimate the error e corresponding to order p+1
-			hScalePlus = this->Ep_(this->p_ + 1) * OpenSMOKE::ErrorControl(this->v_[this->p_ + 2], one_over_epsilon_) + OpenSMOKE::OPENSMOKE_MACH_EPS_FLOAT;
+			hScalePlus = this->Ep_[this->p_ + 1] * OpenSMOKE::ErrorControl(this->v_[this->p_ + 2], one_over_epsilon_) + OpenSMOKE::OPENSMOKE_MACH_EPS_FLOAT;
 			hScalePlus = 1. / hScalePlus;
 
 			// Estimate the new step using a safetyfactor (alfa3)
-            		alfa3 = this->alfa2_(this->p_ + 1) - this->deltaAlfa3_;
+            alfa3 = this->alfa2_[this->p_ + 1] - this->deltaAlfa3_;
 			hScalePlus = alfa3*std::pow(hScalePlus, 1. / double(this->p_ + 2));
 		}
 
@@ -1093,7 +1093,7 @@ namespace OdeSMOKE
 		// 2. Choosing the order p
 		else if (hScaleCurrent > hScaleMinus && hScaleCurrent > hScalePlus)
 		{
-			this->hScale_ = (.75 / this->alfa2_(this->p_))*hScaleCurrent;
+			this->hScale_ = (.75 / this->alfa2_[this->p_])*hScaleCurrent;
 			this->orderInNextStep_ = this->p_;
 			this->odeOrderStatus_ = ORDER_STATUS_CONST;
 		}
@@ -1111,7 +1111,7 @@ namespace OdeSMOKE
 			iterMinimumOrder_++;
 			if (iterMinimumOrder_ < 2000)
 			{
-				this->hScale_ = (.75 / this->alfa2_(this->p_))*hScaleCurrent;
+				this->hScale_ = (.75 / this->alfa2_[this->p_])*hScaleCurrent;
 				this->orderInNextStep_ = this->p_;
 				this->odeOrderStatus_ = ORDER_STATUS_CONST;
 			}
@@ -1173,11 +1173,11 @@ namespace OdeSMOKE
 		// the the time step is very small it is better ho reduce the step and force the solver to use the minimum order
 		if (iterConstSteps_ > 500 || (this->numberOfSteps_ % 1000 == 0 && this->numberOfSteps_ != 0 && (std::fabs(this->h_) < 1.e-7 || std::fabs(this->h_) < 1.e-5*t_)))
 		{
-			if (this->p_ > this->MIN_ORDER)
+			if (this->p_ > this->MIN_ORDER_ODE)
 			{
 				fixedOrderMin_ = true;
 				iterMinimumOrder_ = 0;
-				this->orderInNextStep_ = this->MIN_ORDER;
+				this->orderInNextStep_ = this->MIN_ORDER_ODE;
 				this->odeOrderStatus_ = ORDER_STATUS_DECREASED;
 				this->hScale_ = 0.5;
 				this->hNextStep_ = this->h_*this->hScale_;

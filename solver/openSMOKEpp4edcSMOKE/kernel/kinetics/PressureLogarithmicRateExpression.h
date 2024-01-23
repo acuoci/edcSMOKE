@@ -93,7 +93,12 @@ namespace OpenSMOKE
 		/**
 		*@brief Writes a short summary on file
 		*/	
-		void WriteShortSummaryOnASCIIFile(std::ostream& fOutput) const;
+		void WriteShortSummaryOnASCIIFile(std::ostream& fOutput, const double conversion_factor_A) const;
+
+		/**
+		*@brief Writes reaction data in CHEMKIN format
+		*/
+		void WriteCHEMKINReactionData(std::stringstream& reaction_data, const double conversion_factor_A) const;
                 
         private:
             
@@ -109,12 +114,12 @@ namespace OpenSMOKE
 
 	private:
 
-		unsigned int N;						//!< number of points along the pressure axis
-		std::vector<double> lnA_;			//!< logarithm (natural) of factor frequencies
-		std::vector<double> Beta_;			//!< temperature exponents
-		std::vector<double> E_over_R_;		//!< normalized activation energy [K]
-		std::vector<double> p_;				//!< list of pressure points [Pa]
-		std::vector<double> lnp_;			//!< logarithm of pressure points (for efficiency reasons only)
+		unsigned int N;										//!< number of points along the pressure axis
+		std::vector< std::vector<double> > lnA_;			//!< logarithm (natural) of factor frequencies
+		std::vector< std::vector<double> > Beta_;			//!< temperature exponents
+		std::vector< std::vector<double> > E_over_R_;		//!< normalized activation energy [K]
+		std::vector< std::vector<double> > p_;				//!< list of pressure points [Pa]
+		std::vector< std::vector<double> > lnp_;			//!< logarithm of pressure points (for efficiency reasons only)
 	};
 
 }

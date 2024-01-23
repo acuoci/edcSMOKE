@@ -16,7 +16,7 @@
 |                                                                         |
 |   This file is part of OpenSMOKE++ framework.                           |
 |                                                                         |
-|	License                                                               |
+|   License                                                               |
 |                                                                         |
 |   Copyright(C) 2014, 2013, 2012  Alberto Cuoci                          |
 |   OpenSMOKE++ is free software: you can redistribute it and/or modify   |
@@ -38,16 +38,32 @@
 
 namespace OpenSMOKE
 {
+	void TransportPropertiesMap::Thermodiffusion(const double* moleFractions, const double* cpspecies, const unsigned int Mmain, const std::vector<unsigned int>& kreorder)
+	{
+		solve_thermodiffusion_onePlusM(moleFractions, cpspecies, Mmain, kreorder);
+	}
+
 	double TransportPropertiesMap::ThermalConductivity(const double* moleFractions)
 	{
 		lambda();
 		return lambdaMix(moleFractions);
 	}
 
+	double TransportPropertiesMap::ThermalConductivity(const double* moleFractions, const unsigned int Mmain, const std::vector<unsigned int>& kreorder)
+	{
+		return lambdaMult(moleFractions, Mmain, kreorder);
+	}
+
 	double TransportPropertiesMap::DynamicViscosity(const double* moleFractions)
 	{
 		eta();
 		return etaMix(moleFractions);
+	}
+
+	double TransportPropertiesMap::DynamicViscosity(const double* moleFractions, const unsigned int Mmain, const std::vector<unsigned int>& kreorder)
+	{
+		eta(Mmain, kreorder);
+		return etaMix(moleFractions, Mmain, kreorder);
 	}
 
 	void TransportPropertiesMap::MassDiffusionCoefficients(double* gammamix, const double* moleFractions, const bool bundling)
@@ -64,9 +80,29 @@ namespace OpenSMOKE
 		}
 	}
 
+	void TransportPropertiesMap::MassDiffusionCoefficients(double* gammamult, const double* moleFractions, const unsigned int Mmain, const std::vector<unsigned int>& kreorder)
+	{
+		gamma();
+		gammaMult(gammamult, moleFractions, Mmain, kreorder);
+	}
+
+	void TransportPropertiesMap::BinaryDiffusionCoefficients(const bool bundling)
+	{
+		if (bundling == false)
+			gamma();
+		else
+			bundling_gamma();
+	}
+
 	void TransportPropertiesMap::ThermalDiffusionRatios(double* tetamix, const double* moleFractions)
 	{
 		teta();
 		tetaMix(tetamix, moleFractions);
 	}
+
+	void TransportPropertiesMap::ThermalDiffusionRatios(double* tetamix, const double* moleFractions, const unsigned int Mmain, const std::vector<unsigned int>& kreorder)
+	{
+		tetaMult(tetamix, moleFractions, Mmain, kreorder);
+	}
+
 }

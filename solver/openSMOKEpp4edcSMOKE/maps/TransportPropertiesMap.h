@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------*\
+/*-----------------------------------------------------------------------*\
 |    ___                   ____  __  __  ___  _  _______                  |
 |   / _ \ _ __   ___ _ __ / ___||  \/  |/ _ \| |/ / ____| _     _         |
 |  | | | | '_ \ / _ \ '_ \\___ \| |\/| | | | | ' /|  _| _| |_ _| |_       |
@@ -16,7 +16,7 @@
 |                                                                         |
 |   This file is part of OpenSMOKE++ framework.                           |
 |                                                                         |
-|	License                                                               |
+|   License                                                               |
 |                                                                         |
 |   Copyright(C) 2014, 2013, 2012  Alberto Cuoci                          |
 |   OpenSMOKE++ is free software: you can redistribute it and/or modify   |
@@ -41,33 +41,41 @@ namespace OpenSMOKE
 {
 	//!  A struct to store common data for transport properties maps
 	/*!
-		 This struct provides the tools o store common data for transport properties maps.
+	This struct provides the tools o store common data for transport properties maps.
 	*/
 
 	struct TransportPropertiesMapBaseClass
-	{	
-		protected:
+	{
+	protected:
 
-			unsigned int nspecies_;
+		unsigned int nspecies_;
 
-			Eigen::VectorXd lambdaSpecies_;
-			Eigen::VectorXd etaSpecies_;
-			Eigen::VectorXd gammaSpecies_;
-			Eigen::VectorXd tetaSpecies_;
+		Eigen::VectorXd lambdaSpecies_;
+		Eigen::VectorXd etaSpecies_;
+		Eigen::VectorXd gammaSpecies_;
+		Eigen::VectorXd gammaSpeciesSelfDiffusion_;
+		Eigen::VectorXd tetaSpecies_;
+
+		// [Bertrand Naud] Thermodiffusion (1+M model)
+		Eigen::VectorXd DiKcij_; // from Fick diffusion main species
+		Eigen::VectorXd a10_;
+		Eigen::MatrixXd M1000_;
+		Eigen::MatrixXd M1001_;
+		Eigen::VectorXd inv_M0101_;
 	};
 
 
 	//!  A virtual class to provide a common interface to transport properties maps
 	/*!
-		 This virtual class provides a common interface to transport properties maps
+	This virtual class provides a common interface to transport properties maps
 	*/
 
 	class TransportPropertiesMap : public TransportPropertiesMapBaseClass
 	{
-	
+
 	public:
-            
-        /**
+
+		/**
 		* Sets the temperature (in K)
 		*/
 		virtual void SetTemperature(const double& T) = 0;
@@ -78,24 +86,54 @@ namespace OpenSMOKE
 		virtual void SetPressure(const double& P) = 0;
 
 		/**
+		*@brief [Bertrand Naud] Solves the thermodiffusion problem in order to calculate termal conductivity and thermal diffusion coefficients
+		*/
+		void Thermodiffusion(const double* moleFractions, const double* cpspecies, const unsigned int Mmain, const std::vector<unsigned int>& kreorder);
+
+		/**
 		*@brief Calculates the thermal conductivity of a mixture from the mole fractions
 		*/
 		double ThermalConductivity(const double* moleFractions);
-		
+
+		/**
+		*@brief [Bertrand Naud] Calculates the thermal conductivity of a mixture from the mole fractions (1+M model)
+		*/
+		double ThermalConductivity(const double* moleFractions, const unsigned int Mmain, const std::vector<unsigned int>& kreorder);
+
 		/**
 		*@brief Calculates the dynamic viscosity of a mixture from the mole fractions
-		*/		
+		*/
 		double DynamicViscosity(const double* moleFractions);
+
+		/**
+		*@brief Calculates the dynamic viscosity of a mixture from the mole fractions (1+M model)
+		*/
+		double DynamicViscosity(const double* moleFractions, const unsigned int M, const std::vector<unsigned int>& kreorder);
 
 		/**
 		*@brief Calculates the mass diffusion coefficients (mixture averaged formulation) of a mixture from the mole fractions
 		*/
-		void MassDiffusionCoefficients(double* gammamix, const double* moleFractions, const bool bundling=false);
-		
+		void MassDiffusionCoefficients(double* gammamix, const double* moleFractions, const bool bundling = false);
+
+		/**
+		*@brief [Bertrand Naud] Calculates the mass diffusion coefficients (1+M formulation) of a mixture from the mole fractions
+		*/
+		void MassDiffusionCoefficients(double* gammamult, const double* moleFractions, const unsigned int Mmain, const std::vector<unsigned int>& kreorder);
+
+		/**
+		*@brief Calculates the binary diffusion coefficients
+		*/
+		void BinaryDiffusionCoefficients(const bool bundling);
+
 		/**
 		*@brief Calculates the thermal diffusion coefficients (mixture averaged formulation) of a mixture from the mole fractions
-		*/		
+		*/
 		void ThermalDiffusionRatios(double* tetamix, const double* moleFractions);
+
+		/**
+		*@brief [Bertrand Naud] Calculates the thermal diffusion coefficients (1+M formulation) of a mixture from the mole fractions
+		*/
+		void ThermalDiffusionRatios(double* tetamix, const double* moleFractions, const unsigned int Mmain, const std::vector<unsigned int>& kreorder);
 
 		/**
 		*@brief Sets the coefficients of transport properties for each species
@@ -110,7 +148,10 @@ namespace OpenSMOKE
 		/**
 		*@brief Returns true if the species bundling for calculation of mass diffusion coefficients is activated
 		*/
-		bool is_species_bundling() const { return species_bundling_;  }
+		bool is_species_bundling() const { return species_bundling_; }
+
+
+	protected:
 
 		/**
 		*@brief TODO
@@ -118,11 +159,16 @@ namespace OpenSMOKE
 		virtual void Test(const int nLoops, const double& T, int* index) = 0;
 
 	protected:
-		
+
 		/**
 		*@brief Combines the species thermal conductivities to calculate the mixture thermal conductivity
 		*/
 		virtual double lambdaMix(const double* moleFractions) = 0;
+
+		/**
+		*@brief [Bertrand Naud] Calculates the mixture thermal conductivity using 1+M model
+		*/
+		virtual double lambdaMult(const double* moleFractions, const unsigned int Mmain, const std::vector<unsigned int>& kreorder) = 0;
 
 		/**
 		*@brief Combines the species dynamic viscosities to calculate the mixture dynamic viscosity
@@ -130,9 +176,19 @@ namespace OpenSMOKE
 		virtual double etaMix(const double* moleFractions) = 0;
 
 		/**
+		*@brief Combines the species dynamic viscosities to calculate the mixture dynamic viscosity
+		*/
+		virtual double etaMix(const double* moleFractions, const unsigned int Mmain, const std::vector<unsigned int>& kreorder) = 0;
+
+		/**
 		*@brief Combines the species mass diffusion coefficients to calculate the mixture mass diffusion coefficients
 		*/
 		virtual void gammaMix(double* gammamix, const double* moleFractions) = 0;
+
+		/**
+		*@brief [Bertrand Naud] Calculates the mass diffusion coefficients using 1+M mmodel
+		*/
+		virtual void gammaMult(double* gammamult, const double* moleFractions, const unsigned int Mmain, const std::vector<unsigned int>& kreorder) = 0;
 
 		/**
 		*@brief Combines the species mass diffusion coefficients to calculate the mixture mass diffusion coefficients using the bundling algorithm
@@ -145,22 +201,32 @@ namespace OpenSMOKE
 		virtual void tetaMix(double* tetamix, const double* moleFractions) = 0;
 
 		/**
+		*@brief [Bertrand Naud] Calculates the mixture thermal diffusion coefficients using 1+M model
+		*/
+		virtual void tetaMult(double* tetamix, const double* moleFractions, const unsigned int Mmain, const std::vector<unsigned int>& kreorder) = 0;
+
+		/**
 		*@brief Combines the planck mean absorption coefficients of relevant species, according to their mole fractions
 		*/
 		virtual double kPlanckMix(const double* moleFractions) = 0;
 
 		/**
-		*@brief Calculates the thermal conductivities for all the species 
+		*@brief Calculates the thermal conductivities for all the species
 		*/
 		virtual void lambda() = 0;
 
 		/**
-		*@brief Calculates the dynamic viscosities for all the species 
+		*@brief Calculates the dynamic viscosities for all the species
 		*/
 		virtual void eta() = 0;
 
 		/**
-		*@brief Calculates the mass diffusion coefficients for all the species 
+		*@brief Calculates the dynamic viscosities for all the species
+		*/
+		virtual void eta(const unsigned int Mmain, const std::vector<unsigned int>& kreorder) = 0;
+
+		/**
+		*@brief Calculates the mass diffusion coefficients for all the species
 		*/
 		virtual void gamma() = 0;
 
@@ -170,19 +236,29 @@ namespace OpenSMOKE
 		virtual void bundling_gamma() = 0;
 
 		/**
-		*@brief Calculates the thermal diffusion coefficients for all the species 
+		*@brief Calculates the thermal diffusion coefficients for all the species
 		*/
 		virtual void teta() = 0;
-                
-        protected:
-            
-        double T_;							//!< temperature [K]
-		double P_;							//!< pressure [Pa]
 
-		double T_old_;						//!< temperature [K] (previous value)
-		double P_old_;						//!< pressure [Pa] (previous value)
+		/**
+		*@brief [Bertrand Naud] Reset the vector of species (1-index based) for which the Soret effect is active to all species (1+M model)
+		*/
+		virtual void reset_iThermalDiffusionRatios() = 0;
 
-		bool species_bundling_;				//!< bundling of species for calculation of mass diffusion coefficients
+		/**
+		*@brief [Bertrand Naud] Solves the thermodiffusion problem (1+M model)
+		*/
+		virtual void solve_thermodiffusion_onePlusM(const double* moleFractions, const double* cpspecies, const unsigned int Mmain, const std::vector<unsigned int>& kreorder) = 0;
+
+	protected:
+
+		double T_;			//!< temperature [K]
+		double P_;			//!< pressure [Pa]
+
+		double T_old_;			//!< temperature [K] (previous value)
+		double P_old_;			//!< pressure [Pa] (previous value)
+
+		bool species_bundling_;		//!< bundling of species for calculation of mass diffusion coefficients
 	};
 }
 

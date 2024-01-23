@@ -535,7 +535,7 @@ namespace OpenSMOKE
 	{
 		std::vector<size_t> indices(values.size());
 
-		#if defined(_WIN32) || defined(_WIN64) 
+		#if defined(_WIN32) || defined(_WIN64)  || defined (__APPLE__)
 
 		std::iota(begin(indices), end(indices), static_cast<size_t>(0));
 		std::sort(begin(indices), end(indices), [&](size_t a, size_t b) { return values[a] > values[b]; });
@@ -581,14 +581,10 @@ namespace OpenSMOKE
 	{
 		std::vector<size_t> indices(values.size());
 
-		#if defined(_WIN32) || defined(_WIN64) 
+		#if defined(_WIN32) || defined(_WIN64)  || defined (__APPLE__)
 
 		std::iota(begin(indices), end(indices), static_cast<size_t>(0));
 		std::sort(begin(indices), end(indices), [&](size_t a, size_t b) { return values[a] < values[b]; });
-
-		#elif __APPLE__
-		
-			ErrorMessage("sort_and_track_indices_increasing", "sort_and_track_indices_increasing not yet available for MacOSX");
 	
 		#else
 
@@ -795,7 +791,7 @@ namespace OpenSMOKE
         }
         #else
         {
-                for(int i=0;i<rval->size();i++)
+                for(unsigned int i=0;i<rval->size();i++)
                     (*rval)[i] = std::exp(lval[i]);          
         }
         #endif

@@ -42,30 +42,6 @@
 |                                                                         |
 \*-----------------------------------------------------------------------*/
 
-// Read the kinetic scheme in XML format
-OpenSMOKE::ThermodynamicsMap_CHEMKIN* thermodynamicsMapXML; 
-OpenSMOKE::KineticsMap_CHEMKIN* kineticsMapXML;
-OpenSMOKE::TransportPropertiesMap_CHEMKIN* transportMapXML;
-
-{	
-	word kinetics(thermo.lookup("kineticMechanism"));
-	boost::filesystem::path path_kinetics = kinetics;
-
-	rapidxml::xml_document<> doc;
-	std::vector<char> xml_string;
-	OpenSMOKE::OpenInputFileXML(doc, xml_string,path_kinetics / "kinetics.xml");
-
-	double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
-	thermodynamicsMapXML = new OpenSMOKE::ThermodynamicsMap_CHEMKIN(doc); 
-	transportMapXML = new OpenSMOKE::TransportPropertiesMap_CHEMKIN(doc); 
-	kineticsMapXML = new OpenSMOKE::KineticsMap_CHEMKIN(*thermodynamicsMapXML, doc); 					
-	double tEnd = OpenSMOKE::OpenSMOKEGetCpuTime();
-	std::cout << " * Time to read XML file: " << tEnd-tStart << std::endl;
-}
-
-// Total number of equations for ODE systems (without DRG)
-const int ne_total = thermodynamicsMapXML->NumberOfSpecies()+3;	// species and temperature + 2 dummy variables
-
 const word combustionOptionsDictionaryName("combustionOptions");
 
 Info<< "Reading CombustionOptions dictionary\n" << endl;
@@ -80,6 +56,31 @@ IOdictionary combustionOptionsDictionary
 		IOobject::NO_WRITE
 	)
 );
+
+// Read the kinetic scheme in XML format
+OpenSMOKE::ThermodynamicsMap_CHEMKIN* thermodynamicsMapXML; 
+OpenSMOKE::KineticsMap_CHEMKIN* kineticsMapXML;
+OpenSMOKE::TransportPropertiesMap_CHEMKIN* transportMapXML;
+
+{	
+	word kinetics(combustionOptionsDictionary.lookup("kineticMechanism"));
+	boost::filesystem::path path_kinetics = kinetics;
+	boost::property_tree::ptree ptree;
+    	boost::property_tree::read_xml( (path_kinetics / "kinetics.xml").c_str(), ptree );
+
+	double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
+	thermodynamicsMapXML = new OpenSMOKE::ThermodynamicsMap_CHEMKIN(ptree); 
+	transportMapXML = new OpenSMOKE::TransportPropertiesMap_CHEMKIN(ptree); 
+	kineticsMapXML = new OpenSMOKE::KineticsMap_CHEMKIN(*thermodynamicsMapXML, ptree); 					
+	double tEnd = OpenSMOKE::OpenSMOKEGetCpuTime();
+	std::cout << " * Time to read XML file: " << tEnd-tStart << std::endl;
+}
+
+const word inertSpecie(combustionOptionsDictionary.lookup("inertSpecie"));
+const label inertIndex(composition.species()[inertSpecie]);
+
+// Total number of equations for ODE systems (without DRG)
+const int ne_total = thermodynamicsMapXML->NumberOfSpecies()+3;	// species and temperature + 2 dummy variables
 
 // DRG (Directed Relation Graph)
 OpenSMOKE::DRG* drg;
@@ -130,8 +131,6 @@ Switch iLES = false;
 		)
 	);
 
-
-	#if OPENFOAM_VERSION >= 40
 	word simulationType(turbulencePropertiesDictionary.lookup("simulationType"));
 	if (simulationType == "RAS")
 	{
@@ -151,27 +150,6 @@ Switch iLES = false;
 	{
 		FatalError << "The ED models require turbulent conditions (i.e. LES or RAS)" << exit(FatalError);
 	}
-	#else
-	word simulationType(turbulencePropertiesDictionary.lookup("simulationType"));
-	if (simulationType == "RASModel")
-	{
-		iLES = false;
-		Info << "This is a RANS simulation..." << endl;
-	}
-	else if (simulationType == "LESModel")
-	{
-		#if STEADYSTATE == 1
-		FatalError << "LES is available only for unsteady solvers!" << exit(FatalError);
-		#else
-		iLES = true;
-		Info << "This is a Large Eddy Simulation (LES)..." << endl;
-		#endif
-	}
-	else
-	{
-		FatalError << "The ED models require turbulent conditions (i.e. LESModel or RASModel)" << exit(FatalError);
-	}
-	#endif
 }
 
 // Check if epsilon can be found (only for RAS)
@@ -823,11 +801,7 @@ volScalarField kappa
 		// check if field exists and can be read
 		if (combustionModel == "EDC" || combustionModel == "PaSR")
 		{
-			#if DEVVERSION == 1
-			if (header.typeHeaderOk<volScalarField>(true))
-			#else
 			if (header.headerOk())
-			#endif
 			{
 				std::cout << "from file..." << std::endl;
 				YStar_.set
@@ -950,11 +924,7 @@ if (combustionModel == "EDC" || combustionModel == "PaSR")
 		);
 
 		// check if field exists and can be read
-		#if DEVVERSION == 1
-		if (header.typeHeaderOk<volScalarField>(true))
-		#else
 		if (header.headerOk())
-		#endif
 		{
 			std::cout << "from file..." << std::endl;
 			TStar_.set
@@ -1069,13 +1039,8 @@ volScalarField one_over_tauStar
 		if ( e > maxSumMassFractionsError)
 			FatalError << "Fatal error: the sum of mass fractions in cell " << celli << " is equal to " << sum << " (error " << sum-1. << endl; 
 			
-		#if OPENFOAM_VERSION >= 40
 		for (unsigned int i=0;i<thermodynamicsMapXML->NumberOfSpecies();i++)
 			Y[i].ref()[celli]/=sum;
-		#else
-		for (unsigned int i=0;i<thermodynamicsMapXML->NumberOfSpecies();i++)
-			Y[i].internalField()[celli]/=sum;
-		#endif
 
 		sumTotal += sum;
 		if (e>maxError) maxError = e;
@@ -1107,15 +1072,8 @@ if (combustionModel == "EDC" || combustionModel == "PaSR")
 		if ( e > maxSumMassFractionsError)
 			FatalError << "Fatal error: the sum of mass fractions in cell " << celli << " is equal to " << sum << " (error " << sum-1. << endl; 
 			
-		#if OPENFOAM_VERSION >= 40
 		for (unsigned int i=0;i<thermodynamicsMapXML->NumberOfSpecies();i++)
 			YStar_[i].ref()[celli]/=sum;
-		#else
-		for (unsigned int i=0;i<thermodynamicsMapXML->NumberOfSpecies();i++)
-			YStar_[i].internalField()[celli]/=sum;
-		#endif
-
-		
 
 		sumTotal += sum;
 		if (e>maxError) maxError = e;

@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------*\
+/*-----------------------------------------------------------------------*\
 |    ___                   ____  __  __  ___  _  _______                  |
 |   / _ \ _ __   ___ _ __ / ___||  \/  |/ _ \| |/ / ____| _     _         |
 |  | | | | '_ \ / _ \ '_ \\___ \| |\/| | | | | ' /|  _| _| |_ _| |_       |
@@ -83,6 +83,23 @@ namespace OpenSMOKE
 			}
 		}
 
+		// Reorder
+		{
+			unsigned current_index = 0;
+			std::vector<std::string> target_elements = { "C", "H", "O", "N" };
+
+			for (unsigned int k = 0; k < target_elements.size(); k++)
+			{
+				for (unsigned int j = 0; j < element_names_list_.size(); j++)
+					if (element_names_list_[j] == target_elements[k])
+					{
+						std::iter_swap(element_names_list_.begin() + current_index, element_names_list_.begin() + j);
+						current_index++;
+						break;
+					}
+			}
+		}
+
 		// Recover atomic weights
 		element_weights_list_.resize(element_names_list_.size());
 		element_weights_list_.setZero();
@@ -132,7 +149,7 @@ namespace OpenSMOKE
 			if (relative_errors(i)>epsilon)
 			{
 				fOut << "Error in reaction stoichiometry" << std::endl;
-				fOut << "Atom      Reactants       Products        Rel. error(%)" << std::endl;
+				fOut << "Atom      Reactants       Products        Rel. error(%)   Abs. error" << std::endl;
 				for(int k=0;k<reactant_side.size();k++)
 				{
 					if (relative_errors(k)*100. > epsilon)
@@ -141,6 +158,7 @@ namespace OpenSMOKE
 						fOut << std::left << std::setw(16) << reactant_side(k);
 						fOut << std::left << std::setw(16) << product_side(k);
 						fOut << std::left << std::setw(16) << relative_errors(k)*100.;
+						fOut << std::left << std::setw(16) << std::abs(reactant_side(k)- product_side(k));
 						fOut << std::endl;
 					}
 				}
@@ -151,7 +169,8 @@ namespace OpenSMOKE
 		if (max_relative_errors>1.e-12)
 		{
 			fOut << "Warning: the reaction is not perfectly balanced!" << std::endl;
-			fOut << "Atom      Reactants       Products        Rel. error(%)" << std::endl;
+			//fOut << "Atom      Reactants       Products        Rel. error(%)" << std::endl;
+			fOut << "Atom      Reactants       Products        Rel. error(%)   Abs. error" << std::endl;
 			for(int k=0;k<reactant_side.size();k++)
 			{
 				if (relative_errors(k)*100. > 1e-10)
@@ -160,6 +179,7 @@ namespace OpenSMOKE
 					fOut << std::left << std::setw(16) << reactant_side(k);
 					fOut << std::left << std::setw(16) << product_side(k);
 					fOut << std::left << std::setw(16) << relative_errors(k)*100.;
+					fOut << std::left << std::setw(16) << std::abs(reactant_side(k) - product_side(k));
 					fOut << std::endl;
 				}
 			}
@@ -224,13 +244,12 @@ namespace OpenSMOKE
 					reaction.set_product_nu(i, new_coefficient);
 				}
 
+				return 1;
 			}
 			else
 			{
-				OpenSMOKE::FatalErrorMessage("Something wrong in the stoichiometry: number of equations larger than number of unknowns");
+				return 0;
 			}
-
-			return 0;
 		}
 	}
 

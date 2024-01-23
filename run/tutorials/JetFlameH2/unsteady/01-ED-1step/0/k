@@ -45,12 +45,12 @@ boundaryField
     }
     leftside
     {
-        type            compressible::kqRWallFunction;
+        type            kqRWallFunction;
         value           uniform 1;
     }
     burnerwall
     {
-        type            compressible::kqRWallFunction;
+        type            kqRWallFunction;
         value           uniform 1;
     }
     front

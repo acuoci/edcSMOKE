@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------*\
+/*-----------------------------------------------------------------------*\
 |    ___                   ____  __  __  ___  _  _______                  |
 |   / _ \ _ __   ___ _ __ / ___||  \/  |/ _ \| |/ / ____| _     _         |
 |  | | | | '_ \ / _ \ '_ \\___ \| |\/| | | | | ' /|  _| _| |_ _| |_       |
@@ -58,6 +58,11 @@ namespace OdeSMOKE
 		*@brief Default constructor
 		*/
 		MethodGear();
+
+		/**
+		*@brief Default destructor
+		*/
+		~MethodGear();
 
 		/**
 		*@brief The Jacobian is calculated on a numerical basis
@@ -150,7 +155,7 @@ namespace OdeSMOKE
 		unsigned int FindCorrection(const double t, const Eigen::VectorXd& one_over_epsilon);
 
 		/**
-		*@brief Function internallyused to estimate the convergence rate of the method and apply changes on the
+		*@brief Function internally used to estimate the convergence rate of the method and apply changes on the
 		integration parameters (if needed): order and step size
 		*/
 		void ConvergenceRate();
@@ -170,7 +175,7 @@ namespace OdeSMOKE
 
 		/**
 		*@brief Check if the current solution does not satisfy the imposed constraints
-		*@param y the vector which is supposed to satisfy the contraints
+		*@param y the vector which is supposed to satisfy the constraints
 		*/
 		unsigned int CheckIllegalConstraints(const Eigen::VectorXd& y);
 
@@ -178,12 +183,12 @@ namespace OdeSMOKE
 	protected:
 
 		// Parameters of the Gear methods
-		std::vector<Eigen::VectorXd> r_;			//!< vector r characteristic of the method (there is a vector for each order which was coded, up to MAX_ORDER)
-		Eigen::VectorXd Ep_;					//!< error constant Ep (see Buzzi-Ferraris, eq. 29.163 and 29.204)
+		Eigen::VectorXd* r_;			//!< vector r characteristic of the method (there is a vector for each order which was coded, up to MAXORDER)
+		double* Ep_;					//!< error constant Ep (see Buzzi-Ferraris, eq. 29.163 and 29.204)
 
 		// Internal vectors
-		std::vector<Eigen::VectorXd> z_;			//!< z vectors z
-		std::vector<Eigen::VectorXd> v_;			//!< v vectors v
+		Eigen::VectorXd* z_;			//!< z vectors z
+		Eigen::VectorXd* v_;			//!< v vectors v
 		Eigen::VectorXd b_;				//!< correction vector b
 		Eigen::VectorXd deltab_;		//!< correction vector for the correction vector b
 		Eigen::VectorXd y_;
@@ -196,7 +201,7 @@ namespace OdeSMOKE
 		// Parameter to choose the next order
 		double deltaAlfa1_;					//!< reduction of safety coefficient for the current order minus 1 (see Buzzi-Ferraris, eq. 29.187)
 		double deltaAlfa3_;					//!< reduction of safety coefficient for the current order plus 1 (see Buzzi-Ferraris, eq. 29.189)
-		Eigen::VectorXd alfa2_;					//!< safety coefficient for the current order (see Buzzi-Ferraris, eq. 29.188)
+		double* alfa2_;						//!< safety coefficient for the current order (see Buzzi-Ferraris, eq. 29.188)
 
 		// Policy about the order and the step size
 		OdeHStatus odeHStatus_;				//!< status of the step size (decreased, constant, or decreased)
@@ -241,14 +246,14 @@ namespace OdeSMOKE
 		// Jacobian management
 		unsigned int stepOfLastJacobian_;						//!< step at which the Jacobian was assembled last time
 		unsigned int maxIterationsJacobian_;					//!< maximum number of steps after which the Jacobian must be updated (can be changed by the user)
-		static const unsigned int MAX_ITERATIONS_JACOBIAN;		//!< maximum number of steps without updating the Jacobian (default value)
+		static const unsigned int MAX_ITERATIONS_JACOBIAN = 50;	//!< maximum number of steps without updating the Jacobian (default value)
 		JacobianType jacobianType_;								//!< type of Jacobian matrix
 		JacobianStatus jacobianStatus_;							//!< ???
 
 		// Default values
-		static const unsigned int MIN_ORDER;					//!< minimum order of the method
-		static const unsigned int MAX_CONVERGENCE_FAILURE;		//!< maximum number of allowed successive convergence error
-		static const unsigned int MAX_ORDER;					//!< maximum order which was coded in the current implementation 
+		static const unsigned int MIN_ORDER_ODE = 1;				//!< minimum order of the method
+		static const unsigned int MAX_ORDER_ODE = 5;				//!< maximum order which was coded in the current implementation 
+		static const unsigned int MAX_CONVERGENCE_FAILURE = 50;		//!< maximum number of allowed successive convergence error
 
 		// Constraints on minimum and maximum values
 		bool min_constraints_;									//!< constraints on minimum values are enabled
@@ -261,15 +266,15 @@ namespace OdeSMOKE
 		FactorizationStatus factorizationStatus_;				//!< status of factorization (must be factorized or not)
 		unsigned int stepOfLastFactorization_;					//!< step at which the last factorization was performed
 
-
 		// Default values
-		static const unsigned int DEFAULT_MAX_CONVERGENCE_ITER;		//!< maximum number of iteration for the Newton's method
-		static const unsigned int MAX_ITERATIONS_FACTORIZATION;		//!< maximum number of steps for which the Jacobian can be kept constant
-		static const double DELTA_ALFA1;							//!< reduction of safety coefficient for the current order minus 1 (see Buzzi-Ferraris, eq. 29.187)
-		static const double ALFA2;									//!< reduction of safety coefficient for the current order (see Buzzi-Ferraris, eq. 29.188)
-		static const double DELTA_ALFA3;							//!< reduction of safety coefficient for the current order plus 1 (see Buzzi-Ferraris, eq. 29.189)
-	};
+		static const unsigned int DEFAULT_MAX_CONVERGENCE_ITER = 4;		//!< maximum number of iteration for the Newton's method
+		static const unsigned int MAX_ITERATIONS_FACTORIZATION = 20;	//!< maximum number of steps for which the Jacobian can be kept constant
+		
+		static const double DELTA_ALFA1;								//!< reduction of safety coefficient for the current order minus 1 (see Buzzi-Ferraris, eq. 29.187)
+		static const double ALFA2;										//!< reduction of safety coefficient for the current order (see Buzzi-Ferraris, eq. 29.188)
+		static const double DELTA_ALFA3;								//!< reduction of safety coefficient for the current order plus 1 (see Buzzi-Ferraris, eq. 29.189)
 
+	};
 }
 
 #include "MethodGear.hpp"

@@ -42,138 +42,68 @@
 |                                                                         |
 \*-----------------------------------------------------------------------*/
 
+if (energyEquation == true)
 {
-	volScalarField rAU(1.0/UEqn.A());
-	volScalarField rAtU(1.0/(1.0/rAU - UEqn.H1()));
-	volVectorField HbyA(constrainHbyA(rAU*UEqn.H(), U, p));
-	tUEqn.clear();
+	T.max(minT);
+    	T.min(maxT);
 
-	bool closedVolume = false;
-
-	surfaceScalarField phiHbyA("phiHbyA", fvc::flux(rho*HbyA));
-	MRF.makeRelative(fvc::interpolate(rho), phiHbyA);
-
-	volScalarField rhorAtU("rhorAtU", rho*rAtU);
-
-	// Update the pressure BCs to ensure flux consistency
-	constrainPressure(p, rho, U, phiHbyA, rhorAtU, MRF);
-
-	if (simple.transonic())
+	if (combustionModel == "EDC")
 	{
-	    surfaceScalarField phid
-	    (
-		"phid",
-		(fvc::interpolate(psi)/fvc::interpolate(rho))*phiHbyA
-	    );
+		TStar_[0].max(minT);
+    		TStar_[0].min(maxT);
+	}
+	volScalarField& he = thermo.he();
 
-	    phiHbyA +=
-		fvc::interpolate(rho*(rAtU - rAU))*fvc::snGrad(p)*mesh.magSf()
-	      - fvc::interpolate(p)*phid;
+	if (laminarDiffusion == true)
+	{
+		dimensionedScalar zero("zero", dimensionSet(1,-1,-3,0,0,0,0), scalar(0.)); 
+		massDiffusionInEnergyEquation = zero;
 
-	    HbyA -= (rAU - rAtU)*fvc::grad(p);
+		forAll(Y, i)
+		{ 
+			volScalarField& Yi = Y[i];
+			volScalarField& Dmixi = Dmix_[i];
+			volScalarField& HeSpeciesi = HeSpecies_[i];
 
-	    while (simple.correctNonOrthogonal())
-	    {
-		fvScalarMatrix pEqn
-		(
-		    fvc::div(phiHbyA)
-		  + fvm::div(phid, p)
-		  - fvm::laplacian(rhorAtU, p)
-		 ==
-		    fvOptions(psi, p, rho.name())
-		);
-
-		// Relax the pressure equation to maintain diagonal dominance
-		pEqn.relax();
-
-		#if DEVVERSION == 1
-		pEqn.setReference
-		(
-		    pressureControl.refCell(),
-		    pressureControl.refValue()
-		);
-	        #else
-	        pEqn.setReference(pRefCell, pRefValue);
-	        #endif
-
-		pEqn.solve();
-
-		if (simple.finalNonOrthogonalIter())
-		{
-		    phi = phiHbyA + pEqn.flux();
+			massDiffusionInEnergyEquation += HeSpeciesi* (fvc::laplacian(rho*Dmixi, Yi)); 
 		}
-	    }
 	}
-	else
+
+	// Energy equation
 	{
-	    closedVolume = adjustPhi(phiHbyA, U, p);
-
-	    phiHbyA += fvc::interpolate(rho*(rAtU - rAU))*fvc::snGrad(p)*mesh.magSf();
-	    HbyA -= (rAU - rAtU)*fvc::grad(p);
-
-	    while (simple.correctNonOrthogonal())
-	    {
-		fvScalarMatrix pEqn
+		
+		fvScalarMatrix EEqn
 		(
-		    fvc::div(phiHbyA)
-		  - fvm::laplacian(rhorAtU, p)
-		  ==
-		    fvOptions(psi, p, rho.name())
+			fvm::div(phi, he)
+		        + (
+			    he.name() == "e"
+			  ? fvc::div(phi, volScalarField("Ekp", 0.5*magSqr(U) + p/rho))
+			  : fvc::div(phi, volScalarField("K", 0.5*magSqr(U)))
+			  )
+			- fvm::laplacian(rho*turbulence->nut()/Prt, he)
+			- radiation->Sh(thermo, he)
+                        + massDiffusionInEnergyEquation
+			==
+			Qdot +
+			fvModels.source(rho, he)
 		);
 
-		#if DEVVERSION == 1
-		pEqn.setReference
-		(
-		    pressureControl.refCell(),
-		    pressureControl.refValue()
-		);
-	        #else
-	        pEqn.setReference(pRefCell, pRefValue);
-	        #endif
+    		EEqn.relax();
 
-		pEqn.solve();
+    		fvConstraints.constrain(EEqn);
 
-		if (simple.finalNonOrthogonalIter())
-		{
-		    phi = phiHbyA + pEqn.flux();
-		}
-	    }
+   		EEqn.solve();
+
+    		fvConstraints.constrain(he);
+
+    		thermo.correct();
+    		radiation->correct();
 	}
 
-	// The incompressibe form of the continuity error check is appropriate for
-	// steady-state compressible also.
-	#include "incompressible/continuityErrs.H"
+	T.max(minT);
+    	T.min(maxT);
+	
+	Info<< "min/max(T) = " << min(T).value() << ", " << max(T).value() << endl;
 
-	// Explicitly relax pressure for momentum corrector
-	p.relax();
-
-	U = HbyA - rAtU*fvc::grad(p);
-	U.correctBoundaryConditions();
-	fvOptions.correct(U);
-
-	#if DEVVERSION == 1
-	pressureControl.limit(p);
-	#endif
-
-	// For closed-volume cases adjust the pressure and density levels
-	// to obey overall mass continuity
-	if (closedVolume)
-	{
-	    p += (initialMass - fvc::domainIntegrate(psi*p))
-		/fvc::domainIntegrate(psi);
-	}
-
-	p.correctBoundaryConditions();
-
-	// Recalculate density from the relaxed pressure
-	rho = thermo.rho();
-
-	if (!simple.transonic())
-	{
-	    rho.relax();
-	}
-
-	Info	<< "rho max/min : "
-		<< max(rho).value() << " "
-		<< min(rho).value() << endl;
+	#include "sparkPatch.H"
 }

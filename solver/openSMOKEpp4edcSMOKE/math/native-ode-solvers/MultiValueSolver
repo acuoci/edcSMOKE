@@ -40,3 +40,4 @@
 #include "KernelDense.h"
 #include "KernelSparse.h"
 #include "KernelBand.h"
+#include "KernelTridiagonalBlock.h"

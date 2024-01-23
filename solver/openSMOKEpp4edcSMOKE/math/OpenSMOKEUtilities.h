@@ -40,7 +40,6 @@
 #include "OpenSMOKEStdInclude.h"
 #include "OpenSMOKEBaseClass.h"
 #include <boost/filesystem.hpp>
-#include "rapidxml.hpp"
 
 namespace OpenSMOKE
 {

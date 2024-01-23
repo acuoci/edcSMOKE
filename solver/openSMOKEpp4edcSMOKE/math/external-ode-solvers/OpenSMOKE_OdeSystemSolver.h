@@ -59,18 +59,20 @@ namespace OpenSMOKE
 	
 			void SetAnalyticalJacobian(const bool flag)
 			{
-				if (flag == true)			iJacobian_ = 1;
+				if (flag == true)		iJacobian_ = 1;
 				else if (flag == false)		iJacobian_ = 0;
 			}
 
 			void SetAbsoluteTolerance(const double tolerance)
 			{
-				absTolerance_[0] = tolerance;
+				if (tolerance > 0.)
+					absTolerance_[0] = tolerance;
 			}
 	
 			void SetRelativeTolerance(const double tolerance)
 			{
-				relTolerance_[0] = tolerance;
+				if (tolerance > 0.)
+					relTolerance_[0] = tolerance;
 			}
 
 			void Solution(double* solution) const
@@ -85,20 +87,27 @@ namespace OpenSMOKE
 
 			void SetMaximumNumberOfSteps(const int value)
 			{
+				// If negative number, no maximum is prescribed
 				iSetMaximumNumberOfSteps_ = true;
 				maximumNumberOfSteps_ = value;
 			}
 
 			void SetMaximumOrder(const int value)
 			{
-				iSetMaximumOrder_ = true;
-				maximumOrder_ = value;
+				if (value >= 0)
+				{
+					iSetMaximumOrder_ = true;
+					maximumOrder_ = value;
+				}
 			}
 
 			void SetMaximumNumberOfPrints(const int value)
 			{
-				iSetMaximumNumberOfPrints_ = true;
-				maximumNumberOfPrints_ = value;
+				if (value >= 0)
+				{
+					iSetMaximumNumberOfPrints_ = true;
+					maximumNumberOfPrints_ = value;
+				}
 			}
 
 			void SetFirstStep(const double value)
@@ -250,8 +259,8 @@ namespace OpenSMOKE
 			maximumNumberOfPrints_ = 0;
 			maximumNumberOfSteps_ = 0;
 			maximumOrder_ = 0;
-			maximumStep_ = 0;
-			minimumStep_ = 0;
+			maximumStep_ = 0.;
+			minimumStep_ = 0.;
 			firstStep_ = 1.e-6;
 
 			verbose_output_ = true;

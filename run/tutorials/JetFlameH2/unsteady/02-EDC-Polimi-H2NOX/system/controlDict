@@ -23,7 +23,7 @@ startTime       0;
 
 stopAt          endTime;
 
-endTime         0.5;
+endTime         2;
 
 deltaT          1e-7;
 
@@ -52,7 +52,7 @@ maxCo           0.1;
 
 // ************************************************************************* //
 
-
+/*
 functions
 {
 	outputFrequency 1000;
@@ -132,3 +132,6 @@ functions
     		);
   	}
 }
+
+*/
+

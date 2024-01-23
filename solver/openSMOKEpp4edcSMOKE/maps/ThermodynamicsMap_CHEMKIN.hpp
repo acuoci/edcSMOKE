@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------*\
+/*-----------------------------------------------------------------------*\
 |    ___                   ____  __  __  ___  _  _______                  |
 |   / _ \ _ __   ___ _ __ / ___||  \/  |/ _ \| |/ / ____| _     _         |
 |  | | | | '_ \ / _ \ '_ \\___ \| |\/| | | | | ' /|  _| _| |_ _| |_       |
@@ -16,7 +16,7 @@
 |                                                                         |
 |   This file is part of OpenSMOKE++ framework.                           |
 |                                                                         |
-|	License                                                               |
+|   License                                                               |
 |                                                                         |
 |   Copyright(C) 2014, 2013, 2012  Alberto Cuoci                          |
 |   OpenSMOKE++ is free software: you can redistribute it and/or modify   |
@@ -36,6 +36,10 @@
 
 #include "math/OpenSMOKEUtilities.h"
 
+#include <boost/property_tree/xml_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/foreach.hpp>
+
 namespace OpenSMOKE
 {
 	ThermodynamicsMap_CHEMKIN::ThermodynamicsMap_CHEMKIN(const unsigned int nSpecies)
@@ -46,24 +50,24 @@ namespace OpenSMOKE
 		MemoryAllocation();
 	}
 
-	ThermodynamicsMap_CHEMKIN::ThermodynamicsMap_CHEMKIN(rapidxml::xml_document<>& doc)
+	ThermodynamicsMap_CHEMKIN::ThermodynamicsMap_CHEMKIN(boost::property_tree::ptree& ptree)
 	{
 		this->verbose_output_ = true;
 	
-		ImportSpeciesFromXMLFile(doc);
-		this->ImportElementsFromXMLFile(doc);
+		ImportSpeciesFromXMLFile(ptree);
+		this->ImportElementsFromXMLFile(ptree);
 		MemoryAllocation();
-		ImportCoefficientsFromXMLFile(doc);
+		ImportCoefficientsFromXMLFile(ptree);
 	}
         
-	ThermodynamicsMap_CHEMKIN::ThermodynamicsMap_CHEMKIN(rapidxml::xml_document<>& doc, bool verbose)
+	ThermodynamicsMap_CHEMKIN::ThermodynamicsMap_CHEMKIN(boost::property_tree::ptree& ptree, bool verbose)
 	{
 		this->verbose_output_ = verbose;
 	
-		ImportSpeciesFromXMLFile(doc);
-		this->ImportElementsFromXMLFile(doc);
+		ImportSpeciesFromXMLFile(ptree);
+		this->ImportElementsFromXMLFile(ptree);
 		MemoryAllocation();
-		ImportCoefficientsFromXMLFile(doc);
+		ImportCoefficientsFromXMLFile(ptree);
 	}
     
 	ThermodynamicsMap_CHEMKIN::ThermodynamicsMap_CHEMKIN( const ThermodynamicsMap_CHEMKIN& rhs )
@@ -168,6 +172,98 @@ namespace OpenSMOKE
 		this->P_ = P;
 	}
 
+	void ThermodynamicsMap_CHEMKIN::Change_a_HT(const unsigned int species, const unsigned int j, const double value)
+	{
+
+		const unsigned int i1 = species * 5 + (j - 1);
+		const unsigned int i2 = species * 6 + (j - 1);
+			
+		if (j == 1)
+		{
+			Cp_HT[i1] = value;
+			DH_HT[i2] = value;
+			DS_HT[i2] = value;
+		}
+		else if (j == 2)
+		{
+			Cp_HT[i1] = value;
+			DH_HT[i2] = value/2.;
+			DS_HT[i2] = value;
+		}
+		else if (j == 3)
+		{
+			Cp_HT[i1] = value;
+			DH_HT[i2] = value/3.;
+			DS_HT[i2] = value/2.;
+		}
+		else if (j == 4)
+		{
+			Cp_HT[i1] = value;
+			DH_HT[i2] = value/4.;
+			DS_HT[i2] = value/3.;
+		}
+		else if (j == 5)
+		{
+			Cp_HT[i1] = value;
+			DH_HT[i2] = value/5.;
+			DS_HT[i2] = value/4.;
+		}
+		else if (j == 6)
+		{
+			DH_HT[i2] = value;
+		}
+		else if (j == 7)
+		{
+			DS_HT[i2] = value;
+		}
+	}
+
+	void ThermodynamicsMap_CHEMKIN::Change_a_LT(const unsigned int species, const unsigned int j, const double value)
+	{
+
+		const unsigned int i1 = species * 5 + (j - 1);
+		const unsigned int i2 = species * 6 + (j - 1);
+
+		if (j == 1)
+		{
+			Cp_LT[i1] = value;
+			DH_LT[i2] = value;
+			DS_LT[i2] = value;
+		}
+		else if (j == 2)
+		{
+			Cp_LT[i1] = value;
+			DH_LT[i2] = value / 2.;
+			DS_LT[i2] = value;
+		}
+		else if (j == 3)
+		{
+			Cp_LT[i1] = value;
+			DH_LT[i2] = value / 3.;
+			DS_LT[i2] = value / 2.;
+		}
+		else if (j == 4)
+		{
+			Cp_LT[i1] = value;
+			DH_LT[i2] = value / 4.;
+			DS_LT[i2] = value / 3.;
+		}
+		else if (j == 5)
+		{
+			Cp_LT[i1] = value;
+			DH_LT[i2] = value / 5.;
+			DS_LT[i2] = value / 4.;
+		}
+		else if (j == 6)
+		{
+			DH_LT[i2] = value;
+		}
+		else if (j == 7)
+		{
+			DS_LT[i2] = value;
+		}
+	}
+
 	void ThermodynamicsMap_CHEMKIN::SetCoefficients(const unsigned k, const double* coefficients)
 	{
 		const double one_third = 1./3.;
@@ -264,57 +360,33 @@ namespace OpenSMOKE
 		}
 	}
  
-	void ThermodynamicsMap_CHEMKIN::ImportSpeciesFromXMLFile(rapidxml::xml_document<>& doc)
+	void ThermodynamicsMap_CHEMKIN::ImportSpeciesFromXMLFile(boost::property_tree::ptree& ptree)
 	{
-		rapidxml::xml_node<>* opensmoke_node = doc.first_node("opensmoke");
-		rapidxml::xml_node<>* number_of_species_node = opensmoke_node->first_node("NumberOfSpecies");
-		rapidxml::xml_node<>* names_of_species_node = opensmoke_node->first_node("NamesOfSpecies");
-		try
-		{
-			this->nspecies_ = boost::lexical_cast<unsigned int>(boost::trim_copy(std::string(number_of_species_node->value())));
-			this->names_.resize(this->nspecies_);
-			std::stringstream names_of_species_string;
-			names_of_species_string << names_of_species_node->value();
-			for(unsigned int i=0;i<this->nspecies_;i++)
-				names_of_species_string >> this->names_[i]; 							
-		}
-		catch(...)
-		{
-			ErrorMessage("ThermodynamicsMap_CHEMKIN::ImportSpeciesFromXMLFile", "Error in reading the list of species.");
-		}
+		this->nspecies_ = ptree.get<unsigned int>("opensmoke.NumberOfSpecies");  
+		this->names_.resize(this->nspecies_);
+
+		std::stringstream stream;
+		stream.str( ptree.get< std::string >("opensmoke.NamesOfSpecies") );  
+		for(unsigned int i=0;i<this->nspecies_;i++)
+			stream >> this->names_[i];
 	}
  
-	void ThermodynamicsMap_CHEMKIN::ImportCoefficientsFromXMLFile(rapidxml::xml_document<>& doc)
+
+	void ThermodynamicsMap_CHEMKIN::ImportCoefficientsFromXMLFile(boost::property_tree::ptree& ptree)
 	{
                 if(verbose_output_ == true)
-		    std::cout << " * Reading thermodynamic coefficients of species from XML file..." << std::endl;
+		   	std::cout << " * Reading thermodynamic coefficients of species from XML file..." << std::endl;
 
-		rapidxml::xml_node<>* opensmoke_node = doc.first_node("opensmoke");
+		std::stringstream stream;
+		stream.str( ptree.get< std::string >("opensmoke.Thermodynamics.NASA-coefficients") );  
 
-		rapidxml::xml_node<>* thermodynamics_node = opensmoke_node->first_node("Thermodynamics");
-		if (thermodynamics_node != 0)
+		double coefficients[18];
+		for(unsigned int i=0;i<this->nspecies_;i++)
 		{
-			std::string thermodynamics_type = thermodynamics_node->first_attribute("type")->value();			
-			if (thermodynamics_type == "NASA")
-			{
-				rapidxml::xml_node<>* nasa_coefficients_node = thermodynamics_node->first_node("NASA-coefficients");
-				
-				std::stringstream nasa_coefficients;
-				nasa_coefficients << nasa_coefficients_node->value();
-			
-				double coefficients[18];
-				for(unsigned int i=0;i<this->nspecies_;i++)
-				{
-					for(unsigned int j=0;j<18;j++)
-						nasa_coefficients >> coefficients[j];
-					SetCoefficients(i, coefficients);
-				}
-			}
-			else
-				ErrorMessage("ThermodynamicsMap_CHEMKIN::ImportCoefficientsFromXMLFile", "Thermodynamics type not supported!"); 
+			for(unsigned int j=0;j<18;j++)
+				stream >> coefficients[j];
+			SetCoefficients(i, coefficients);
 		}
-		else
-			ErrorMessage("ThermodynamicsMap_CHEMKIN::ImportCoefficientsFromXMLFile", "Thermodynamics tag was not found!");
 	}
  
 	inline double ThermodynamicsMap_CHEMKIN::MolecularWeight_From_MoleFractions(const double* x)
@@ -834,7 +906,14 @@ namespace OpenSMOKE
 		f = hMolar_Mixture_From_MoleFractions(x);
 		df *= -1;
 		f = H-f;
-	}	
+	}
+
+	void ThermodynamicsMap_CHEMKIN::NASA_TRange(const unsigned int i, double* coefficients) const
+	{
+		coefficients[0] = TL[i];
+		coefficients[1] = TH[i];
+		coefficients[2] = TM[i];
+	}
 
 	void ThermodynamicsMap_CHEMKIN::NASA_LowT(const unsigned int i, double* coefficients) const
 	{

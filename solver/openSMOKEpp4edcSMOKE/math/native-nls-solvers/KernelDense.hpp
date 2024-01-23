@@ -286,8 +286,8 @@ namespace NlsSMOKE
 	template <typename NLSSystemObject>
 	void KernelDense<NLSSystemObject>::NlsSolverKernelSummary(std::ostream& out)
 	{
-		const double totalCpu = cpuTimeJacobianFullAssembling_ + cpuTimeJacobianQuasiAssembling_ + cpuTimeJacobianFactorization_ + cpuTimeLinearSystemSolution_ + 1.e-16;
-		const double totalSingleCpu = cpuTimeSingleJacobianFullAssembling_ + cpuTimeSingleJacobianQuasiAssembling_ + cpuTimeSingleJacobianFactorization_ + cpuTimeSingleLinearSystemSolution_ + 1.e-16;
+		const double totalCpu = cpuTimeJacobianFullAssembling_ + cpuTimeJacobianQuasiAssembling_ + cpuTimeJacobianFactorization_ + cpuTimeLinearSystemSolution_;
+		const double totalSingleCpu = cpuTimeSingleJacobianFullAssembling_ + cpuTimeSingleJacobianQuasiAssembling_ + cpuTimeSingleJacobianFactorization_ + cpuTimeSingleLinearSystemSolution_;
 
 		out << std::endl;
 		out << "Data for the Dense NLS solver Kernel" << std::endl;

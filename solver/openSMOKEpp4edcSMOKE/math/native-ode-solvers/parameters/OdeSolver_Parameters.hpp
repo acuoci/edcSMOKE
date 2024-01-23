@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------*\
+/*-----------------------------------------------------------------------*\
 |    ___                   ____  __  __  ___  _  _______                  |
 |   / _ \ _ __   ___ _ __ / ___||  \/  |/ _ \| |/ / ____| _     _         |
 |  | | | | '_ \ / _ \ '_ \\___ \| |\/| | | | | ' /|  _| _| |_ _| |_       |
@@ -16,7 +16,7 @@
 |                                                                         |
 |   This file is part of OpenSMOKE++ framework.                           |
 |                                                                         |
-|	License                                                               |
+|   License                                                               |
 |                                                                         |
 |   Copyright(C) 2014, 2013, 2012  Alberto Cuoci                          |
 |   OpenSMOKE++ is free software: you can redistribute it and/or modify   |
@@ -44,7 +44,8 @@ namespace OdeSMOKE
 		type_ = ODE_INTEGRATOR_OPENSMOKEPP;
 		sparse_linear_algebra_ = false;
 		
-        jacobian_solver_ = OpenSMOKE::SOLVER_SPARSE_EIGEN_SPARSE_LU;
+		jacobian_structure_ = OpenSMOKE::JACOBIAN_STRUCTURE_DENSE;
+        	jacobian_solver_ = OpenSMOKE::SOLVER_SPARSE_EIGEN_SPARSE_LU;
 		preconditioner_ = OpenSMOKE::PRECONDITIONER_SPARSE_ILUT;
 
 		// Contraints
@@ -120,10 +121,17 @@ namespace OdeSMOKE
 				std::string name;
 				dictionary.ReadString("@Jacobian", name);
 
-				if (name == "Band")				sparse_linear_algebra_ = false;
+				if (name == "Dense")			sparse_linear_algebra_ = false;
+				else if (name == "Band")		sparse_linear_algebra_ = false;
+				else if (name == "TridiagonalBlock")	sparse_linear_algebra_ = false;
 				else if (name == "Sparse")		sparse_linear_algebra_ = true;
+				else OpenSMOKE::FatalErrorMessage("Unknown @Jacobian. Available options: Band (default) | TridiagonalBlock | Sparse");
 
-				else OpenSMOKE::FatalErrorMessage("Unknown @Jacobian. Available options: Band (default) | Sparse");
+				if (name == "Dense")			jacobian_structure_ = OpenSMOKE::JACOBIAN_STRUCTURE_DENSE;
+				else if (name == "Band")		jacobian_structure_ = OpenSMOKE::JACOBIAN_STRUCTURE_BAND;
+				else if (name == "TridiagonalBlock")	jacobian_structure_ = OpenSMOKE::JACOBIAN_STRUCTURE_TRIDIAGONAL_BLOCK;
+				else if (name == "Sparse")		jacobian_structure_ = OpenSMOKE::JACOBIAN_STRUCTURE_SPARSE;
+				else OpenSMOKE::FatalErrorMessage("Unknown @Jacobian. Available options: Dense | Band | TridiagonalBlock | Sparse");
 			}
 
 			if (dictionary.CheckOption("@SparseSolver") == true)

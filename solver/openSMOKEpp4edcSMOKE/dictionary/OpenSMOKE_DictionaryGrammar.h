@@ -64,6 +64,16 @@ namespace OpenSMOKE
 		void ShortSummary(std::ostream& fout) const;
 
 		/**
+		* Shows the list of available keywords on the screen
+		*/
+		void ShowListAvailableKeywords();
+
+		/**
+		* Returns the dictionary grammar name
+		*/
+		std::string name() const { return name_; }
+
+		/**
 		* Default destructor
 		*/
 		virtual ~OpenSMOKE_DictionaryGrammar() {};
@@ -79,6 +89,11 @@ namespace OpenSMOKE
 		* Initializes the grammar from a file (quite unusual)
 		*/
 		void UserDefined();
+
+		/**
+		* Checks for the @Help keyword
+		*/
+		bool CheckForHelpKeyWord(std::vector<std::string>& list_of_keywords);
 
 		/**
 		* Checks the keywords in a dictionary to see if some of them are undefined in the current grammar

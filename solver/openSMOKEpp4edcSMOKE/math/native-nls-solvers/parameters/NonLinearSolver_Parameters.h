@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------*\
+/*-----------------------------------------------------------------------*\
 |    ___                   ____  __  __  ___  _  _______                  |
 |   / _ \ _ __   ___ _ __ / ___||  \/  |/ _ \| |/ / ____| _     _         |
 |  | | | | '_ \ / _ \ '_ \\___ \| |\/| | | | | ' /|  _| _| |_ _| |_       |
@@ -16,7 +16,7 @@
 |                                                                         |
 |   This file is part of OpenSMOKE++ framework.                           |
 |                                                                         |
-|	License                                                               |
+|   License                                                               |
 |                                                                         |
 |   Copyright(C) 2014, 2013, 2012  Alberto Cuoci                          |
 |   OpenSMOKE++ is free software: you can redistribute it and/or modify   |
@@ -41,7 +41,8 @@
 #include <vector>
 #include <iostream>
 #include <iomanip>
-#include <math/OpenSMOKEFunctions.h>
+#include "math/OpenSMOKEFunctions.h"
+#include "math/OpenSMOKEStdInclude.h"
 #include "dictionary/OpenSMOKE_DictionaryManager.h"
 #include "dictionary/OpenSMOKE_DictionaryGrammar.h"
 #include "dictionary/OpenSMOKE_DictionaryKeyWord.h"
@@ -208,6 +209,11 @@ namespace NlsSMOKE
 		*@brief Returns the solver to be used for solving the linear systems associated to the Jacobian matrix
 		*/
 		OpenSMOKE::SparseSolverType jacobian_solver() const { return jacobian_solver_; }
+
+		/**
+		*@brief Returns the Jacobian structure adopted
+		*/
+		OpenSMOKE::JacobianStructureType jacobian_structure() const { return jacobian_structure_; }
 		
 		/**
 		*@brief Returns the preconditioner to be used for solving the linear systems associated to the Jacobian matrix
@@ -280,6 +286,7 @@ namespace NlsSMOKE
 		int eta_choice_;						//!< TODO
 
 		NlsStrategy strategy_;									//!< strategy to be used for solving the non linear system
+		OpenSMOKE::JacobianStructureType jacobian_structure_;			//!< Jacobian structure type
 		OpenSMOKE::SparseSolverType jacobian_solver_;			//!< solver to be used for solving linear systems associated to the Jacobian matrix
 		OpenSMOKE::SparsePreconditionerType preconditioner_;	//!< preconditioner to be used for solving linear systems associated to the Jacobian matrix
 		bool sparse_linear_algebra_;							//!< true if sparse linear solvers have to be used

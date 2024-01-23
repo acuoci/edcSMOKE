@@ -133,7 +133,7 @@ namespace OpenSMOKE_Utilities
 		try
 		{
 			tokenizer_only_blanks::iterator tok_iter = tokens.begin();
-			advance(tok_iter, count-3);
+			std::advance(tok_iter, count-3);
 			A = boost::lexical_cast<double>(*tok_iter);
 			tok_iter++;
 			beta = boost::lexical_cast<double>(*tok_iter);
@@ -518,6 +518,13 @@ namespace OpenSMOKE_Utilities
 	bool ReadReactionKeyWordPlusCoefficients(const std::string tag, std::string& line, const int n, std::vector<std::string>& coefficients)
 	{
 		return ReadReactionKeyWordPlusCoefficients(tag, line, n, n, coefficients);
+	}
+
+	std::string ReadReactionKeyWordPlusWord(const std::string tag, std::string& line)
+	{
+		std::vector<std::string> words(1);
+		ReadReactionKeyWordPlusWords(tag, line, 1, words);
+		return words[0];
 	}
 
 	bool ReadReactionKeyWordPlusWords(const std::string tag, std::string& line, const int n, std::vector<std::string>& words)

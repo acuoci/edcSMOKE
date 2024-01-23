@@ -23,7 +23,7 @@ boundaryField
 {
     inletfuel
     {
-        type            compressible::turbulentMixingLengthDissipationRateInlet;
+        type            turbulentMixingLengthDissipationRateInlet;
         mixingLength    0.005;
         phi             phi;
         k               k;
@@ -31,7 +31,7 @@ boundaryField
     }
     inletair
     {
-        type            compressible::turbulentMixingLengthDissipationRateInlet;
+        type            turbulentMixingLengthDissipationRateInlet;
         mixingLength    0.005;
         phi             phi;
         k               k;
@@ -49,7 +49,7 @@ boundaryField
     }
     leftside
     {
-        type            compressible::epsilonWallFunction;
+        type            epsilonWallFunction;
         value           uniform 200;
         Cmu             0.09;
         kappa           0.41;
@@ -57,7 +57,7 @@ boundaryField
     }
     burnerwall
     {
-        type            compressible::epsilonWallFunction;
+        type            epsilonWallFunction;
         value           uniform 200;
         Cmu             0.09;
         kappa           0.41;

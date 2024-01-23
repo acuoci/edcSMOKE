@@ -98,6 +98,7 @@ namespace OpenSMOKE
 		std::string sparse_solver() const { return sparse_solver_; }
 		std::string preconditioner() const { return preconditioner_; }
 		bool full_pivoting() const { return full_pivoting_; }
+		bool analytical_jacobian() const { return analytical_jacobian_; }
 		double cpu_time() const { return cpu_time_; }
 		double relative_tolerance() const { return relative_tolerance_; }
 		double absolute_tolerance() const { return absolute_tolerance_; }
@@ -135,6 +136,7 @@ namespace OpenSMOKE
 		std::string sparse_solver_;
 		std::string preconditioner_;
 		bool full_pivoting_;
+		bool analytical_jacobian_;
 		double drop_tolerance_;
 		int fill_factor_;
 
@@ -235,6 +237,11 @@ namespace OpenSMOKE
 																OpenSMOKE::SINGLE_INT,
 																"Preconditioner fill factor (default 10)",
 																false));
+
+			AddKeyWord(OpenSMOKE::OpenSMOKE_DictionaryKeyWord("@AnalyticalJacobian",
+															   OpenSMOKE::SINGLE_BOOL,
+															  "Analytical Jacobian, if available (default: false)",
+															   false));
 		}
 	};
 }

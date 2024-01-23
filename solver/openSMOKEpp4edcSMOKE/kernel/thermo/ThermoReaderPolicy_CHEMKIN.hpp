@@ -135,6 +135,36 @@ namespace OpenSMOKE
 				boost::tokenizer<boost::offset_separator> tokens(myThermo.good_lines()[j],f);
 				std::string word=*tokens.begin();
 				boost::algorithm::trim(word);
+				
+			#ifdef __APPLE__				
+				double dummy_value;
+				
+				if(!boost::conversion::try_lexical_convert<double>(word, dummy_value))
+				{
+					tokenizer_only_blanks tok(word, sep);
+
+					if (*tok.begin()=="END" || *tok.begin()=="end" )
+					{
+						if (std::distance( tok.begin(), tok.end() ) == 1)
+						{
+							 index_of_end_file_ = j;
+							 break;
+						}
+						else
+						{
+							std::cout << "Expected END. Found: " << myThermo.good_lines()[j] << std::endl;
+							return false;
+						}
+					}
+                
+					if (*tok.begin()!="TEMP" && *tok.begin()!="temp")
+					{
+						if (myThermo.good_lines()[j].size()>=80)
+							if (myThermo.good_lines()[j].at(79) == '1')
+								indices_of_starting_species_.push_back(j);
+					}
+				}
+			#else
 				try
 				{
 					boost::lexical_cast<double>(word);
@@ -163,7 +193,8 @@ namespace OpenSMOKE
 							if (myThermo.good_lines()[j].at(79) == '1')
 								indices_of_starting_species_.push_back(j);
 					}
-				}
+				}				
+			#endif
 			}
 
 			if (index_of_end_file_ != 0)

@@ -64,29 +64,15 @@
 
 // OpenFOAM
 #include "fvCFD.H"
-#if OPENFOAM_VERSION >= 40
-#include "fluidThermo.H"
-#include "turbulentFluidThermoModel.H"
+#include "fluidReactionThermo.H"
+#include "combustionModel.H"
+#include "compressibleMomentumTransportModels.H"
+#include "fluidReactionThermophysicalTransportModel.H"
 #include "multivariateScheme.H"
-#if OPENFOAM_VERSION >=60
-#include "psiReactionThermo.H"
-#include "CombustionModel.H"
-#else
-#include "psiCombustionModel.H"
-#endif
-#else
-#include "multivariateScheme.H"
-#include "turbulenceModel.H"
-#endif
 #include "simpleControl.H"
-#if OPENFOAM_VERSION >= 40
-#if DEVVERSION == 1
-#include "pressureControl.H"
-#endif
-#include "fvOptions.H"
-#else
-#include "fvIOoptionList.H"
-#endif
+#include "pressureReference.H"
+#include "fvModels.H"
+#include "fvConstraints.H"
 #include "radiationModel.H"
 
 // Utilities
@@ -120,52 +106,30 @@ int main(int argc, char *argv[])
 {
     unsigned int runTimeStep = 0;
 
-    #if OPENFOAM_VERSION >= 40
-
 	#include "postProcess.H"
 
-	#include "setRootCase.H"
+	#include "setRootCaseLists.H"
 	#include "createTime.H"
 	#include "createMesh.H"
-	#include "readGravitationalAcceleration.H"
+        #include "readGravitationalAcceleration.H"
 	#include "createControl.H"
 	#include "createFields.H"
         #include "createOpenSMOKEFields.H"
-	#include "createFvOptions.H"
 	#include "createRadiationModel.H"
 	#include "initContinuityErrs.H"
 
 	turbulence->validate();
 
-    #else
-
-	#include "setRootCase.H"
-	#include "createTime.H"
-	#include "createMesh.H"
-	#include "readGravitationalAcceleration.H"
-
-	simpleControl simple(mesh);
-
-	#include "createFields.H"
-	#include "createOpenSMOKEFields.H"
-	#include "createFvOptions.H"
-	#include "createRadiationModel.H"
-	#include "initContinuityErrs.H"
-
-    #endif
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
     Info<< "\nStarting time loop\n" << endl;
 
-    #if OPENFOAM_VERSION >=60
     while (simple.loop(runTime))
-    #else
-    while (simple.loop())
-    #endif
     {
-	runTimeStep++;
-        Info<< "Time = " << runTime.timeName() << nl << endl;
+        Info<< "Time = " << runTime.userTimeName() << nl << endl;
+
+        fvModels.correct();
 
 	if (momentumEquations == true)
 	{
@@ -175,17 +139,7 @@ int main(int argc, char *argv[])
 		    #include "properties.H"
 		    #include "YEqn.H"
 		    #include "EEqn.H"
-
-		    #if OPENFOAM_VERSION >= 40
-		    if (simple.consistent())
-		    {
-		    	#include "pcEqn.H"
-		    }
-		    else
-		    #endif
-		    {
-		        #include "pEqn.H"
-		    }
+		    #include "pEqn.H"
 		}
 	}
 	else

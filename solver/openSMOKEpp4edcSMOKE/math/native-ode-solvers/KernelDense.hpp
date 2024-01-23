@@ -66,8 +66,8 @@ namespace OdeSMOKE
 
 		// Internal variables
 		aux_.resize(this->ne_);
-		J_.resize(this->ne_, this->ne_);
-		G_.resize(this->ne_, this->ne_);
+		J_.resize(this->ne_, this->ne_);	J_.setZero();
+		G_.resize(this->ne_, this->ne_);	G_.setZero();
 	}
 
 	template <typename ODESystemObject>
@@ -98,9 +98,9 @@ namespace OdeSMOKE
 	{
 		const double tstart = OpenSMOKE::OpenSMOKEGetCpuTime();
 
-		// TODO
-		// this->Jacobian(y, t, J_);
-		OpenSMOKE::ErrorMessage("KernelDense<ODESystemObject>", "User defined Jacobian is still not supported!");
+		// TODO (CUOCI)
+		this->Jacobian(y, t, J_);
+		//OpenSMOKE::ErrorMessage("KernelDense<ODESystemObject>", "User defined Jacobian is still not supported!");
 
 		const double tend = OpenSMOKE::OpenSMOKEGetCpuTime();
 

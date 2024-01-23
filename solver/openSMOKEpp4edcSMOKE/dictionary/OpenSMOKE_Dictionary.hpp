@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------*\
+/*-----------------------------------------------------------------------*\
 |    ___                   ____  __  __  ___  _  _______                  |
 |   / _ \ _ __   ___ _ __ / ___||  \/  |/ _ \| |/ / ____| _     _         |
 |  | | | | '_ \ / _ \ '_ \\___ \| |\/| | | | | ' /|  _| _| |_ _| |_       |
@@ -16,7 +16,7 @@
 |                                                                         |
 |   This file is part of OpenSMOKE++ framework.                           |
 |                                                                         |
-|	License                                                               |
+|   License                                                               |
 |                                                                         |
 |   Copyright(C) 2014, 2013, 2012  Alberto Cuoci                          |
 |   OpenSMOKE++ is free software: you can redistribute it and/or modify   |
@@ -63,6 +63,11 @@ namespace OpenSMOKE
 
 	void OpenSMOKE_Dictionary::Checks()
 	{
+		// Check for @Help keyword
+		bool help_keyword = grammar_.CheckForHelpKeyWord(keywords_);
+		if (help_keyword == true)
+			ErrorMessage("Simulation stopped because the user requested @Help");
+
 		// Check for undefined keywords
 		bool undefined_keywords = grammar_.CheckUndefinedKeyWords(keywords_);
 		if (undefined_keywords == false)
@@ -507,8 +512,52 @@ namespace OpenSMOKE
 			count++;
 		}
 	}
+
+	void OpenSMOKE_Dictionary::ReadOption(const std::string name_of_keyword, std::vector<int>& values, std::vector<std::string>& names)
+	{
+		size_t index = CheckOption(name_of_keyword, VECTOR_INT_STRING);
+
+		typedef boost::tokenizer<boost::char_separator<char> >  tokenizer_blank;
+		boost::char_separator<char> sep_blank(" ");
+		tokenizer_blank tokens(options_[index], sep_blank);
+		const std::size_t n = std::distance(tokens.begin(), tokens.end());
+
+		if (n == 0 || n % 2 != 0)
+		{
+			std::stringstream line; line << starting_lines_[index];
+			std::string message = "Error in the keyword at line : " + line.str() + "\n";
+			message += "The required keyword (" + name_of_keyword + ") requires a list of numbers (int) and strings";
+			ErrorMessage(message);
+		}
+
+
+		names.resize(n / 2);
+		values.resize(n / 2);
+
+		unsigned int count = 0;
+		for (tokenizer_blank::iterator tok_iter = tokens.begin(); tok_iter != tokens.end(); ++tok_iter)
+		{
+			try
+			{
+				const std::string number = *tok_iter;
+				values[count] = boost::lexical_cast<int>(number.c_str());
+			}
+			catch (boost::bad_lexical_cast &)
+			{
+				std::stringstream line; line << starting_lines_[index];
+				std::string message = "Error in the keyword at line : " + line.str() + "\n";
+				message += "Failure in the numerical conversion.";
+				ErrorMessage(message);
+			}
+			++tok_iter;
+
+			names[count] = *tok_iter;
+			
+			count++;
+		}
+	}
         
-        void OpenSMOKE_Dictionary::ReadOption(const std::string name_of_keyword, std::vector<double>& values, std::vector<std::string>& names)
+    void OpenSMOKE_Dictionary::ReadOption(const std::string name_of_keyword, std::vector<double>& values, std::vector<std::string>& names)
 	{
 		size_t index = CheckOption(name_of_keyword, VECTOR_MEASURE);
 

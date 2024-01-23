@@ -16,7 +16,7 @@
 |                                                                         |
 |   This file is part of OpenSMOKE++ framework.                           |
 |                                                                         |
-|	License                                                               |
+|   License                                                               |
 |                                                                         |
 |   Copyright(C) 2014, 2013, 2012  Alberto Cuoci                          |
 |   OpenSMOKE++ is free software: you can redistribute it and/or modify   |
@@ -39,20 +39,23 @@
 
 #include "math/external-ode-solvers/OpenSMOKE_OdeSystemSolver.h"
 
-#include <cvode/cvode.h>             /* prototypes for CVODE fcts., consts. */
-#include <nvector/nvector_serial.h>  /* serial N_Vector types, fcts., macros */
-#include <cvode/cvode_dense.h>       /* prototype for CVDense */
-#include <cvode/cvode_band.h>        /* prototype for CVBand */
-#include <cvode/cvode_lapack.h>      /* prototype for CVDense */
-#include <sundials/sundials_dense.h> /* definitions DlsMat DENSE_ELEM */
-#include <sundials/sundials_types.h> /* definition of type realtype */
+#include <cvode/cvode.h>			/* prototypes for CVODE fcts., consts. */
+#include <sunmatrix/sunmatrix_dense.h>		/* access to dense SUNMatrix            */
+#include <cvode/cvode_direct.h>                 /* access to CVDls interface            */
+#include <nvector/nvector_serial.h>		/* serial N_Vector types, fcts., macros */
+
+#include <sunlinsol/sunlinsol_dense.h>		/* prototype for CVDense */
+#include <sunlinsol/sunlinsol_band.h>		/* prototype for CVBand */
+#include <sunlinsol/sunlinsol_lapackdense.h>    /* prototype for CVDense */
+#include <sunlinsol/sunlinsol_lapackband.h>     /* prototype for CVBand */
+#include <sundials/sundials_dense.h>		/* definitions DlsMat DENSE_ELEM */
+#include <sundials/sundials_types.h>		/* definition of type realtype */
+
 
 namespace OpenSMOKE
 {
 	#define Ith(v,i)    NV_Ith_S(v,i-1)       /* Ith numbers components 1..NEQ */
 	#define IJth(A,i,j) DENSE_ELEM(A,i-1,j-1) /* IJth numbers rows,cols 1..NEQ */
-	 
-	static int check_flag(void *flagvalue, char *funcname, int opt);
 
 	template <typename T>
 	class OpenSMOKE_CVODE_Sundials : public OpenSMOKE::OpenSMOKE_OdeSystemSolver<T>
@@ -89,9 +92,13 @@ namespace OpenSMOKE
 		N_Vector y0Sundials_;
 		N_Vector ySundials_;
 		void *cvode_mem_;
+		SUNContext sunctx_;
 
 		bool firstCall_; 
 		bool iUseLapack_;
+
+		SUNMatrix A;
+		SUNLinearSolver LS;
 
 	private:
 
@@ -136,6 +143,52 @@ namespace OpenSMOKE
 		{
 			fprintf(stderr, "\nMEMORY_ERROR: %s() failed - returned NULL pointer\n\n", funcname.c_str());
 			return(1); 
+		}
+
+		return(0);
+	}
+
+	/*
+	* Check function return value...
+	*   opt == 0 means SUNDIALS function allocates memory so check if
+	*            returned NULL pointer
+	*   opt == 1 means SUNDIALS function returns an integer value so check if
+	*            retval < 0
+	*   opt == 2 means function allocates memory so check if returned
+	*            NULL pointer
+	*/
+
+	static int check_retval(void *returnvalue, char *funcname, int opt)
+	{
+		int *retval;
+
+		if (opt == 0 && returnvalue == NULL) 
+		{
+			/* Check if SUNDIALS function returned NULL pointer - no memory allocated */
+			fprintf(stderr,
+				"\nSUNDIALS_ERROR: %s() failed - returned NULL pointer\n\n",
+			funcname);
+			return(1);
+		} 
+		else if (opt == 1) 
+		{
+			/* Check if retval < 0 */
+			retval = (int *) returnvalue;
+			if (*retval < 0) 
+			{
+				fprintf(stderr,
+				"\nSUNDIALS_ERROR: %s() failed with retval = %d\n\n",
+				funcname, *retval);
+				return(1);
+			}
+		} 
+		else if (opt == 2 && returnvalue == NULL) 
+		{
+			/* Check if function returned NULL pointer - no memory allocated */
+			fprintf(stderr,
+				"\nMEMORY_ERROR: %s() failed - returned NULL pointer\n\n",
+				funcname);
+			return(1);
 		}
 
 		return(0);

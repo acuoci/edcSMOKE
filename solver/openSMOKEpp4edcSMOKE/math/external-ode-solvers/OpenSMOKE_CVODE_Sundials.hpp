@@ -36,6 +36,9 @@ namespace OpenSMOKE
 
 		y0Sundials_ = NULL;
 		cvode_mem_ = NULL;
+		sunctx_ = NULL;
+		A = NULL;
+		LS = NULL;
 
 		this->odeSystem_ = odeSystem;
 	}
@@ -55,27 +58,28 @@ namespace OpenSMOKE
 	template<typename T>
 	void OpenSMOKE_CVODE_Sundials<T>::MemoryAllocation(const int n)
 	{	
+		if (firstCall_ == true)
+		{
+			/* Create the SUNDIALS context */
+  			int retval = SUNContext_Create(NULL, &sunctx_);
+  			if(check_retval(&retval, (char*)"SUNContext_Create", 1)) exit(-1);
+		}
+
 		this->n_		=	n;					// Number of equations
 
 		this->y0_ 	= new double[this->n_];
 		this->y_ 	= new double[this->n_];
  
-		y0Sundials_ = N_VNew_Serial(this->n_);
-		if (check_flag((void *)y0Sundials_, std::string("N_VNew_Serial"), 0))	exit(-1);
+		y0Sundials_ = N_VNew_Serial(this->n_, sunctx_);
+		if (check_flag((void *)y0Sundials_, (char*)"N_VNew_Serial", 0))	exit(-1);
 
-		ySundials_ = N_VNew_Serial(this->n_);
-		if (check_flag((void *)ySundials_, std::string("N_VNew_Serial"), 0))	exit(-1);
+		ySundials_ = N_VNew_Serial(this->n_, sunctx_);
+		if (check_flag((void *)ySundials_, (char*)"N_VNew_Serial", 0))	exit(-1);
 	}
 
 	template<typename T>
 	void OpenSMOKE_CVODE_Sundials<T>::AnalyzeUserOptions()
 	{
-		/*
-		TODO
-		if (this->iSetMaximumNumberOfPrints_) iwork_[6] = this->maximumNumberOfPrints_;
-		if (this->iSetMaximumOrder_)			iwork_[8] = this->maximumOrder_;
-		*/
-
 		if (this->iSetMaximumNumberOfSteps_)
 		{
 			int flag = CVodeSetMaxNumSteps(cvode_mem_, this->maximumNumberOfSteps_);
@@ -104,7 +108,6 @@ namespace OpenSMOKE
 	template<typename T>
 	void OpenSMOKE_CVODE_Sundials<T>::Solve(const double xend)
 	{
-
 		int flag;
 
 		this->x_ = this->x0_;
@@ -119,8 +122,8 @@ namespace OpenSMOKE
 
 			/* Call CVodeCreate to create the solver memory and specify the 
 			* Backward Differentiation Formula and the use of a Newton iteration */
-			cvode_mem_ = CVodeCreate(CV_BDF, CV_NEWTON);
-			if (check_flag((void *)cvode_mem_, std::string("CVodeCreate"), 0)) exit(-1);
+			cvode_mem_ = CVodeCreate(CV_BDF, sunctx_);
+ 			if(check_flag((void *)cvode_mem_, (char*)"CVodeCreate", 0)) exit(-1);
 
 			/* Call CVodeInit to initialize the integrator memory and specify the
 			* user's right hand side function in y'=f(t,y), the inital time t0, and
@@ -131,39 +134,61 @@ namespace OpenSMOKE
 			/* Call CVodeSVtolerances to specify the scalar relative tolerance
 			* and vector absolute tolerances */
 			flag = CVodeSStolerances(cvode_mem_, this->relTolerance_[0], this->absTolerance_[0]);
-			if (check_flag(&flag, std::string("CVodeSVtolerances"), 1)) exit(-1);
+			if (check_flag(&flag, std::string("CVodeSStolerances"), 1)) exit(-1);
 
 			/* Call Solver */
 			if (this->iUseLapack_ == false)
 			{
 				if (this->mUpper_ == 0 && this->mLower_ == 0)
 				{
-//					std::cout << "CVODE Solver: Dense Jacobian (without Lapack)..." << std::endl;
-					flag = CVDense(cvode_mem_, this->n_);
-					if (check_flag(&flag, std::string("CVDense"), 1)) exit(-1);
+					/* Create dense SUNMatrix for use in linear solves */
+					A = SUNDenseMatrix(this->n_, this->n_, sunctx_);
+					if(check_retval((void *)A, (char*)"SUNDenseMatrix", 0)) exit(-1);
+
+					/* Create SUNLinSol_Dense solver object for use by CVode */
+					LS = SUNLinSol_Dense(ySundials_, A, sunctx_);
+					if(check_retval((void *)LS, (char*)"SUNLinSol_Dense", 0)) exit(-1);
 				}
 				else
 				{
-//					std::cout << "CVODE Solver: Band Jacobian (without Lapack)..." << std::endl;
-					flag = CVBand(cvode_mem_, this->n_, this->mUpper_, this->mLower_);
-					if (check_flag(&flag, std::string("CVBand"), 1)) exit(-1);
+					/* Create banded SUNMatrix for use in linear solves -- since this will be factored,
+					set the storage bandwidth to be the sum of upper and lower bandwidths */
+					A = SUNBandMatrix(this->n_, this->mUpper_, this->mLower_, sunctx_);
+					if (check_flag((void *)A, std::string("SUNBandMatrix"), 0)) exit(-1);
+
+					/* Create banded SUNLinSol_Band object for use by CVode */
+					LS = SUNLinSol_Band(ySundials_, A, sunctx_);
+					if (check_flag((void *)LS, std::string("SUNLinSol_Band"), 0)) exit(-1);
 				}
 			}
 			else
 			{
 				if (this->mUpper_ == 0 && this->mLower_ == 0)
 				{
-//					std::cout << "CVODE Solver: Dense Jacobian (with Lapack)..." << std::endl;
-					flag = CVLapackDense(cvode_mem_, this->n_);
-					if (check_flag(&flag, std::string("CVLapackDense"), 1)) exit(-1);
+					/* Create dense SUNMatrix for use in linear solves */
+					A = SUNDenseMatrix(this->n_, this->n_, sunctx_);
+					if (check_flag((void *)A, std::string("SUNDenseMatrix"), 0)) exit(-1);
+
+					/* Create SUNLinSol_LapackDense solver object for use by CVode */
+					LS = SUNLinSol_LapackDense(ySundials_, A, sunctx_);
+					if (check_flag((void *)LS, std::string("SUNLinSol_LapackDense"), 0)) exit(-1);
 				}
 				else
 				{
-//					std::cout << "CVODE Solver: Band Jacobian (with Lapack)..." << std::endl;
-					flag = CVLapackBand(cvode_mem_, this->n_, this->mUpper_, this->mLower_);
-					if (check_flag(&flag, std::string("CVLapackBand"), 1)) exit(-1);
+					/* Create banded SUNMatrix for use in linear solves -- since this will be factored,
+					set the storage bandwidth to be the sum of upper and lower bandwidths */
+					A = SUNBandMatrix(this->n_, this->mUpper_, this->mLower_, sunctx_);
+					if (check_flag((void *)A, std::string("SUNBandMatrix"), 0)) exit(-1);
+
+					/* Create banded SUNLinSol_LapackBand solver object for use by CVode */
+					LS = SUNLinSol_LapackBand(ySundials_, A, sunctx_);
+					if (check_flag((void *)LS, std::string("SUNLinSol_LapackBand"), 0)) exit(-1);
 				}
 			}
+
+			/* Call CVodeSetLinearSolver to attach the matrix and linear solver to CVode */
+			flag = CVodeSetLinearSolver(cvode_mem_, LS, A);
+			if(check_flag(&flag, std::string("CVodeSetLinearSolver"), 1)) exit(-1);
 		}
 		else
 		{
@@ -181,6 +206,7 @@ namespace OpenSMOKE
 		this->x0_ = this->x_;
 		for(int i=0;i<this->n_;i++)
 			NV_Ith_S(y0Sundials_,i) = NV_Ith_S(ySundials_,i);
+
 		for(int i=0;i<this->n_;i++)
 			this->y_[i] = NV_Ith_S(ySundials_,i);
 	}
@@ -195,8 +221,8 @@ namespace OpenSMOKE
 
 		flag = CVodeGetNumSteps(cvode_mem_, &nst);
 		check_flag(&flag, std::string("CVodeGetNumSteps"), 1);
-		flag = CVDlsGetNumJacEvals(cvode_mem_, &nje);
-		check_flag(&flag, std::string("CVDlsGetNumJacEvals"), 1);
+		flag = CVodeGetNumJacEvals(cvode_mem_, &nje);
+		check_flag(&flag, std::string("CVodeGetNumJacEvals"), 1);
 		flag = CVodeGetNumRhsEvals(cvode_mem_, &nfe);
 		check_flag(&flag, std::string("CVodeGetNumRhsEvals"), 1);
 
@@ -211,8 +237,8 @@ namespace OpenSMOKE
 		flag = CVodeGetNumGEvals(cvode_mem_, &nge);
 		check_flag(&flag, std::string("CVodeGetNumGEvals"), 1);
 
-		flag = CVDlsGetNumRhsEvals(cvode_mem_, &nfeLS);
-		check_flag(&flag, std::string("CVDlsGetNumRhsEvals"), 1);
+		flag = CVodeGetNumLinRhsEvals(cvode_mem_, &nfeLS);
+		check_flag(&flag, std::string("CVodeGetNumLinRhsEvals"), 1);
 
 		flag = CVodeGetLastOrder(cvode_mem_, &qlast);
 		check_flag(&flag, std::string("CVodeGetLastOrder"), 1);
@@ -222,7 +248,6 @@ namespace OpenSMOKE
 		check_flag(&flag, std::string("CVodeGetLastStep"), 1);
 		flag = CVodeGetCurrentStep(cvode_mem_, &hcurrent);
 		check_flag(&flag, std::string("CVodeGetCurrentStep"), 1);
-
 
 		std::cout << "CVODE Sundials Status" << std::endl;
 		std::cout << " * Absolute tolerance:              " << this->absTolerance_[0]   << std::endl;	// Absolute tolerance
@@ -266,8 +291,8 @@ namespace OpenSMOKE
 	int OpenSMOKE_CVODE_Sundials<T>::GetNumberOfJacobianEvaluations() const
 	{
 		long int nje;
-		int flag = CVDlsGetNumJacEvals(cvode_mem_, &nje);
-		check_flag(&flag, std::string("CVDlsGetNumJacEvals"), 1);
+		int flag = CVodeGetNumJacEvals(cvode_mem_, &nje);
+		check_flag(&flag, std::string("CVodeGetNumJacEvals"), 1);
 
 		return int(nje);
 	}
@@ -317,6 +342,9 @@ namespace OpenSMOKE
 
 		/* Free integrator memory */
 		CVodeFree(&cvode_mem_);
+		SUNLinSolFree(LS);
+		SUNMatDestroy(A);
+		SUNContext_Free(&sunctx_);
 
 		delete[] this->y0_;
 		delete[] this->y_;

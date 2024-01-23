@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------*\
+/*-----------------------------------------------------------------------*\
 |    ___                   ____  __  __  ___  _  _______                  |
 |   / _ \ _ __   ___ _ __ / ___||  \/  |/ _ \| |/ / ____| _     _         |
 |  | | | | '_ \ / _ \ '_ \\___ \| |\/| | | | | ' /|  _| _| |_ _| |_       |
@@ -16,7 +16,7 @@
 |                                                                         |
 |   This file is part of OpenSMOKE++ framework.                           |
 |                                                                         |
-|	License                                                               |
+|   License                                                               |
 |                                                                         |
 |   Copyright(C) 2014, 2013, 2012  Alberto Cuoci                          |
 |   OpenSMOKE++ is free software: you can redistribute it and/or modify   |
@@ -234,6 +234,17 @@ namespace OpenSMOKE
 
 		if (dictionary.CheckOption("@FullPivoting") == true)
 			dictionary.ReadBool("@FullPivoting", full_pivoting_);
+
+		if (dictionary.CheckOption("@AnalyticalJacobian") == true)
+			dictionary.ReadBool("@AnalyticalJacobian", analytical_jacobian_);
+
+		// Force analytical Jacobian when sparse linear algebra is used
+		if (sparse_solver_ != "none")
+			analytical_jacobian_ = true;
+
+		// Force numerical Jacobian when non-native ODE solvers are adopted
+		if (type_ != ODE_INTEGRATOR_OPENSMOKE)
+			analytical_jacobian_ = false;
 	}
 
 	ODE_Parameters::ODE_Parameters()
@@ -253,6 +264,7 @@ namespace OpenSMOKE
 		initial_step_ = -1.;
 		maximum_order_ = -1;
 		full_pivoting_ = false;
+		analytical_jacobian_ = false;
 		
 		// Reset the counters
 		time_spent_to_factorize_ = 0.;
@@ -298,6 +310,7 @@ namespace OpenSMOKE
 		fOut << " * Sparse solver:                       " << sparse_solver_ << std::endl;
 		fOut << " * Preconditioner:                      " << preconditioner_ << std::endl;
 		fOut << " * Linear algebra:                      " << linear_algebra_ << std::endl;
+		fOut << " * Analytical Jacobian:                 " << analytical_jacobian_ << std::endl;
 		fOut << " * CPU Time (s):                        " << std::scientific << cpu_time_ << std::endl;
 		fOut << " *   assembling Jacobian:               " << std::scientific << time_spent_to_evaluate_jacobian_;
 		fOut                                               << std::fixed << " (" << time_spent_to_evaluate_jacobian_ / cpu_time_*100. << "%)" << std::endl;

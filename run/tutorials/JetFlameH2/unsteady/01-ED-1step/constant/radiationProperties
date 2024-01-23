@@ -22,7 +22,7 @@ radiation       on;
 radiationModel  P1;
 
 // Absorption coefficients model
-absorptionEmissionModel greyMeanAbsorptionEmission;
+absorptionEmissionModel greyMean;
 
 // Number of flow iterations per radiation iteration
 solverFreq 5;
@@ -57,7 +57,7 @@ constantAbsorptionEmissionCoeffs
     E               E               [ kg m^-1 s^-3 ]  0;
 }
 
-greyMeanAbsorptionEmissionCoeffs
+greyMeanCoeffs
 {
     lookUpTableFileName      none;
 

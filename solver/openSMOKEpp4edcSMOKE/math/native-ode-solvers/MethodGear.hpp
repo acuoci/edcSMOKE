@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------*\
+/*-----------------------------------------------------------------------*\
 |    ___                   ____  __  __  ___  _  _______                  |
 |   / _ \ _ __   ___ _ __ / ___||  \/  |/ _ \| |/ / ____| _     _         |
 |  | | | | '_ \ / _ \ '_ \\___ \| |\/| | | | | ' /|  _| _| |_ _| |_       |
@@ -16,7 +16,7 @@
 |                                                                         |
 |   This file is part of OpenSMOKE++ framework.                           |
 |                                                                         |
-|	License                                                           |
+|   License                                                               |
 |                                                                         |
 |   Copyright(C) 2014, 2013, 2012  Alberto Cuoci                          |
 |   OpenSMOKE++ is free software: you can redistribute it and/or modify   |
@@ -36,29 +36,32 @@
 
 namespace OdeSMOKE
 {
+	template <typename ODESystemKernel>
+	const double MethodGear<ODESystemKernel>::DELTA_ALFA1 = 0.05;		//!< reduction of safety coefficient for the current order minus 1 (see Buzzi-Ferraris, eq. 29.187)
 
 	template <typename ODESystemKernel>
-	const unsigned int MethodGear<ODESystemKernel>::MIN_ORDER = 1;
+	const double MethodGear<ODESystemKernel>::ALFA2 = 0.8;				//!< reduction of safety coefficient for the current order (see Buzzi-Ferraris, eq. 29.188)
+
 	template <typename ODESystemKernel>
-	const unsigned int MethodGear<ODESystemKernel>::MAX_ORDER = 5;
-	template <typename ODESystemKernel>
-	const unsigned int MethodGear<ODESystemKernel>::DEFAULT_MAX_CONVERGENCE_ITER = 4;
-	template <typename ODESystemKernel>
-	const unsigned int MethodGear<ODESystemKernel>::MAX_ITERATIONS_FACTORIZATION = 20;
-	template <typename ODESystemKernel>
-	const unsigned int MethodGear<ODESystemKernel>::MAX_ITERATIONS_JACOBIAN = 50;
-	template <typename ODESystemKernel>
-	const double MethodGear<ODESystemKernel>::DELTA_ALFA1 = .05;
-	template <typename ODESystemKernel>
-	const double MethodGear<ODESystemKernel>::ALFA2 = .8;
-	template <typename ODESystemKernel>
-	const double MethodGear<ODESystemKernel>::DELTA_ALFA3 = .25;
-	template <typename ODESystemKernel>
-	const unsigned int MethodGear<ODESystemKernel>::MAX_CONVERGENCE_FAILURE = 50;
+	const double MethodGear<ODESystemKernel>::DELTA_ALFA3 = 0.25;		//!< reduction of safety coefficient for the current order plus 1 (see Buzzi-Ferraris, eq. 29.189)
+
 
 	template <typename ODESystemKernel>
 	MethodGear<ODESystemKernel>::MethodGear()
 	{
+	}
+
+	template <typename ODESystemKernel>
+	MethodGear<ODESystemKernel>::~MethodGear()
+	{
+		if (this->ne_ != 0)
+		{
+			delete[] r_;
+			delete[] Ep_;
+			delete[] z_;
+			delete[] v_;
+			delete[] alfa2_;
+		}
 	}
 
 	template <typename ODESystemKernel>
@@ -116,20 +119,20 @@ namespace OdeSMOKE
 		// Safety coefficient for choosing the optimal new order
 		deltaAlfa1_ = DELTA_ALFA1;
 		deltaAlfa3_ = DELTA_ALFA3;
-		alfa2_.resize(MAX_ORDER + 1);
-		for (unsigned int i = 0; i <= MAX_ORDER; i++)
-			alfa2_(i) = ALFA2;
+		alfa2_ = new double[MAX_ORDER_ODE + 1];
+		for (unsigned int i = 0; i <= MAX_ORDER_ODE; i++)
+			alfa2_[i] = ALFA2;
 
 		// Initialize vector of error coefficients Ep (Buzzi-Ferraris, 29.204)
-		Ep_.resize(MAX_ORDER + 1);
-		for (unsigned int j = 0; j <= MAX_ORDER; j++)
-			Ep_(j) = Factorial(j);
+		Ep_ = new double[MAX_ORDER_ODE + 1];
+		for (unsigned int j = 0; j <= MAX_ORDER_ODE; j++)
+			Ep_[j] = Factorial(j);
 
 		// Allocating memory for vector r
-		r_.resize(MAX_ORDER + 1);
-		for (unsigned int i = 0; i <= MAX_ORDER; i++)
+		r_ = new Eigen::VectorXd[MAX_ORDER_ODE + 1];
+		for (unsigned int i = 0; i <= MAX_ORDER_ODE; i++)
 		{
-			r_[i].resize(MAX_ORDER);
+			r_[i].resize(MAX_ORDER_ODE);
 			r_[i].setZero();
 		}
 
@@ -143,7 +146,7 @@ namespace OdeSMOKE
 		{
 			r_[0](0) = 1.;
 			r_[1](0) = 1.;
-			for (unsigned int j = 2; j <= MAX_ORDER; j++)
+			for (unsigned int j = 2; j <= MAX_ORDER_ODE; j++)
 			{
 				r_[0](j - 1) = Factorial(j);
 				for (unsigned int i = 2; i <= j; i++)
@@ -151,7 +154,7 @@ namespace OdeSMOKE
 				r_[j](j - 1) = 1.;
 			}
 			double sum = 1.;
-			for (unsigned int j = 2; j <= MAX_ORDER; j++)
+			for (unsigned int j = 2; j <= MAX_ORDER_ODE; j++)
 			{
 				sum += 1. / double(j);
 				for (unsigned int i = 1; i <= j + 1; i++)
@@ -160,9 +163,9 @@ namespace OdeSMOKE
 		}
 
 		// Allocating memory for vectors z and v
-		z_.resize(MAX_ORDER + 3);
-		v_.resize(MAX_ORDER + 3);
-		for (unsigned int i = 0; i <= MAX_ORDER + 2; i++)
+		z_ = new Eigen::VectorXd[MAX_ORDER_ODE + 3];
+		v_ = new Eigen::VectorXd[MAX_ORDER_ODE + 3];
+		for (unsigned int i = 0; i <= MAX_ORDER_ODE + 2; i++)
 		{
 			z_[i].resize(this->ne_);
 			v_[i].resize(this->ne_);
@@ -336,20 +339,20 @@ namespace OdeSMOKE
 		odeHStatus_ = H_STATUS_DECREASED;
 
 		// At the same time, if possible, the order must be decreased
-		if (p_ > MIN_ORDER)
+		if (p_ > MIN_ORDER_ODE)
 		{
 			p_ -= 1;
 			odeOrderStatus_ = ORDER_STATUS_DECREASED;
 		}
 
 		// The propensity to change the step size is decreased for the highest orders (4 and 5)
-		alfa2_(4) -= 0.01;
-		alfa2_(5) -= 0.02;
+		alfa2_[4] -= 0.01;
+		alfa2_[5] -= 0.02;
 
 		// Exclude 4th order if too many convergence failures were observed
-		if (alfa2_(4) < 0.)
+		if (alfa2_[4] < 0.)
 		{
-			alfa2_(4) = 0.;
+			alfa2_[4] = 0.;
 			maximum_order_ = 3;
 			if (p_ > 3)
 			{
@@ -359,9 +362,9 @@ namespace OdeSMOKE
 		}
 
 		// Exclude 5th order if too many convergence failures were observed
-		if (alfa2_(5) < 0.)
+		if (alfa2_[5] < 0.)
 		{
-			alfa2_(5) = 0.;
+			alfa2_[5] = 0.;
 			maximum_order_ = 4;
 			if (p_ > 4)
 			{
@@ -377,9 +380,9 @@ namespace OdeSMOKE
 			// Every 5 convergence failures, the order is reset to the minimum
 			if (numberOfConvergenceFailuresForOrderMax_ % 5 == 0)
 			{
-				if (p_ != MIN_ORDER)
+				if (p_ != MIN_ORDER_ODE)
 				{
-					p_ = MIN_ORDER;
+					p_ = MIN_ORDER_ODE;
 					odeOrderStatus_ = ORDER_STATUS_DECREASED;
 				}
 			}

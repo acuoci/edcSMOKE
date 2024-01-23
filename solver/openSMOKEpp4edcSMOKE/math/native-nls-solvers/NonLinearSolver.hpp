@@ -707,9 +707,6 @@ namespace NlsSMOKE
 
 		for (number_iterations_ = 1; number_iterations_ <= max_number_iterations_; number_iterations_++)
 		{
-			if (number_iterations_ == max_number_iterations_)
-				return NLS_EXCESSIVE_WORK_STATE; 
-
 			// Call the print function (defined in the NLS object)
 			if (printResults_ == true)
 			{

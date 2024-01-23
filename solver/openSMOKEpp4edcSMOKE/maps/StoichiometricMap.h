@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------*\
+/*-----------------------------------------------------------------------*\
 |    ___                   ____  __  __  ___  _  _______                  |
 |   / _ \ _ __   ___ _ __ / ___||  \/  |/ _ \| |/ / ____| _     _         |
 |  | | | | '_ \ / _ \ '_ \\___ \| |\/| | | | | ' /|  _| _| |_ _| |_       |
@@ -16,7 +16,7 @@
 |                                                                         |
 |   This file is part of OpenSMOKE++ framework.                           |
 |                                                                         |
-|	License                                                               |
+|   License                                                               |
 |                                                                         |
 |   Copyright(C) 2014, 2013, 2012  Alberto Cuoci                          |
 |   OpenSMOKE++ is free software: you can redistribute it and/or modify   |
@@ -51,14 +51,16 @@ namespace OpenSMOKE
 
 		std::vector<double> production_rates;
 		std::vector<double> destruction_rates;
+
+		void PrintOnFile(std::ofstream& fOut, OpenSMOKE::ThermodynamicsMap_CHEMKIN& thermodynamicsMap, const std::vector<std::string>& reaction_names, const double* P, const double* D);
 	};
 
 	//!  A class containing the data about the stoichiometry and the reaction orders
 	/*!
-		 This class provides the tools to manage the stoichiometry and the reaction orders of all the 
-		 reactions included in the kinetic scheme. This class is specifically conceived in order to perform 
-		 the calculations as fast as possible. To reach this goal the kinetic data are stored in a
-		 format which is not so easy to manage and to understand.
+	This class provides the tools to manage the stoichiometry and the reaction orders of all the
+	reactions included in the kinetic scheme. This class is specifically conceived in order to perform
+	the calculations as fast as possible. To reach this goal the kinetic data are stored in a
+	format which is not so easy to manage and to understand.
 	*/
 
 	class StoichiometricMap
@@ -68,16 +70,16 @@ namespace OpenSMOKE
 
 		/**
 		*@brief Default constructor
-		*@param nspecies number of species 
+		*@param nspecies number of species
 		*@param nreactions number of reactions
 		*/
 		StoichiometricMap(const unsigned int nspecies, const unsigned int nreactions);
-                
-        /**
+
+		/**
 		*@brief Constructor with verbose option
-		*@param nspecies number of species 
+		*@param nspecies number of species
 		*@param nreactions number of reactions
-        *@param verbose show output
+		*@param verbose show output
 		*/
 		StoichiometricMap(const unsigned int nspecies, const unsigned int nreactions, bool verbose);
 
@@ -87,7 +89,26 @@ namespace OpenSMOKE
 		void ReadFromASCIIFile(std::istream& fInput);
 
 		/**
-		*@brief Buid vectors for non elementary reactions (if any)
+		*@brief Initialize the stoichiometry explicitly
+		*/
+		void ExplictlyBuildFromData(
+			const std::vector<unsigned int>& numDir1, const std::vector<unsigned int>& numDir2, const std::vector<unsigned int>& numDir3, const std::vector<unsigned int>& numDir4, const std::vector<unsigned int>& numDir5,
+			const std::vector<unsigned int>& numRevTot1, const std::vector<unsigned int>& numRevTot2, const std::vector<unsigned int>& numRevTot3, const std::vector<unsigned int>& numRevTot4, const std::vector<unsigned int>& numRevTot5,
+			const std::vector<unsigned int>& numRevEq1, const std::vector<unsigned int>& numRevEq2, const std::vector<unsigned int>& numRevEq3, const std::vector<unsigned int>& numRevEq4, const std::vector<unsigned int>& numRevEq5,
+			const std::vector<unsigned int>& jDir1, const std::vector<unsigned int>& jDir2, const std::vector<unsigned int>& jDir3, const std::vector<unsigned int>& jDir4, const std::vector<unsigned int>& jDir5,
+			const std::vector<unsigned int>& jRevTot1, const std::vector<unsigned int>& jRevTot2, const std::vector<unsigned int>& jRevTot3, const std::vector<unsigned int>& jRevTot4, const std::vector<unsigned int>& jRevTot5,
+			const std::vector<unsigned int>& jRevEq1, const std::vector<unsigned int>& jRevEq2, const std::vector<unsigned int>& jRevEq3, const std::vector<unsigned int>& jRevEq4, const std::vector<unsigned int>& jRevEq5,
+			const std::vector<double>& valueDir5, const std::vector<double>& valueRevTot5, const std::vector<double>& valueRevEq5,
+			const bool explicit_reaction_orders,
+			const std::vector<unsigned int>& lambda_jDir1, const std::vector<unsigned int>& lambda_jDir2, const std::vector<unsigned int>& lambda_jDir3, const std::vector<unsigned int>& lambda_jDir4, const std::vector<unsigned int>& lambda_jDir5,
+			const std::vector<unsigned int>& lambda_jRevEq1, const std::vector<unsigned int>& lambda_jRevEq2, const std::vector<unsigned int>& lambda_jRevEq3, const std::vector<unsigned int>& lambda_jRevEq4, const std::vector<unsigned int>& lambda_jRevEq5,
+			const std::vector<unsigned int>& lambda_numDir1, const std::vector<unsigned int>& lambda_numDir2, const std::vector<unsigned int>& lambda_numDir3, const std::vector<unsigned int>& lambda_numDir4, const std::vector<unsigned int>& lambda_numDir5,
+			const std::vector<unsigned int>& lambda_numRevEq1, const std::vector<unsigned int>& lambda_numRevEq2, const std::vector<unsigned int>& lambda_numRevEq3, const std::vector<unsigned int>& lambda_numRevEq4, const std::vector<unsigned int>& lambda_numRevEq5,
+			const std::vector<double>& lambda_valueDir5, const std::vector<double>& lambda_valueRevEq5,
+			const std::vector<double>& changeOfMoles);
+
+		/**
+		*@brief Build vectors for non elementary reactions (if any)
 		*/
 		void BuildNonElementaryReactions();
 
@@ -102,12 +123,17 @@ namespace OpenSMOKE
 		void Summary(std::ostream &fOut) const;
 
 		/**
+		*@brief Sets the indices (0-based) of species to be kept frozen
+		*/
+		void SetFrozenSpecies(const std::vector<unsigned int> frozen_species) { frozen_species_ = frozen_species; }
+
+		/**
 		*@brief Evaluates the equilibrium constants
 		*/
 		void EquilibriumConstants(double* Kp, const double* exp_g_over_RT, const double Patm_over_RT);
 
 		/**
-		*@brief Evaluates the rwaction enthalpies and entropies
+		*@brief Evaluates the reaction enthalpies and entropies
 		*/
 		void ReactionEnthalpyAndEntropy(std::vector<double>& reaction_dh_over_RT, std::vector<double>& reaction_ds_over_R, const std::vector<double>& species_h_over_RT, const std::vector<double>& species_s_over_R);
 
@@ -123,7 +149,7 @@ namespace OpenSMOKE
 
 		/**
 		*@brief Evaluates the formation rates from the reaction rates
-		*/	
+		*/
 		void FormationRatesFromReactionRates(double* R, const double* r);
 
 		/**
@@ -147,23 +173,28 @@ namespace OpenSMOKE
 		void BuildReactionOrdersMatrix();
 
 		/**
-		*@brief Internal function (TODO)
+		*@brief Returns the stoichiometric matrix as a sparse matrix
 		*/
-		void CompleteChangeOfMoles(const bool* isThermodynamicReversible);
-
-		void RateOfProductionAnalysis(const double* r, const bool iNormalize);
-		void RateOfProductionAnalysis(const double* rf, const double* rb);
-
-
-		void WriteRateOfProductionAnalysis(std::ostream& fout);
-		void WriteRateOfProductionAnalysis(ROPA_Data& ropa);
-
 		const Eigen::SparseMatrix<double>& stoichiometric_matrix() const { return stoichiometric_matrix_; };
 
-		const Eigen::SparseMatrix<double>& stoichiometric_matrix_reactants() const { return stoichiometric_matrix_reactants_;};
+		/**
+		*@brief Returns the stoichiometric matrix of reactant species only as a sparse matrix
+		*/
+		const Eigen::SparseMatrix<double>& stoichiometric_matrix_reactants() const { return stoichiometric_matrix_reactants_; };
+
+		/**
+		*@brief Returns the stoichiometric matrix of product species only as a sparse matrix
+		*/
 		const Eigen::SparseMatrix<double>& stoichiometric_matrix_products() const { return stoichiometric_matrix_products_; };
-		
+
+		/**
+		*@brief Returns the reaction order matrix of reactant species only as a sparse matrix
+		*/
 		const Eigen::SparseMatrix<double>& reactionorders_matrix_reactants() const { return reactionorders_matrix_reactants_; };
+
+		/**
+		*@brief Returns the reaction order matrix of product species only as a sparse matrix
+		*/
 		const Eigen::SparseMatrix<double>& reactionorders_matrix_products() const { return reactionorders_matrix_products_; };
 
 		/**
@@ -176,21 +207,33 @@ namespace OpenSMOKE
 		*/
 		void GetSumOfStoichiometricCoefficientsOfProducts(Eigen::VectorXd& sum_nu) const;
 
-		
+		/**
+		*@brief Internal function (TODO)
+		*/
+		void CompleteChangeOfMoles(const bool* isThermodynamicReversible);
+
+
+	public:	// Rate of Production Analysis (ROPA) utilities
+
+		void RateOfProductionAnalysis(const double* r, const bool iNormalize);
+		void RateOfProductionAnalysis(const double* rf, const double* rb);
+		void WriteRateOfProductionAnalysis(std::ostream& fout);
+		void WriteRateOfProductionAnalysis(ROPA_Data& ropa);
+
 	private:
 
 		unsigned int number_of_species_;
 		unsigned int number_of_reactions_;
-                
-        bool verbose_output_;
 
-		std::vector<unsigned int>	numDir1_,	numDir2_,	numDir3_,	numDir4_,	numDir5_;
-		std::vector<unsigned int>	numRevTot1_, numRevTot2_,	numRevTot3_,	numRevTot4_, numRevTot5_;
-		std::vector<unsigned int>	numRevEq1_,	numRevEq2_,	numRevEq3_,	numRevEq4_,	numRevEq5_;
-		
-		std::vector<unsigned int>	jDir1_,		jDir2_,		jDir3_,		jDir4_,		jDir5_;
-		std::vector<unsigned int>	jRevTot1_,	jRevTot2_,	jRevTot3_,	jRevTot4_,	jRevTot5_;
-		std::vector<unsigned int>	jRevEq1_,	jRevEq2_,	jRevEq3_,	jRevEq4_,	jRevEq5_;
+		bool verbose_output_;
+
+		std::vector<unsigned int>	numDir1_, numDir2_, numDir3_, numDir4_, numDir5_;
+		std::vector<unsigned int>	numRevTot1_, numRevTot2_, numRevTot3_, numRevTot4_, numRevTot5_;
+		std::vector<unsigned int>	numRevEq1_, numRevEq2_, numRevEq3_, numRevEq4_, numRevEq5_;
+
+		std::vector<unsigned int>	jDir1_, jDir2_, jDir3_, jDir4_, jDir5_;
+		std::vector<unsigned int>	jRevTot1_, jRevTot2_, jRevTot3_, jRevTot4_, jRevTot5_;
+		std::vector<unsigned int>	jRevEq1_, jRevEq2_, jRevEq3_, jRevEq4_, jRevEq5_;
 
 		std::vector<double>	valueDir5_;
 		std::vector<double> valueRevTot5_;
@@ -232,6 +275,8 @@ namespace OpenSMOKE
 		std::vector< std::vector<double> >			non_elementary_reactions_orders_direct_;
 		std::vector< std::vector<unsigned int> >	non_elementary_reactions_species_indices_reverse_;
 		std::vector< std::vector<double> >			non_elementary_reactions_orders_reverse_;
+
+		std::vector<unsigned int> frozen_species_;
 
 	};
 }

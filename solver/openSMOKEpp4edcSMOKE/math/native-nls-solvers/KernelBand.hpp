@@ -16,7 +16,7 @@
 |                                                                         |
 |   This file is part of OpenSMOKE++ framework.                           |
 |                                                                         |
-|	License                                                               |
+|   License                                                               |
 |                                                                         |
 |   Copyright(C) 2014, 2013, 2012  Alberto Cuoci                          |
 |   OpenSMOKE++ is free software: you can redistribute it and/or modify   |
@@ -194,11 +194,11 @@ namespace NlsSMOKE
 			{
 				x_plus_(j) = x(j);
 
-				double* col_j = BAND_COL(J_, j);
+				double* col_j = OS_BAND_COL(J_, j);
 				int i1 = std::max(0, j - J_->nUpper());
 				int i2 = std::min(j + J_->nLower(), static_cast<int>(this->ne_ - 1));
 				for (int i = i1; i <= i2; i++)
-					BAND_COL_ELEM(col_j, i, j) = (f_plus_(i) - f(i)) / hJ_(j);
+					OS_BAND_COL_ELEM(col_j, i, j) = (f_plus_(i) - f(i)) / hJ_(j);
 			}
 		}
 
@@ -248,22 +248,12 @@ namespace NlsSMOKE
 			{
 				for (int j = group - 1; j < static_cast<int>(this->ne_); j += width_)
 				{
-					double* col_j = BAND_COL(J_, j);
+					double* col_j = OS_BAND_COL(J_, j);
 					int i1 = std::max(0, j - J_->nUpper());
 					int i2 = std::min(j + J_->nLower(), static_cast<int>(this->ne_ - 1));
 
 					for (int i = i1; i <= i2; i++)
-						(*sum_vector)(i) -= BAND_COL_ELEM(col_j, i, j)*dxi(j);
-				}
-			}
-
-			for (int group = 1; group <= ngroups_; group++)
-			{
-				for (int j = group - 1; j < static_cast<int>(this->ne_); j += width_)
-				{
-					double* col_j = BAND_COL(J_, j);
-					int i1 = std::max(0, j - J_->nUpper());
-					int i2 = std::min(j + J_->nLower(), static_cast<int>(this->ne_ - 1));
+						(*sum_vector)(i) -= OS_BAND_COL_ELEM(col_j, i, j)*dxi(j);
 				}
 			}
 
@@ -275,12 +265,12 @@ namespace NlsSMOKE
 			{
 				for (int j = group - 1; j < static_cast<int>(this->ne_); j += width_)
 				{
-					double* col_j = BAND_COL(J_, j);
+					double* col_j = OS_BAND_COL(J_, j);
 					int i1 = std::max(0, j - J_->nUpper());
 					int i2 = std::min(j + J_->nLower(), static_cast<int>(this->ne_ - 1));
 
 					for (int i = i1; i <= i2; i++)
-						BAND_COL_ELEM(col_j, i, j) += (*sum_vector)(i)*dxi(j);
+						OS_BAND_COL_ELEM(col_j, i, j) += (*sum_vector)(i)*dxi(j);
 				}
 			}
 		}
@@ -330,13 +320,13 @@ namespace NlsSMOKE
 		{
 			for (int j = group - 1; j < static_cast<int>(this->ne_); j += width_)
 			{
-				double* col_j = BAND_COL(J_, j);
+				double* col_j = OS_BAND_COL(J_, j);
 				int i1 = std::max(0, j - J_->nUpper());
 				int i2 = std::min(j + J_->nLower(), static_cast<int>(this->ne_ - 1));
 
 				for (int i = i1; i <= i2; i++)
 				{
-					const double J = BAND_COL_ELEM(col_j, i, j);
+					const double J = OS_BAND_COL_ELEM(col_j, i, j);
 					row_norms(i) += J*J;
 				}
 			}

@@ -12,9 +12,9 @@
 |   Department of Chemistry, Materials and Chemical Engineering           |
 |   Politecnico di Milano                                                 |
 |   Author: Alberto Cuoci <alberto.cuoci@polimi.it>                       |
-|	Date: 07 Mar 2013                                                     |
+|   Date: 07 Mar 2013                                                     |
 |-------------------------------------------------------------------------|
-|	License                                                               |
+|   License                                                               |
 |                                                                         |
 |   This file is part of OpenSMOKE.                                       |
 |                                                                         |
@@ -44,4 +44,3 @@
 // Compulsory external libraries
 #include <Eigen/Dense>
 #include <boost/program_options.hpp>
-#include "rapidxml.hpp"

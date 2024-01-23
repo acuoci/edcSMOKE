@@ -27,11 +27,21 @@
 #ifndef OpenSMOKE_Solve_Band_KinSolFalseTransient_H
 #define OpenSMOKE_Solve_Band_KinSolFalseTransient_H
 
+// Sundials
+#include <kinsol/kinsol.h>             /* access to KINSOL func., consts. */
+#include <nvector/nvector_serial.h>    /* access to serial N_Vector       */
+#include <sunmatrix/sunmatrix_band.h>  /* access to band SUNMatrix        */
+#include <sunlinsol/sunlinsol_band.h>  /* access to band SUNLinearSolver  */
+#include <sundials/sundials_types.h>   /* defs. of realtype, sunindextype */
+#include <sundials/sundials_math.h>    /* access to SUNRexp               */
+
+// OpenSMOKE++
 #include "math/native-nls-solvers/NonLinearSystemSolver"
 
 namespace NlsSMOKE
 {
-	int loop_KinSol(void* kmem, const NlsSMOKE::FalseTransientSolver_Parameters& parameters, void *user_data, int& global_count, N_Vector& y, N_Vector& yInitial, N_Vector& scale);
+	template<typename Object>
+	int loop_KinSol(void* kmem, Object* object, const NlsSMOKE::FalseTransientSolver_Parameters& parameters, void *user_data, int& global_count, N_Vector& y, N_Vector& yInitial, N_Vector& scale);
 
 	template<typename Object>
 	int Solve_Band_KinSolFalseTransient(Object* object, const NlsSMOKE::FalseTransientSolver_Parameters& parameters)
@@ -44,6 +54,9 @@ namespace NlsSMOKE
 		N_Vector yInitial;
 		N_Vector scale;
 		FalseTransient_UserData data;
+		SUNMatrix J;
+		SUNLinearSolver LS;
+		SUNContext sunctx;
 
 		int flag;
 		void *kmem;
@@ -52,18 +65,25 @@ namespace NlsSMOKE
 		yInitial = NULL;
 		scale = NULL;
 		kmem = NULL;
+		sunctx = NULL;
 		data = NULL;
+		J = NULL;
+		LS = NULL;
+
+  		/* Create the SUNDIALS context that all SUNDIALS objects require */
+  		int retval = SUNContext_Create(NULL, &sunctx);
+  		if (check_retval(&retval, (char*)"SUNContext_Create", 1)) return(1);
 
 		// Memory allocation
 		{
-			y = N_VNew_Serial(neq);
-			if (check_flag((void *)y, "N_VNew_Serial", 0)) return(1);
+			y = N_VNew_Serial(neq, sunctx);
+			if (check_flag((void *)y, (char*)"N_VNew_Serial", 0)) return(1);
 
-			yInitial = N_VNew_Serial(neq);
-			if (check_flag((void *)yInitial, "N_VNew_Serial", 0)) return(1);
+			yInitial = N_VNew_Serial(neq, sunctx);
+			if (check_flag((void *)yInitial, (char*)"N_VNew_Serial", 0)) return(1);
 
-			scale = N_VNew_Serial(neq);
-			if (check_flag((void *)scale, "N_VNew_Serial", 0)) return(1);
+			scale = N_VNew_Serial(neq, sunctx);
+			if (check_flag((void *)scale, (char*)"N_VNew_Serial", 0)) return(1);
 		}
 
 		// User data
@@ -74,16 +94,16 @@ namespace NlsSMOKE
 		}
 
 		// Initialize and allocate memory for KINSOL
-		kmem = KINCreate();
-		if (check_flag((void *)kmem, "KINCreate", 0)) return(1);
+		kmem = KINCreate(sunctx);
+		if (check_retval((void *)kmem, (char*)"KINCreate", 0)) return(1);
 
 		// Set user data
 		flag = KINSetUserData(kmem, data);
-		if (check_flag(&flag, "KINSetUserData", 1)) return(1);
+		if (check_flag(&flag, (char*)"KINSetUserData", 1)) return(1);
 
 		// Assign the system
 		flag = KINInit(kmem, kinsol_equations_false_transient, y);
-		if (check_flag(&flag, "KINInit", 1)) return(1);
+		if (check_flag(&flag, (char*)"KINInit", 1)) return(1);
 
 		// Set optional input
 		{
@@ -91,51 +111,51 @@ namespace NlsSMOKE
 			if (parameters.tolerance_function() > 0.)
 			{
 				flag = KINSetFuncNormTol(kmem, parameters.tolerance_function());
-				if (check_flag(&flag, "KINSetFuncNormTol", 1)) return(1);
+				if (check_flag(&flag, (char*)"KINSetFuncNormTol", 1)) return(1);
 			}
 
 			// Step tolerance
 			if (parameters.tolerance_step() > 0.)
 			{
 				flag = KINSetScaledStepTol(kmem, parameters.tolerance_step());
-				if (check_flag(&flag, "KINSetScaledStepTol", 1)) return(1);
+				if (check_flag(&flag, (char*)"KINSetScaledStepTol", 1)) return(1);
 			}
 
 			// Relative error
 			if (parameters.relative_error() > 0.)
 			{
 				flag = KINSetRelErrFunc(kmem, parameters.relative_error());
-				if (check_flag(&flag, "KINSetRelErrFunc", 1)) return(1);
+				if (check_flag(&flag, (char*)"KINSetRelErrFunc", 1)) return(1);
 			}
 
 			// Force a Jacobian re-evaluation every mset iterations (default 10)
 			flag = KINSetMaxSetupCalls(kmem, parameters.maximum_setup_calls());
-			if (check_flag(&flag, "KINSetMaxSetupCalls", 1)) return(1);
+			if (check_flag(&flag, (char*)"KINSetMaxSetupCalls", 1)) return(1);
 
 			// Every msubset iterations, test if a Jacobian evaluation is necessary (default 5)
 			flag = KINSetMaxSubSetupCalls(kmem, parameters.maximum_sub_setup_calls());
-			if (check_flag(&flag, "KINSetMaxSubSetupCalls", 1)) return(1);
+			if (check_flag(&flag, (char*)"KINSetMaxSubSetupCalls", 1)) return(1);
 
 			// Maximum number of nonlinear iterations allowed
 			flag = KINSetNumMaxIters(kmem, parameters.maximum_number_iterations());
-			if (check_flag(&flag, "KINSetNumMaxIters", 1)) return(1);
+			if (check_flag(&flag, (char*)"KINSetNumMaxIters", 1)) return(1);
 
 			// Maximum beta failures in linesearch algorithm
 			flag = KINSetMaxBetaFails(kmem, parameters.maximum_beta_fails());
-			if (check_flag(&flag, "KINSetMaxBetaFails", 1)) return(1);
+			if (check_flag(&flag, (char*)"KINSetMaxBetaFails", 1)) return(1);
 
 			// Maximum allowed scaled lenght of Newton step
 			if (parameters.maximum_newton_step() > 0.)
 			{
 				flag = KINSetMaxNewtonStep(kmem, parameters.maximum_newton_step());
-				if (check_flag(&flag, "KINSetMaxNewtonStep", 1)) return(1);
+				if (check_flag(&flag, (char*)"KINSetMaxNewtonStep", 1)) return(1);
 			}
 
 			// Parameters omega_min and omega_max
 			if (parameters.omega_min() > 0. || parameters.omega_max() > 0.)
 			{
 				flag = KINSetResMonParams(kmem, parameters.omega_min(), parameters.omega_max());
-				if (check_flag(&flag, "KINSetResMonParams", 1)) return(1);
+				if (check_flag(&flag, (char*)"KINSetResMonParams", 1)) return(1);
 			}
 
 			// Eta choice
@@ -143,12 +163,12 @@ namespace NlsSMOKE
 				if (parameters.eta_choice() == 0)	flag = KINSetEtaForm(kmem, KIN_ETACHOICE1);
 				if (parameters.eta_choice() == 1)	flag = KINSetEtaForm(kmem, KIN_ETACHOICE2);
 				if (parameters.eta_choice() == 2)	flag = KINSetEtaForm(kmem, KIN_ETACONSTANT);
-				if (check_flag(&flag, "KINSetEtaForm", 1)) return(1);
+				if (check_flag(&flag, (char*)"KINSetEtaForm", 1)) return(1);
 			}
 
 			// Print level
 			flag = KINSetPrintLevel(kmem, parameters.verbosity_level());
-			if (check_flag(&flag, "KINSetPrintLevel", 1)) return(1);
+			if (check_flag(&flag, (char*)"KINSetPrintLevel", 1)) return(1);
 		}
 
 		// Set minimum constraints
@@ -156,13 +176,13 @@ namespace NlsSMOKE
 		{
 			N_Vector constraints;
 			constraints = NULL;
-			constraints = N_VNew_Serial(neq);
-			if (check_flag((void *)constraints, "N_VNew_Serial", 0)) return(1);
+			constraints = N_VNew_Serial(neq, sunctx);
+			if (check_flag((void *)constraints, (char*)"N_VNew_Serial", 0)) return(1);
 
 			// All the unknowns will be constrained to be >= 0
 			N_VConst(1., constraints);
 			flag = KINSetConstraints(kmem, constraints);
-			if (check_flag(&flag, "KINSetConstraints", 1)) return(1);
+			if (check_flag(&flag, (char*)"KINSetConstraints", 1)) return(1);
 
 			N_VDestroy_Serial(constraints);
 		}
@@ -178,17 +198,25 @@ namespace NlsSMOKE
 			const int mu = object->UpperBand();
 			const int ml = object->LowerBand();
 
+			/* In Sundials version 4.1.x no need to specify the fourth argument */
+			// J = SUNBandMatrix(neq, mu, ml, mu + ml);
+			J = SUNBandMatrix(neq, mu, ml, sunctx);
+			if (check_flag((void *)J, (char*)"SUNBandMatrix", 0)) return(1);
+
 			#if OPENSMOKE_USE_MKL == 1
 			{
-				flag = KINLapackBand(kmem, neq, mu, ml);
-				if (check_flag(&flag, "KINLapackBand", 1)) return(1);
+				LS = SUNLinSol_LapackBand(y, J, sunctx);
+				if (check_flag((void *)LS, (char*)"SUNLapackBand", 0)) return(1);
 			}
 			#else
 			{
-				flag = KINBand(kmem, neq, mu, ml);
-				if (check_flag(&flag, "KINBand", 1)) return(1);
+				LS = SUNLinSol_Band(y, J, sunctx);
+				if (check_flag((void *)LS, (char*)"SUNDenseLinearSolver", 0)) return(1);
 			}
 			#endif
+
+			flag = KINSetLinearSolver(kmem, LS, J);
+			if (check_flag(&flag, (char*)"KINSetLinearSolver", 1)) return(1);
 		}
 
 		// Initialize
@@ -210,7 +238,7 @@ namespace NlsSMOKE
 		int flag_solver;
 		for (;;)
 		{
-			const int loop_result = loop_KinSol(kmem, parameters, data, global_count, y, yInitial, scale);
+			const int loop_result = loop_KinSol(kmem, object, parameters, data, global_count, y, yInitial, scale);
 
 			// The loop was successfully accomplished
 			if (loop_result == 0)
@@ -238,11 +266,14 @@ namespace NlsSMOKE
 		N_VDestroy_Serial(scale);
 		KINFree(&kmem);
 		free(data);
+		SUNLinSolFree(LS);
+		SUNMatDestroy(J);
 
 		return flag_solver;
 	}
 
-	int loop_KinSol(void* kmem, const NlsSMOKE::FalseTransientSolver_Parameters& parameters, void *user_data, int& global_count, N_Vector& y, N_Vector& yInitial, N_Vector& scale)
+	template<typename Object>
+	int loop_KinSol(void* kmem, Object* object, const NlsSMOKE::FalseTransientSolver_Parameters& parameters, void *user_data, int& global_count, N_Vector& y, N_Vector& yInitial, N_Vector& scale)
 	{
 		int flag_solver;
 		FalseTransient_UserData data = (FalseTransient_UserData)user_data;
@@ -254,7 +285,7 @@ namespace NlsSMOKE
 			if (count == 0)
 			{
 				int flag = KINSetNoInitSetup(kmem, false);
-				if (check_flag(&flag, "KINSetNoInitSetup", 1)) return(1);
+				if (check_flag(&flag, (char*)"KINSetNoInitSetup", 1)) return(1);
 			}
 
 			// The time step is kept constant for a specific number of times
@@ -270,22 +301,22 @@ namespace NlsSMOKE
 			if (parameters.strategy() == NlsSMOKE::NonLinearSolver_Parameters::NLS_STRATEGY_NEWTON_BASIC)
 			{
 				flag_solver = KINSol(kmem, y, KIN_NONE, scale, scale);
-				if (check_flag(&flag_solver, "KINSol::KIN_NONE", 0)) return(1);
+				if (check_flag(&flag_solver, (char*)"KINSol::KIN_NONE", 0)) return(1);
 			}
 			else if (parameters.strategy() == NlsSMOKE::NonLinearSolver_Parameters::NLS_STRATEGY_NEWTON_GLOBALIZATION)
 			{
 				flag_solver = KINSol(kmem, y, KIN_LINESEARCH, scale, scale);
-				if (check_flag(&flag_solver, "KINSol::KIN_LINESEARCH", 0)) return(1);
+				if (check_flag(&flag_solver, (char*)"KINSol::KIN_LINESEARCH", 0)) return(1);
 			}
 			else if (parameters.strategy() == NlsSMOKE::NonLinearSolver_Parameters::NLS_STRATEGY_FIXED_POINT)
 			{
 				flag_solver = KINSol(kmem, y, KIN_FP, scale, scale);
-				if (check_flag(&flag_solver, "KINSol::KIN_FP", 0)) return(1);
+				if (check_flag(&flag_solver, (char*)"KINSol::KIN_FP", 0)) return(1);
 			}
 			else if (parameters.strategy() == NlsSMOKE::NonLinearSolver_Parameters::NLS_STRATEGY_PICARD)
 			{
 				flag_solver = KINSol(kmem, y, KIN_PICARD, scale, scale);
-				if (check_flag(&flag_solver, "KINSol::KIN_PICARD", 0)) return(1);
+				if (check_flag(&flag_solver, (char*)"KINSol::KIN_PICARD", 0)) return(1);
 			}
 
 			realtype* pt_y = NV_DATA_S(y);
@@ -293,13 +324,13 @@ namespace NlsSMOKE
 			for (int i = 0; i < NV_LENGTH_S(y); i++)
 				pt_yInitial[i] = pt_y[i];
 
-			flame->CorrectedUnknownsVector(NV_DATA_S(y));
-			flame->norm();
+			object->CorrectedUnknownsVector(NV_DATA_S(y));
+			object->norm();
 
 			// Update the Jacobian at first call: false
 			{
 				int flag = KINSetNoInitSetup(kmem, true);
-				if (check_flag(&flag, "KINSetNoInitSetup", 1)) return(1);
+				if (check_flag(&flag, (char*)"KINSetNoInitSetup", 1)) return(1);
 			}
 
 			count++;

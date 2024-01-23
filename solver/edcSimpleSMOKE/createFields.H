@@ -44,172 +44,132 @@
 
 	Info<< "Creating reaction model\n" << endl;
 
-	#if OPENFOAM_VERSION >=60
-	autoPtr<psiReactionThermo> pThermo
+	autoPtr<fluidReactionThermo> pThermo
 	(
-		psiReactionThermo::New(mesh)
+		fluidReactionThermo::New(mesh)
 	);
-	psiReactionThermo& thermo = pThermo();
-	#else
-	autoPtr<combustionModels::psiCombustionModel> reaction
-	(
-	    combustionModels::psiCombustionModel::New(mesh)
-	);
-	psiReactionThermo& thermo = reaction->thermo();
-	#endif
-
+	fluidReactionThermo& thermo = pThermo();
 	thermo.validate(args.executable(), "h", "e");
 
-	basicMultiComponentMixture& composition = thermo.composition();
+	basicSpecieMixture& composition = thermo.composition();
 	PtrList<volScalarField>& Y = composition.Y();
 
-	word inertSpecie(thermo.lookup("inertSpecie"));
-
-
-
-    volScalarField rho
-    (
-        IOobject
-        (
-            "rho",
-            runTime.timeName(),
-            mesh,
-            IOobject::READ_IF_PRESENT,
-            IOobject::AUTO_WRITE
-        ),
-        thermo.rho()
-    );
-
-    volScalarField& p = thermo.p();
-    const volScalarField& psi = thermo.psi();
-    volScalarField& T = thermo.T();
-
-    Info<< "Reading field U\n" << endl;
-    volVectorField U
-    (
-        IOobject
-        (
-            "U",
-            runTime.timeName(),
-            mesh,
-            IOobject::MUST_READ,
-            IOobject::AUTO_WRITE
-        ),
-        mesh
-    );
-
-    #include "compressibleCreatePhi.H"
-
-
-    label pRefCell = 0;
-    scalar pRefValue = 0.0;
-    setRefCell(p, simple.dict(), pRefCell, pRefValue);
-
-    #if OPENFOAM_VERSION >= 40
-
-	#if DEVVERSION == 1
-	pressureControl pressureControl(p, rho, simple.dict());
-	#endif
-
-	mesh.setFluxRequired(p.name());
-
-	Info<< "Creating turbulence model\n" << endl;
-	autoPtr<compressible::turbulenceModel> turbulence
+	volScalarField rho
 	(
-		compressible::turbulenceModel::New
+		IOobject
 		(
-			rho,
-			U,
-			phi,
-			thermo
-		)
+			"rho",
+			runTime.timeName(),
+			mesh,
+			IOobject::READ_IF_PRESENT,
+			IOobject::AUTO_WRITE
+		),
+		thermo.rho()
 	);
+
+	volScalarField& p = thermo.p();
+	const volScalarField& psi = thermo.psi();
+	volScalarField& T = thermo.T();
+
+	Info<< "Reading field U\n" << endl;
+	volVectorField U
+	(
+		IOobject
+		(
+			"U",
+			runTime.timeName(),
+			mesh,
+			IOobject::MUST_READ,
+			IOobject::AUTO_WRITE
+		),
+		mesh
+	);
+
+	#include "compressibleCreatePhi.H"
+
+	pressureReference pressureReference
+	(
+	    p,
+	    simple.dict(),
+	    thermo.incompressible()
+	);
+
+	mesh.schemes().setFluxRequired(p.name());
+
+
+	Info << "Creating turbulence model.\n" << nl;
+	autoPtr<compressible::momentumTransportModel> turbulence
+	(
+	    compressible::momentumTransportModel::New
+	    (
+		rho,
+		U,
+		phi,
+		thermo
+	    )
+	);
+
+
+	Info<< "Creating reaction model\n" << endl;
+	autoPtr<combustionModel> reaction(combustionModel::New(thermo, turbulence()));
+
+    	dimensionedScalar initialMass = fvc::domainIntegrate(rho);
 
 	#include "createMRF.H"
+	#include "createFvModels.H"
+	#include "createFvConstraints.H"
 
-    #else
+    	multivariateSurfaceInterpolationScheme<scalar>::fieldTable fields;
 
-	dimensionedScalar rhoMax(simple.dict().lookup("rhoMax"));
-    	dimensionedScalar rhoMin(simple.dict().lookup("rhoMin"));
+	forAll(Y, i)
+	{
+	    fields.add(Y[i]);
+	}
+	fields.add(thermo.he());
 
-	Info<< "Creating turbulence model\n" << endl;
-	autoPtr<compressible::turbulenceModel> turbulence
+
+	Info<< "Creating field number of active species\n" << endl;
+
+	volScalarField drg_important_species
 	(
-		compressible::turbulenceModel::New
-		(
-			rho,
-			U,
-			phi,
-			thermo
-		)
+	    IOobject
+	    (
+		"drg::important_species",
+		runTime.timeName(),
+		mesh,
+		IOobject::NO_READ,
+		IOobject::AUTO_WRITE
+	    ),
+	    mesh,
+	    dimensionedScalar("drg::important_species", dimensionSet(0, 0, 0, 0, 0), 0.0)
 	);
 
-    #endif
-
-	#if OPENFOAM_VERSION >=60
-	Info<< "Creating reaction model\n" << endl;
-	autoPtr<CombustionModel<psiReactionThermo>> reaction
+	volScalarField drg_important_reactions
 	(
-	    CombustionModel<psiReactionThermo>::New(thermo, turbulence())
+	    IOobject
+	    (
+		"drg::important_reactions",
+		runTime.timeName(),
+		mesh,
+		IOobject::NO_READ,
+		IOobject::AUTO_WRITE
+	    ),
+	    mesh,
+	    dimensionedScalar("drg::important_reactions", dimensionSet(0, 0, 0, 0, 0), 0.0)
 	);
-	#else
-	// Set the turbulence into the reaction model
-	reaction->setTurbulence(turbulence());
-	#endif
 
-    dimensionedScalar initialMass = fvc::domainIntegrate(rho);
-
-    multivariateSurfaceInterpolationScheme<scalar>::fieldTable fields;
-
-forAll(Y, i)
-{
-    fields.add(Y[i]);
-}
-fields.add(thermo.he());
-
-
-Info<< "Creating field number of active species\n" << endl;
-
-volScalarField drg_important_species
-(
-    IOobject
-    (
-        "drg::important_species",
-        runTime.timeName(),
-        mesh,
-        IOobject::NO_READ,
-        IOobject::AUTO_WRITE
-    ),
-    mesh,
-    dimensionedScalar("drg::important_species", dimensionSet(0, 0, 0, 0, 0), 0.0)
-);
-
-volScalarField drg_important_reactions
-(
-    IOobject
-    (
-        "drg::important_reactions",
-        runTime.timeName(),
-        mesh,
-        IOobject::NO_READ,
-        IOobject::AUTO_WRITE
-    ),
-    mesh,
-    dimensionedScalar("drg::important_reactions", dimensionSet(0, 0, 0, 0, 0), 0.0)
-);
-
-volScalarField cpu_reaction_times
-(
-    IOobject
-    (
-        "cpu::reaction_times",
-        runTime.timeName(),
-        mesh,
-        IOobject::NO_READ,
-        IOobject::AUTO_WRITE
-    ),
-    mesh,
-    dimensionedScalar("cpu::reaction_times", dimensionSet(0, 0, 0, 0, 0), 0.0)
-);
+	volScalarField cpu_reaction_times
+	(
+	    IOobject
+	    (
+		"cpu::reaction_times",
+		runTime.timeName(),
+		mesh,
+		IOobject::NO_READ,
+		IOobject::AUTO_WRITE
+	    ),
+	    mesh,
+	    dimensionedScalar("cpu::reaction_times", dimensionSet(0, 0, 0, 0, 0), 0.0)
+	);
 
 

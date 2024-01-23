@@ -30,9 +30,9 @@
 	#include <assert.h>
 	#include <vector>
 	#include <map>
-    #include <stdlib.h>
+        #include <stdlib.h>
 
-	#define __OPENSMOKE_VERSION__ "0.7.0"
+	#define __OPENSMOKE_VERSION__ "0.21.0"
 
 	#define OPENSMOKE_LONG_DOUBLE 8
 	#define OPENSMOKE_DOUBLE 8
@@ -117,6 +117,16 @@
 			DENSE_DECOMPOSITION_PARTIAL_PIVOTING_LU 
 		};
 
+		/**
+		* Jacobian structure type
+		*/
+		enum JacobianStructureType
+		{
+			JACOBIAN_STRUCTURE_DENSE,
+			JACOBIAN_STRUCTURE_BAND,
+			JACOBIAN_STRUCTURE_TRIDIAGONAL_BLOCK,
+			JACOBIAN_STRUCTURE_SPARSE
+		};
 
 		/**
 		* Sparse solvers

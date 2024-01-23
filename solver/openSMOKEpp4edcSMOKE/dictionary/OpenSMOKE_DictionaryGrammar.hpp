@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------*\
+/*-----------------------------------------------------------------------*\
 |    ___                   ____  __  __  ___  _  _______                  |
 |   / _ \ _ __   ___ _ __ / ___||  \/  |/ _ \| |/ / ____| _     _         |
 |  | | | | '_ \ / _ \ '_ \\___ \| |\/| | | | | ' /|  _| _| |_ _| |_       |
@@ -16,7 +16,7 @@
 |                                                                         |
 |   This file is part of OpenSMOKE++ framework.                           |
 |                                                                         |
-|	License                                                               |
+|   License                                                               |
 |                                                                         |
 |   Copyright(C) 2014, 2013, 2012  Alberto Cuoci                          |
 |   OpenSMOKE++ is free software: you can redistribute it and/or modify   |
@@ -155,7 +155,7 @@ namespace OpenSMOKE
 										break;
 									}
 								if (found==false)
-									ErrorMessage("Unconsistent compulsory options between the following keywords: " + keywords_[j].name() + " and " + keywords_[i].name());
+									ErrorMessage("Inconsistent compulsory options between the following keywords: " + keywords_[j].name() + " and " + keywords_[i].name());
 							}
 				}
 			}
@@ -178,7 +178,7 @@ namespace OpenSMOKE
 									break;
 								}
 							if (found==false)
-								ErrorMessage("Unconsistent conflicting options between the following keywords: " + keywords_[j].name() + " and " + keywords_[i].name());
+								ErrorMessage("Inconsistent conflicting options between the following keywords: " + keywords_[j].name() + " and " + keywords_[i].name());
 						}
 			}
 		}	
@@ -198,9 +198,30 @@ namespace OpenSMOKE
 		fout << "-----------------------------------------------------------------------------------------------------" << std::endl;
 	}
 
+	bool OpenSMOKE_DictionaryGrammar::CheckForHelpKeyWord(std::vector<std::string>& list_of_keywords)
+	{
+		for (unsigned int i = 0; i < list_of_keywords.size(); i++)
+			if (list_of_keywords[i] == "@Help")
+			{
+				ShowListAvailableKeywords();
+				return true;
+			}
+
+		return false;
+	}
+
 	bool OpenSMOKE_DictionaryGrammar::CheckUndefinedKeyWords(std::vector<std::string>& list_of_keywords)
 	{
 		bool global_error = true;
+
+		for (unsigned int i = 0; i < list_of_keywords.size(); i++)
+			if (list_of_keywords[i] == "@Help")
+			{
+				ShowListAvailableKeywords();
+				global_error = false;
+				return global_error;
+			}
+
 		for(unsigned int i=0;i<list_of_keywords.size();i++)
 		{
 			bool is_defined = false;
@@ -215,9 +236,28 @@ namespace OpenSMOKE
 			{
 				global_error = false;
 				std::cout << "The " << list_of_keywords[i] << " type is not recognized as a keyword." << std::endl;
+
+				ShowListAvailableKeywords();
 			}
 		}
 		return global_error;
+	}
+
+	void OpenSMOKE_DictionaryGrammar::ShowListAvailableKeywords()
+	{
+		std::cout << std::endl;
+		std::cout << "----------------------------------------------------------------------------------" << std::endl;
+		std::cout << "List of available options in Dictionary " << name_ << std::endl;
+		std::cout << "----------------------------------------------------------------------------------" << std::endl;
+		for (unsigned int j = 0; j < number_of_keywords_; j++)
+		{
+			std::cout << std::setw(45) << std::left << keywords_[j].name();
+			std::cout << std::setw(20) << std::left << keywords_[j].type_ascii();
+			std::cout << std::left << keywords_[j].comment_short();
+			std::cout << std::endl;
+		}
+		std::cout << "----------------------------------------------------------------------------------" << std::endl;
+		std::cout << std::endl;
 	}
 
 	bool OpenSMOKE_DictionaryGrammar::CheckCompulsoryKeyWords(std::vector<std::string>& list_of_keywords)

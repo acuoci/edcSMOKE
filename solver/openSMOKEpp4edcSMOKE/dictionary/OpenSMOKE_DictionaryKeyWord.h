@@ -48,7 +48,7 @@ namespace OpenSMOKE
 
 	enum OpenSMOKE_DictionaryKeyWordTypes { NONE, SINGLE_INT, SINGLE_DOUBLE, SINGLE_STRING, SINGLE_CHAR, SINGLE_BOOL, SINGLE_MEASURE, SINGLE_PATH, SINGLE_DICTIONARY,
 											VECTOR_INT, VECTOR_DOUBLE, VECTOR_STRING, VECTOR_CHAR, VECTOR_BOOL, VECTOR_MEASURE,
-											VECTOR_STRING_DOUBLE, SEQUENCE_STRING };
+											VECTOR_STRING_DOUBLE, VECTOR_INT_STRING, SEQUENCE_STRING };
 
 	class OpenSMOKE_DictionaryKeyWord {
 	public:
@@ -114,6 +114,11 @@ namespace OpenSMOKE
 		* Returns the type of the keyword in ASCII format
 		*/
 		const std::string type_ascii() const { return type_ascii_; }
+
+		/**
+		* Returns the comment
+		*/
+		const std::string comment_short() const { return comment_short_; }
 
 		/**
 		* Returns true is the keyword is compulsory

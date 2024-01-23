@@ -57,11 +57,7 @@ if (laminarDiffusion == true)
 	{
 		const scalarField& TCells = T.internalField();
 		const scalarField& pCells = p.internalField();
-		#if OPENFOAM_VERSION >= 40
 		scalarField& lambdaCells = lambda.ref();
-		#else
-		scalarField& lambdaCells = lambda.internalField(); 
-		#endif
 
 		forAll(TCells, celli)
 		{
@@ -80,28 +76,17 @@ if (laminarDiffusion == true)
 			lambdaCells[celli] = transportMapXML->ThermalConductivity(moleFractions.GetHandle());
 			transportMapXML->MassDiffusionCoefficients(Dmixvector.GetHandle(), moleFractions.GetHandle());
 
-			#if OPENFOAM_VERSION >= 40
 			for(int i=0;i<thermodynamicsMapXML->NumberOfSpecies();i++)
 				Dmix_[i].ref()[celli] = Dmixvector[i+1];
-			#else
-			for(int i=0;i<thermodynamicsMapXML->NumberOfSpecies();i++)
-				Dmix_[i].internalField()[celli] = Dmixvector[i+1];
-			#endif
 		}
 	}
 
 	// Boundaries
 	forAll(T.boundaryField(), patchi)
 	{
-		#if OPENFOAM_VERSION >= 40
 		fvPatchScalarField& pp = p.boundaryFieldRef()[patchi];
 		fvPatchScalarField& pT = T.boundaryFieldRef()[patchi];
 		fvPatchScalarField& plambda = lambda.boundaryFieldRef()[patchi];
-		#else
-		fvPatchScalarField& pp = p.boundaryField()[patchi];
-		fvPatchScalarField& pT = T.boundaryField()[patchi];
-		fvPatchScalarField& plambda = lambda.boundaryField()[patchi];
-		#endif
         
 		forAll(pT, facei)
 		{
@@ -120,13 +105,8 @@ if (laminarDiffusion == true)
 			plambda[facei] = transportMapXML->ThermalConductivity(moleFractions.GetHandle());
 			transportMapXML->MassDiffusionCoefficients(Dmixvector.GetHandle(),moleFractions.GetHandle());
 
-			#if OPENFOAM_VERSION >= 40
 			for(int i=0;i<thermodynamicsMapXML->NumberOfSpecies();i++)
 				Dmix_[i].boundaryFieldRef()[patchi][facei] = Dmixvector[i+1];
-			#else
-			for(int i=0;i<thermodynamicsMapXML->NumberOfSpecies();i++)
-				Dmix_[i].boundaryField()[patchi][facei] = Dmixvector[i+1];
-			#endif
 		}
 	}
 	

@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------*\
+/*-----------------------------------------------------------------------*\
 |    ___                   ____  __  __  ___  _  _______                  |
 |   / _ \ _ __   ___ _ __ / ___||  \/  |/ _ \| |/ / ____| _     _         |
 |  | | | | '_ \ / _ \ '_ \\___ \| |\/| | | | | ' /|  _| _| |_ _| |_       |
@@ -36,6 +36,8 @@
 
 #ifndef OpenSMOKE_ReactionPolicy_CHEMKIN_H
 #define	OpenSMOKE_ReactionPolicy_CHEMKIN_H
+
+#include "kernel/kinetics/ReducedPressureBasedRateExpression.h"
 
 namespace OpenSMOKE
 {
@@ -296,12 +298,22 @@ namespace OpenSMOKE
 		/**
 		*@brief Returns a string reporting the reaction in CHEMKIN format (CGS units)
 		*/
+		void GetReactionStringCHEMKIN(const std::vector<std::string>& list_species, std::stringstream& line_reaction, const std::vector<bool>& isReducedSpecies, const std::string& strong_comment) const;
+
+		/**
+		*@brief Returns a string reporting the reaction in CHEMKIN format (CGS units)
+		*/
 		void GetReactionStringCHEMKIN(const std::vector<std::string>& list_species, std::stringstream& line_reaction, const std::vector<bool>& isReducedSpecies) const;
 
 		/**
 		*@brief Returns a string reporting the reaction in CHEMKIN format (CGS units)
 		*/
-		void GetReactionStringCHEMKIN(const std::vector<std::string>& list_species, std::stringstream& line_reaction) const;
+		void GetReactionStringCHEMKIN(const std::vector<std::string>& list_species, std::stringstream& line_reactionconst, const std::string& strong_comment) const;
+
+		/**
+		*@brief Returns a string reporting the reaction in CHEMKIN format (CGS units)
+		*/
+		void GetReactionStringCHEMKIN(const std::vector<std::string>& list_species, std::stringstream& line_reactionconst) const;
 
 		/**
 		*@brief Reports the reaction data (details) on a file
@@ -428,7 +440,7 @@ namespace OpenSMOKE
 		// Chebishev reaction
 		bool iChebyshev_;										//!< is the reaction a Chebyshev reaction?
 		std::vector<double> chebyshev_coefficients_;			//!< Chebishev coefficients
-		std::vector<double> chebyshev_pressure_limits_;			//!< temperature limits
+		std::vector<double> chebyshev_pressure_limits_;			//!< pressure limits
 		std::vector<double> chebyshev_temperature_limits_;		//!< temperature limits
 
 		// Power series modified Arrhenius law
@@ -455,6 +467,11 @@ namespace OpenSMOKE
 		bool iExtLow_;															//!< is an extended falloff reaction
 		std::vector< std::vector<std::string> > extendedfalloff_coefficients_;	//!< coefficients
 
+		// Reduced-Pressure Based Mixture Rule reaction
+		bool iRPBMR_;															//!< is a Reduced-Pressure Based Mixture Rule reaction
+		std::vector<ReducedPressureBasedRateExpression> rpbmr_reactions_;		//!< RPBMR reactions
+
+
 	private:
 
 		/**
@@ -468,14 +485,14 @@ namespace OpenSMOKE
 		void ConvertUnits();
 
 		/**
-		*@brief Calcultaes the conversion factors for the pre-exponential factor and the activation energy
+		*@brief Calculates the conversion factors for the pre-exponential factor and the activation energy
 		*/
 		void ConversionFactors();
                 
  		/**
 		*@brief Gets the number of decimal places after comma
 		*/               
-                int GetDecimalPlaces(const double nu) const;
+        int GetDecimalPlaces(const double nu) const;
 	};
 
 }

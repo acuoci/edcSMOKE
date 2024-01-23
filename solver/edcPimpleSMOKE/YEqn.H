@@ -42,14 +42,14 @@
 |                                                                         |
 \*-----------------------------------------------------------------------*/
 
-tmp<fv::convectionScheme<scalar> > mvConvection
+tmp<fv::convectionScheme<scalar>> mvConvection
 (
     fv::convectionScheme<scalar>::New
     (
         mesh,
         fields,
         phi,
-        mesh.divScheme("div(phi,Yi)")
+        mesh.schemes().div("div(phi,Yi_h)")
     )
 );
 
@@ -78,28 +78,26 @@ tmp<fv::convectionScheme<scalar> > mvConvection
 				(
 					fvm::ddt(rho, Yi)
 					+ mvConvection->fvmDiv(phi, Yi)
-					- fvm::laplacian(rho*Dmixi + turbulence->mut()/Sct, Yi)
+					- fvm::laplacian(rho*(Dmixi + turbulence->nut()/Sct), Yi)
 					==
 					R_[i]
-					+ fvOptions(rho, Yi)
+          				+ fvModels.source(rho, Yi)
 				);
 
 				YiEqn.relax();
 
-				fvOptions.constrain(YiEqn);
+				fvConstraints.constrain(YiEqn);
 
                                 const double tStartSolve = OpenSMOKE::OpenSMOKEGetCpuTime();
-				#if OPENFOAM_VERSION >=60
+
                                 YiEqn.solve("Yi");
-				#else
-				YiEqn.solve(mesh.solver("Yi"));
-				#endif
+
                                 const double tEndSolve = OpenSMOKE::OpenSMOKEGetCpuTime();
 
 				cpuTimeSolve += tEndSolve - tStartSolve;
                                 Info << " * CPU time for species solve : " << tEndSolve - tStartSolve << endl;
 
-				fvOptions.correct(Yi);
+				fvConstraints.constrain(Yi);
 
 				Yi.max(0.0);
 				Yt += Yi;
@@ -123,28 +121,26 @@ tmp<fv::convectionScheme<scalar> > mvConvection
 				(
 					fvm::ddt(rho, Yi)
 					+ mvConvection->fvmDiv(phi, Yi)
-					- fvm::laplacian(turbulence->muEff()/Sct, Yi)
+					- fvm::laplacian(rho*turbulence->nuEff()/Sct, Yi)
 					==
 					R_[i]
-					+ fvOptions(rho, Yi)
+          				+ fvModels.source(rho, Yi)
 				);
 
 				YiEqn.relax();
 
-				fvOptions.constrain(YiEqn);
+				fvConstraints.constrain(YiEqn);
 
 				const double tStartSolve = OpenSMOKE::OpenSMOKEGetCpuTime();
-				#if OPENFOAM_VERSION >=60
+
                                 YiEqn.solve("Yi");
-				#else
-				YiEqn.solve(mesh.solver("Yi"));
-				#endif
+
                                 const double tEndSolve = OpenSMOKE::OpenSMOKEGetCpuTime();
 
 				cpuTimeSolve += tEndSolve - tStartSolve;
                                 Info << " * CPU time for species solve : " << tEndSolve - tStartSolve << endl;
 
-				fvOptions.correct(Yi);
+				fvConstraints.constrain(Yi);
 
 				Yi.max(0.0);
 				Yt += Yi;

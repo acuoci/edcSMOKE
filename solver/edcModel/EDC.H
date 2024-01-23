@@ -75,25 +75,14 @@
 		double hMean, MWMean;
 		const scalarField& pCells = thermo.p().internalField();
 		const scalarField& TCells = thermo.T().internalField();
-		#if OPENFOAM_VERSION >= 40
+
 		scalarField& QdotCells = Qdot.ref();
 		scalarField& dQCells = dQ.ref();
-		#else
-		scalarField& QdotCells = Qdot.internalField();
-		scalarField& dQCells = dQ.internalField();
-		#endif
 
 		// DRG Fields
-		#if OPENFOAM_VERSION >= 40
 		scalarField& drgSpeciesCells = drg_important_species.ref();
 		scalarField& drgReactionsCells = drg_important_reactions.ref();
 		scalarField& cpuReactionsCells = cpu_reaction_times.ref();
-		#else
-		scalarField& drgSpeciesCells = drg_important_species.internalField();
-		scalarField& drgReactionsCells = drg_important_reactions.internalField();
-		scalarField& cpuReactionsCells = cpu_reaction_times.internalField();
-		#endif
-
 
 		// ISAT Statistics
 		#if EDCSMOKE_USE_ISAT == 1
@@ -509,62 +498,32 @@
 	
 			if (drg_analysis == false)
 			{		
-				#if OPENFOAM_VERSION >= 40
-						for(unsigned int i=0;i<ns;i++)
-							YStar_[i].ref()[celli] = yStarf(i);
-						TStar_[0].ref()[celli] = yStarf(ne-3);
-				 
-						for(unsigned int i=0;i<ns;i++)
-							R_[i].ref()[celli] = edc_coefficient[celli]*(YStar_[i].internalField()[celli]-Y[i].internalField()[celli]);
-				#else
-						for(unsigned int i=0;i<ns;i++)
-							YStar_[i].internalField()[celli] = yStarf(i);
-						TStar_[0].internalField()[celli] = yStarf(ne-3);
-				 
-						for(unsigned int i=0;i<ns;i++)
-							R_[i].internalField()[celli] = edc_coefficient[celli]*(YStar_[i].internalField()[celli]-Y[i].internalField()[celli]);
-				#endif
+				for(unsigned int i=0;i<ns;i++)
+					YStar_[i].ref()[celli] = yStarf(i);
+				TStar_[0].ref()[celli] = yStarf(ne-3);
+		 
+				for(unsigned int i=0;i<ns;i++)
+					R_[i].ref()[celli] = edc_coefficient[celli]*(YStar_[i].internalField()[celli]-Y[i].internalField()[celli]);
 			}
 			else
 			{
-				#if OPENFOAM_VERSION >= 40
-					for(unsigned int i=0;i<ne_drg-1;i++)
-					{
-			       			const unsigned int j = drg->indices_important_species()[i];
-						YStar_[j].ref()[celli] = yStarf(i);
-					}
-					TStar_[0].ref()[celli] = yStarf(ne_drg-1);
-			 
-					// Reset to 0 every formation rate
-					for(unsigned int i=0;i<ns;i++)
-						R_[i].ref()[celli] = 0.;
+				for(unsigned int i=0;i<ne_drg-1;i++)
+				{
+		       			const unsigned int j = drg->indices_important_species()[i];
+					YStar_[j].ref()[celli] = yStarf(i);
+				}
+				TStar_[0].ref()[celli] = yStarf(ne_drg-1);
+		 
+				// Reset to 0 every formation rate
+				for(unsigned int i=0;i<ns;i++)
+					R_[i].ref()[celli] = 0.;
 
-					// Update only formation rates for relevant species
-					for(unsigned int i=0;i<ne_drg-1;i++)
-					{
-						const unsigned int j = drg->indices_important_species()[i];
-						R_[j].ref()[celli] = edc_coefficient[celli]*(YStar_[j].internalField()[celli]-Y[j].internalField()[celli]);
-					}
-				#else
-					for(unsigned int i=0;i<ne_drg-1;i++)
-					{
-			       			const unsigned int j = drg->indices_important_species()[i];
-						YStar_[j].internalField()[celli] = yStarf(i);
-					}
-					TStar_[0].internalField()[celli] = yStarf(ne_drg-1);
-			 
-					// Reset to 0 every formation rate
-					for(unsigned int i=0;i<ns;i++)
-						R_[i].internalField()[celli] = 0.;
-
-					// Update only formation rates for relevant species
-					for(unsigned int i=0;i<ne_drg-1;i++)
-					{
-						const unsigned int j = drg->indices_important_species()[i];
-						R_[j].internalField()[celli] = edc_coefficient[celli]*(YStar_[j].internalField()[celli]-Y[j].internalField()[celli]);
-					}
-				#endif
-				
+				// Update only formation rates for relevant species
+				for(unsigned int i=0;i<ne_drg-1;i++)
+				{
+					const unsigned int j = drg->indices_important_species()[i];
+					R_[j].ref()[celli] = edc_coefficient[celli]*(YStar_[j].internalField()[celli]-Y[j].internalField()[celli]);
+				}	
 			}
 
 			thermodynamicsMapXML->SetTemperature(TCells[celli]);
@@ -579,13 +538,8 @@
 
 			if (laminarDiffusion == true)
 			{
-				#if OPENFOAM_VERSION >= 40
 				for(unsigned int i=0;i<ns;i++)
 					HeSpecies_[i].ref()[celli] = -h_species[i+1]/thermodynamicsMapXML->MW(i);
-				#else
-				for(unsigned int i=0;i<ns;i++)
-					HeSpecies_[i].internalField()[celli] = -h_species[i+1]/thermodynamicsMapXML->MW(i);
-				#endif
 			}
 
 			if (debug == true)

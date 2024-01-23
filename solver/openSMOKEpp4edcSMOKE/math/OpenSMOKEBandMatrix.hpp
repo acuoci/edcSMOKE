@@ -50,18 +50,22 @@
 #elif OPENSMOKE_USE_OPENBLAS == 1
 	#include "cblas.h"
 	#include "lapacke.h"
-	#include "malloc.h"
+	#ifndef __APPLE__
+		#include "malloc.h"
+	#endif
 #endif
 
 namespace OpenSMOKE
 {
-	#define BAND_COL(A,j) (((A->cols)[j])+(A->s_mu))
-	#define BAND_COL_ELEM(col_j,i,j) (col_j[(i)-(j)])
-	#define BAND_ELEM(A,i,j) ((A->cols)[j][(i)-(j)+(A->s_mu)])
-	#define ROW(i,j,smu) (i-j+smu)
+	#define OS_BAND_COL(A,j) (((A->cols)[j])+(A->s_mu))
+	#define OS_BAND_COL_ELEM(col_j,i,j) (col_j[(i)-(j)])
+	#define OS_BAND_ELEM(A,i,j) ((A->cols)[j][(i)-(j)+(A->s_mu)])
+	#define OS_ROW(i,j,smu) (i-j+smu)
 
 	#if defined(_WIN32) || defined(_WIN64) 
 		// Nothing to declare
+		template<typename TT>
+		OpenSMOKEBandMatrix<TT>* NewBandMat(const int N, const int mu, const int ml, const int smu);
 	#else
 		template<typename TT>
 		OpenSMOKEBandMatrix<TT>* NewBandMat(const int N, const int mu, const int ml, const int smu);
@@ -72,7 +76,7 @@ namespace OpenSMOKE
 	#endif
  
 	template<typename T>
-	void bandGBTRS(T **a, const int n, const int smu, const int ml, const int *p, T *b);
+	int bandGBTRS(T **a, const int n, const int smu, const int ml, const int *p, T *b);
 
         template<typename T>
         int bandGBTRF(T **a, const int n, const int mu, const int ml, const int smu, int *p);
@@ -126,6 +130,7 @@ namespace OpenSMOKE
 	template<typename T>
 	void OpenSMOKEBandMatrix<T>::Print(std::ostream& out)
 	{
+		/*
 		T **a;
 		a = cols;
 		
@@ -140,6 +145,25 @@ namespace OpenSMOKE
 				out << std::setw(12) << a[j][i - j + s_mu];
 			out << std::endl;
 		}
+		*/
+
+		int width = mu + ml + 1;
+		int ngroups = std::min(width, N);
+
+		for (int group = 1; group <= ngroups; group++)
+		{
+			for (int j = group - 1; j < N; j += width)
+			{
+				double* col_j = OS_BAND_COL(this, j);
+				
+				int i1 = std::max((int)(0), j - mu);
+				int i2 = std::min(j + ml, N-1);
+				for (int i = i1; i <= i2; i++)
+				{
+					out << i << " " << j << " " << OS_BAND_COL_ELEM(col_j, i, j) << std::endl;
+				}
+			}
+		}
 	}
 
 	template<typename T>
@@ -152,16 +176,16 @@ namespace OpenSMOKE
 		{
 			for (int j = group - 1; j < N; j += width)
 			{
-				double* col_j = BAND_COL(this, j);
+				double* col_j = OS_BAND_COL(this, j);
 				
 				int i1 = std::max((int)(0), j - mu);
-				int i2 = std::min(j + ml, N);
+				int i2 = std::min(j + ml, N-1);
 				for (int i = i1; i <= i2; i++)
 				{
 					if (index[i] == 1)
-						BAND_COL_ELEM(col_j, i, j) *= c_differential;
+						OS_BAND_COL_ELEM(col_j, i, j) *= c_differential;
 					else
-						BAND_COL_ELEM(col_j, i, j) *= c_algebraic;
+						OS_BAND_COL_ELEM(col_j, i, j) *= c_algebraic;
 				}
 			}
 		}
@@ -171,18 +195,6 @@ namespace OpenSMOKE
 	void OpenSMOKEBandMatrix<T>::SetToZero()
 	{
 		const T ZERO = 0.;
-		/*		
-		int i, j, colSize;
-		T *col_j;
-
-		colSize = mu + ml + 1;
-		for (j = 0; j<M; j++)
-		{
-			col_j = cols[j] + s_mu - mu;
-			for (i = 0; i<colSize; i++)
-				col_j[i] = ZERO;
-		}
-		*/
 		for (int j = 0; j < ldata; j++)
 			data[j] = ZERO;
 	}
@@ -210,11 +222,11 @@ namespace OpenSMOKE
 	template<typename T>
 	void OpenSMOKEBandMatrix<T>::CopyTo(OpenSMOKEBandMatrix<T>* B)
 	{
-//		#if __APPLE__
-//
-//			bandCopy(cols, B->cols, M, s_mu, B->s_mu, mu, ml);
-//
-//		#else
+		#if __APPLE__
+
+			bandCopy(cols, B->cols, M, s_mu, B->s_mu, mu, ml);
+
+		#else
 
 			#if (OPENSMOKE_USE_MKL == 1)
 
@@ -230,7 +242,7 @@ namespace OpenSMOKE
 
 			#endif
 
-//		#endif
+		#endif
 	}
 
 	template<typename T>
@@ -304,19 +316,26 @@ namespace OpenSMOKE
 			{
 				std::cout << "Pivot " << ier << " is equal to zero (singular matrix). The factorization has been completed, but U is exactly singular." << std::endl;
 				std::cout << "The solution cannot be calculated." << std::endl;
+				
+				const int NB = (ml+1)/2;
+				std::cout << " (1) Matrix layout:        " << CblasColMajor << std::endl;
+				std::cout << " (2) Equations:            " << M << std::endl;
+				std::cout << " (3) Blocks:               " << M/NB << std::endl;
+				std::cout << " (4) Block size:           " << NB << std::endl;
+				std::cout << " (5) Block index (from 1): " << int(std::floor((ier-1)/NB))+1 << std::endl;
+				std::cout << " (6) Local row (from 1):   " << (ier-1)%NB+1 << std::endl;
 			}
 			else
 			{
 				std::cout << "Parameter " << -ier << " has an illegal value" << std::endl;
 
-				std::cout << " (1) Matrix layout: " << CblasColMajor << std::endl;
-				std::cout << " (2) Rows:          " << M << std::endl;
-				std::cout << " (3) Columns:       " << M << std::endl;
-				std::cout << " (4) Lower band:    " << ml << std::endl;
-				std::cout << " (5) Upper band:    " << mu << std::endl;
-				std::cout << " (6) Data[0]:       " << data[0] << std::endl;
-				std::cout << " (7) Leading dim.:  " << ldim << std::endl;
-				std::cout << " (8) Pivot[0]:      " << p[0] << std::endl;
+				const int NB = (ml+1)/2;
+				std::cout << " (1) Matrix layout:        " << CblasColMajor << std::endl;
+				std::cout << " (2) Equations:            " << M << std::endl;
+				std::cout << " (3) Blocks:               " << M/NB << std::endl;
+				std::cout << " (4) Block size:           " << NB << std::endl;
+				std::cout << " (5) Block index (from 1): " << int(std::floor((ier-1)/NB))+1 << std::endl;
+				std::cout << " (6) Local row (from 1):   " << (ier-1)%NB+1 << std::endl;
 			}
 
 			OpenSMOKE::FatalErrorMessage("Factorizing the banded linear system: LAPACKE_dgbtrf failed");
@@ -334,7 +353,7 @@ namespace OpenSMOKE
 	}
 
 	template<typename T>
-	void OpenSMOKEBandMatrix<T>::Solve(T *b)
+	int OpenSMOKEBandMatrix<T>::Solve(T *b)
 	{
 		#if (OPENSMOKE_USE_MKL == 1 || OPENSMOKE_USE_OPENBLAS == 1)
 
@@ -345,30 +364,28 @@ namespace OpenSMOKE
 			{
 				std::cout << "Parameter " << -ier << " has an illegal value" << std::endl;
 
-				std::cout << " (1) Matrix layout: " << CblasColMajor << std::endl;
-				std::cout << " (2) Transpose:     " << "N" << std::endl;
-				std::cout << " (3) Size:          " << M << std::endl;
-				std::cout << " (4) Lower band:    " << ml << std::endl;
-				std::cout << " (5) Upper band:    " << mu << std::endl;
-				std::cout << " (6) #RHS:          " << one << std::endl;
-				std::cout << " (7) Data[0]:       " << data[0] << std::endl;
-				std::cout << " (8) Leading dim.:  " << ldim << std::endl;
-				std::cout << " (9) Pivot[0]:      " << p[0] << std::endl;
-				std::cout << " (10) b[0]:         " << b[0] << std::endl;
-				std::cout << " (11) Size:         " << M << std::endl;
+				const int NB = (ml+1)/2;
+				std::cout << " (1) Matrix layout:        " << CblasColMajor << std::endl;
+				std::cout << " (2) Equations:            " << M << std::endl;
+				std::cout << " (3) Blocks:               " << M/NB << std::endl;
+				std::cout << " (4) Block size:           " << NB << std::endl;
+				std::cout << " (5) Block index (from 1): " << int(std::floor((ier-1)/NB))+1 << std::endl;
+				std::cout << " (6) Local row (from 1):   " << (ier-1)%NB+1 << std::endl;
 
 				OpenSMOKE::FatalErrorMessage("Solving the banded linear system: LAPACKE_dgbtrs failed");
 			}
 
 		#else
 			
-			bandGBTRS(cols, M, s_mu, ml, p, b);
+		const int ier = bandGBTRS(cols, M, s_mu, ml, p, b);
 
 		#endif
+
+		return ier;
 	}
 
 	template<typename T>
-	void OpenSMOKEBandMatrix<T>::Solve(const int nrhs, T *b)
+	int OpenSMOKEBandMatrix<T>::Solve(const int nrhs, T *b)
 	{
 		#if (OPENSMOKE_USE_MKL == 1 || OPENSMOKE_USE_OPENBLAS == 1)
 
@@ -396,73 +413,22 @@ namespace OpenSMOKE
 		#else
 
 		OpenSMOKE::FatalErrorMessage("Solution of multiple rhs with banded structure requires MKL or OpenBlas");
-		bandGBTRS(cols, M, s_mu, ml, p, b);
+		const int ier = bandGBTRS(cols, M, s_mu, ml, p, b);
 
 		#endif
+
+		return ier;
 	}
 
 	// This function must be checked!
 	// Please do not use it
 	template<typename T>
-	void OpenSMOKEBandMatrix<T>::FactorizeAndSolve(T *b)
+	int OpenSMOKEBandMatrix<T>::FactorizeAndSolve(T *b)
 	{
-		/*
-		#if (OPENSMOKE_USE_MKL == 1 || OPENSMOKE_USE_OPENBLAS == 1)
-
-			double* r = new double[M];
-			double* c = new double[M];
-			const int ldafb = 2*iml + imu + 1;
-
-			double* afb = new double[ldafb*M];
-			double* berr = new double[1];
-			double* ferr = new double[1];
-			double* x = new double[M];
-
-			double rcond;
-			double rpivot;
-			char equed;
-
-			const int ier = LAPACKE_dgbsvx(CblasColMajor, 'E', 'N', M, ml, mu, 1, data, ldim, afb, ldafb, p, &equed, r, c, b, M, x, M, &rcond, ferr, berr, &rpivot);
-				
-			if (ier != 0)
-			{
-				std::cout << "Equilibration type: " << equed << std::endl;
-				std::cout << "1/cond:             " << rcond << std::endl;
-				std::cout << "1/pivot:            " << rpivot << std::endl;
-
-				if (ier > 0 && ier <= M)
-				{
-					std::cout << "Pivot " << ier << " is equal to zero (singular matrix). The factorization has been completed, but U is exactly singular." << std::endl;
-					std::cout << "The solution cannot be calculated." << std::endl;
-				}
-				else if (ier == M + 1)
-				{
-					std::cout << "U is nonsingular, but the reciprocal of condition number is less than machine precision, meaning that the matrix is" << std::endl;
-					std::cout << "singular working precision.Nevertheless, the solution and error bounds are computed because there are a number of " << std::endl;
-					std::cout << "where the computed solution can be more accurate than the value of rcond would suggest." << std::endl;
-				}
-				else
-				{
-					std::cout << "Parameter " << -ier << " has an illegal value" << std::endl;
-				}
-
-				OpenSMOKE::FatalErrorMessage("Factorizing and solving the banded linear system: LAPACKE_dgbsvx failed");
-			}
-
-			for(unsigned int i=0;i<M;i++)
-				b[i] = x[i];
-
-		#else
-
-			OpenSMOKE::FatalErrorMessage("Factorizing and solving the banded linear system: bandGBTRS(cols, M, s_mu, ml, p, b) not implemented");
-
-		#endif
-		*/
-
 		OpenSMOKE::FatalErrorMessage("Factorizing and solving the banded linear system: bandGBTRS(cols, M, s_mu, ml, p, b) not implemented");
-	}
 
-	
+		return -1;
+	}
 
 	template<typename T>
 	OpenSMOKEBandMatrix<T>* NewBandMat(const int N, const int mu, const int ml, const int smu)
@@ -684,7 +650,7 @@ namespace OpenSMOKE
 					max = std::fabs(*kptr);
 				}
 			}
-			storage_l = ROW(l, k, smu);
+			storage_l = OS_ROW(l, k, smu);
 			*p = l;
 
 			/* check for zero pivot element */
@@ -715,8 +681,8 @@ namespace OpenSMOKE
 			{
 
 				col_j = a[j];
-				storage_l = ROW(l, j, smu);
-				storage_k = ROW(k, j, smu);
+				storage_l = OS_ROW(l, j, smu);
+				storage_k = OS_ROW(k, j, smu);
 				a_kj = col_j[storage_l];
 
 				/* Swap the elements a(k,j) and a(k,l) if l!=k. */
@@ -731,7 +697,7 @@ namespace OpenSMOKE
 
 				if (a_kj != ZERO)
 				{
-					for (i = k + 1, kptr = sub_diag_k, jptr = col_j + ROW(k + 1, j, smu);
+					for (i = k + 1, kptr = sub_diag_k, jptr = col_j + OS_ROW(k + 1, j, smu);
 						i <= last_row_k;
 						i++, kptr++, jptr++)
 						(*jptr) += a_kj * (*kptr);
@@ -744,7 +710,7 @@ namespace OpenSMOKE
 
 	// Solution 
 	template<typename T>
-	void bandGBTRS(T **a, const int n, const int smu, const int ml, const int *p, T *b)
+	int bandGBTRS(T **a, const int n, const int smu, const int ml, const int *p, T *b)
 	{
 		const int ZERO = 0;
 		int k, l, i, first_row_k, last_row_k;
@@ -775,5 +741,7 @@ namespace OpenSMOKE
 			for (i = first_row_k; i <= k - 1; i++)
 				b[i] += mult*diag_k[i - k];
 		}
+		
+		return 0;
 	}
 }

@@ -16,7 +16,7 @@
 |                                                                         |
 |   This file is part of OpenSMOKE++ framework.                           |
 |                                                                         |
-|	License                                                               |
+|   License                                                               |
 |                                                                         |
 |   Copyright(C) 2014, 2013, 2012  Alberto Cuoci                          |
 |   OpenSMOKE++ is free software: you can redistribute it and/or modify   |
@@ -36,7 +36,46 @@
 
 namespace OpenSMOKE
 {
-	InputFileCHEMKIN::InputFileCHEMKIN() {
+	bool ParseReactionClassLine(const std::string line_to_parse, const std::string keyword, std::vector<std::string>& names)
+	{
+		std::string line = line_to_parse;
+		boost::replace_all(line, keyword, "");
+
+		// Remove empty spaces
+		boost::erase_all(line, " ");
+		boost::erase_all(line, "\t");
+
+		// Remove additional comments
+		const size_t pos = line.find_last_of("]");
+		if (pos != std::string::npos)
+			line.erase(pos+1, line.length()-pos);
+
+		// Remove special characters for comments
+		boost::erase_all(line, "!");
+
+		// Look for the existence of mainclass and subclass definitions
+		if (line.find("][") == std::string::npos)
+			return false;
+
+		// Replace "][" with empty spaces
+		boost::replace_all(line, "][", " ");
+
+		// Remove square brackets
+		boost::erase_all(line, "[");
+		boost::erase_all(line, "]");
+
+		// Separate mainclass and subclass
+		boost::split(names, line, boost::is_any_of(" "));
+
+		// Check if multiple definitions exist
+		if (names.size() != 2)
+			return false;
+
+		return true;
+	}
+
+	InputFileCHEMKIN::InputFileCHEMKIN() 
+	{
 	}
 
 	InputFileCHEMKIN::InputFileCHEMKIN(const std::string file_name) 
@@ -75,11 +114,102 @@ namespace OpenSMOKE
 			std::ifstream myfile(file_name.c_str(), std::ios::in);
 			CheckIfFileIsOpen(myfile, file_name);
 
+			bool TakeFirstSpecies = false;
 			int count=1;
 			std::string line;
 			while ( myfile.good() )
 			{
 					std::getline(myfile,line);
+
+					size_t found_comment = line.find("!#");
+					std::string comment = "";
+					bool found_strong_comment = false;
+					if (found_comment != line.npos)
+					{
+						comment = line.substr(found_comment);
+						found_strong_comment = true;
+					}
+
+					size_t found_soot_class = line.find("[SOOTCLASS]");
+					if (found_soot_class != line.npos)
+					{
+						std::string line_to_parse = line.substr(found_soot_class);
+						boost::replace_all(line_to_parse, "[SOOTCLASS]", "");
+						boost::erase_all(line_to_parse, " ");
+						boost::erase_all(line_to_parse, "!");
+						boost::erase_all(line_to_parse, "[");
+						boost::erase_all(line_to_parse, "]");
+						soot_class_names_.push_back(line_to_parse);
+						soot_class_lines_abs_.push_back(count);
+					}
+
+					size_t found_reaction_class = line.find("[REACTIONCLASS]");
+					if (found_reaction_class != line.npos)
+					{
+						std::string line_to_parse = line.substr(found_reaction_class);
+
+						std::vector<std::string> classnames;
+						const bool flag = ParseReactionClassLine(line_to_parse, "[REACTIONCLASS]", classnames);
+						if (flag == false)
+						{
+							std::cout << "Line: " << count << line_to_parse << std::endl;
+							OpenSMOKE::FatalErrorMessage("Syntax error in definition of [REACTIONCLASS]");
+						}
+
+						reaction_mainclass_names_.push_back(classnames[0]);
+						reaction_mainclass_lines_abs_.push_back(count);
+						reaction_subclass_names_.push_back(classnames[1]);
+						reaction_subclass_lines_abs_.push_back(count);
+					}
+
+					size_t found_endreaction_class = line.find("[ENDREACTIONCLASS]");
+					if (found_endreaction_class != line.npos)
+					{
+						std::string line_to_parse = line.substr(found_endreaction_class);
+
+						std::vector<std::string> endclassnames;
+						const bool flag = ParseReactionClassLine(line_to_parse, "[ENDREACTIONCLASS]", endclassnames);
+						if (flag == false)
+						{
+							std::cout << "Line: " << count << line_to_parse << std::endl;
+							OpenSMOKE::FatalErrorMessage("Syntax error in definition of [ENDREACTIONCLASS]");
+						}
+
+						endreaction_mainclass_names_.push_back(endclassnames[0]);
+						endreaction_mainclass_lines_abs_.push_back(count);
+						endreaction_subclass_names_.push_back(endclassnames[1]);
+						endreaction_subclass_lines_abs_.push_back(count);
+					}
+					
+					// AN to get the first species of each [SPECIESCLASS]
+					if (TakeFirstSpecies == true) {
+						boost::replace_all(line, "\t", " ");
+						size_t found=line.find_first_of("!");
+						if (found!=line.npos)
+						line.erase(found);
+						auto pos = line.find_first_not_of (' ');
+						if (pos != line.npos) {				
+							std::vector<std::string> stringvector;
+							boost::split(stringvector,line.substr(pos),boost::is_any_of(" "));
+							firstspecies_names_.push_back(stringvector.front());
+							TakeFirstSpecies = false;
+						}
+					}
+
+					size_t found_species_class = line.find("[SPECIESCLASS]");
+					if (found_species_class != line.npos)
+					{
+						std::string line_to_parse = line.substr(found_species_class);
+						boost::replace_all(line_to_parse, "[SPECIESCLASS]", "");
+						boost::erase_all(line_to_parse, " ");
+						boost::erase_all(line_to_parse, "!#");
+						boost::erase_all(line_to_parse, "[");
+						boost::erase_all(line_to_parse, "]");
+						species_class_names_.push_back(line_to_parse);
+						species_class_lines_abs_.push_back(count);
+						//AN to get the first species of each [SPECIESCLASS]
+						TakeFirstSpecies = true;
+					}
 
 					size_t found=line.find_first_of("!");
 					if (found!=line.npos)
@@ -90,11 +220,18 @@ namespace OpenSMOKE
 					if (line.find_first_not_of (' ') == line.npos)   // has only spaces?
 					{
 						indices_of_blank_lines_.push_back(count);
+
+						if (found_strong_comment == true)
+						{
+							indices_of_strong_comment_lines_.push_back(count);
+							strong_comment_lines_.push_back(comment);
+						}
 					}
 					else
 					{	
-							good_lines_.push_back(line);
-							indices_of_good_lines_.push_back(count);
+						good_lines_.push_back(line);
+						indices_of_good_lines_.push_back(count);
+						strong_comments_.push_back(comment);
 					}
 					count++;
 			}
@@ -103,7 +240,27 @@ namespace OpenSMOKE
         
 			number_of_blank_lines_ = boost::lexical_cast<int>(indices_of_blank_lines_.size());
 			number_of_good_lines_ = boost::lexical_cast<int>(indices_of_good_lines_.size());
+			number_of_strong_comment_lines_ = boost::lexical_cast<int>(indices_of_strong_comment_lines_.size());
 			number_of_lines_ = number_of_blank_lines_ + number_of_good_lines_;
+	}
+
+	void InputFileCHEMKIN::ConvertGoodLinesIntoBlankLines(const std::vector<unsigned int> lines_to_remove)
+	{
+		std::vector<unsigned int> indices = lines_to_remove;
+		std::sort(indices.begin(), indices.end());
+		std::reverse(indices.begin(), indices.end());
+
+		number_of_blank_lines_ += static_cast<int>(indices.size());
+		number_of_good_lines_ -= static_cast<int>(indices.size());
+
+		for (unsigned int j = 0; j < indices.size(); j++)
+		{
+			indices_of_blank_lines_.push_back(indices_of_good_lines_[indices[j]]);
+			indices_of_good_lines_.erase(indices_of_good_lines_.begin() + (indices[j]-1));
+		}
+
+		for (unsigned int j = 0; j<indices.size(); j++)
+			good_lines_.erase(good_lines_.begin() + (indices[j]-1));	
 	}
 
 	InputFileCHEMKIN::InputFileCHEMKIN(const InputFileCHEMKIN& orig) {
@@ -114,7 +271,7 @@ namespace OpenSMOKE
 
 	void InputFileCHEMKIN::Status(std::ostream &fOut) const
 	{ 
-		fOut << "Name:        " << file_name_->leaf() << std::endl;
+		fOut << "Name:        " << file_name_->filename() << std::endl;
 		fOut << "Path:        " << file_name_->parent_path() << std::endl;
 		fOut << "Size:        " << boost::filesystem::file_size(*file_name_)/1000. << " kB" << std::endl;
 		fOut << "Lines:       " << number_of_lines_ << std::endl;

@@ -42,29 +42,26 @@
 |                                                                         |
 \*-----------------------------------------------------------------------*/
 
-MRF.correctBoundaryVelocity(U);
+    // Solve the Momentum equation
 
-tmp<fvVectorMatrix> tUEqn
-(
-	fvm::ddt(rho, U) + fvm::div(phi, U)
-	+ MRF.DDt(rho, U)
-	+ turbulence->divDevRhoReff(U)
-	==
-	rho*g +
-	fvOptions(rho, U)
-);
-fvVectorMatrix& UEqn = tUEqn.ref();
+    MRF.correctBoundaryVelocity(U);
 
-UEqn.relax();
+    tmp<fvVectorMatrix> tUEqn
+    (
+        fvm::div(phi, U)
+      + MRF.DDt(rho, U)
+      + turbulence->divDevTau(U)
+     ==
+	rho*g
+      + fvModels.source(rho, U)
+    );
+    fvVectorMatrix& UEqn = tUEqn.ref();
 
-fvOptions.constrain(UEqn);
+    UEqn.relax();
 
-if (pimple.momentumPredictor())
-{
-	solve(UEqn == -fvc::grad(p));
+    fvConstraints.constrain(UEqn);
 
-	fvOptions.correct(U);
-	K = 0.5*magSqr(U);
-}
+    solve(UEqn == -fvc::grad(p));
 
-Info << " Umin: " << min(U).value() << " Umax: " << max(U).value() << endl;
+    fvConstraints.constrain(U);
+

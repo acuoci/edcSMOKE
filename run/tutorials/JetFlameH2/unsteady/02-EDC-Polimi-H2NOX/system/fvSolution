@@ -17,7 +17,7 @@ FoamFile
 
 solvers
 {
-"rho.*"
+    "rho.*"
     {
         solver              PCG;
         preconditioner      DIC;
@@ -51,7 +51,7 @@ solvers
 
     U
     {
-        solver          PBiCG;
+        solver          PBiCGStab;
         preconditioner  DILU;
         tolerance       1e-8;
         relTol          0.01;
@@ -60,7 +60,7 @@ solvers
 
     UFinal
     {
-        solver          PBiCG;
+        solver          PBiCGStab;
         preconditioner  DILU;
         tolerance       1e-9;
         relTol          0;
@@ -70,7 +70,7 @@ solvers
 
     "(h|k|epsilon)"
     {
-        solver          PBiCG;
+        solver          PBiCGStab;
         preconditioner  DILU;
         tolerance       1e-8;
         relTol          0.01;
@@ -82,9 +82,9 @@ solvers
         $h;
     }
 
-    Yi
+    "(Yi|YiFinal)"
     {
-        solver          PBiCG;
+        solver          PBiCGStab;
         preconditioner  DILU;
         tolerance       1e-8;
         relTol          0;

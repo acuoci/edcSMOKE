@@ -64,30 +64,18 @@
 
 // OpenFOAM
 #include "fvCFD.H"
-#if OPENFOAM_VERSION >= 40
-#include "turbulentFluidThermoModel.H"
-#else
-#include "turbulenceModel.H"
-#include "compressible/LES/LESModel/LESModel.H"
-#endif
-#if OPENFOAM_VERSION >=60
-#include "psiReactionThermo.H"
-#include "CombustionModel.H"
-#else
-#include "psiCombustionModel.H"
-#endif
+#include "fluidReactionThermo.H"
+#include "combustionModel.H"
+#include "compressibleMomentumTransportModels.H"
+#include "fluidReactionThermophysicalTransportModel.H"
 #include "multivariateScheme.H"
 #include "pimpleControl.H"
-#if OPENFOAM_VERSION >= 40
-#if DEVVERSION==1
-#include "pressureControl.H"
-#endif
-#include "fvOptions.H"
+#include "pressureReference.H"
+#include "CorrectPhi.H"
+#include "fvModels.H"
+#include "fvConstraints.H"
 #include "localEulerDdtScheme.H"
 #include "fvcSmooth.H"
-#else
-#include "fvIOoptionList.H"
-#endif
 #include "radiationModel.H"
 
 // Utilities
@@ -122,20 +110,17 @@ int main(int argc, char *argv[])
 {
     unsigned int runTimeStep = 0;
 
-    #if OPENFOAM_VERSION >= 40
+        #include "postProcess.H"
 
-	#include "postProcess.H"
-
-	#include "setRootCase.H"
-	#include "createTime.H"
-	#include "createMesh.H"
+        #include "setRootCaseLists.H"
+        #include "createTime.H"
+        #include "createMesh.H"
 	#include "readGravitationalAcceleration.H"
-	#include "createControl.H"
-	#include "createTimeControls.H"
+	#include "createDyMControls.H"
 	#include "initContinuityErrs.H"
 	#include "createFields.H"
 	#include "createOpenSMOKEFields.H"
-	#include "createFvOptions.H"
+	#include "createRhoUfIfPresent.H"
 	#include "createRadiationModel.H"
 
 	turbulence->validate();
@@ -146,79 +131,128 @@ int main(int argc, char *argv[])
 		#include "setInitialDeltaT.H"
 	}
 
-    #else
-
-	#include "setRootCase.H"
-	#include "createTime.H"
-	#include "createMesh.H"
-	#include "readGravitationalAcceleration.H"
-
-	pimpleControl pimple(mesh);
-
-	#include "createFields.H"
-	#include "createOpenSMOKEFields.H"
-	#include "createFvOptions.H"
-	#include "createRadiationModel.H"
-	#include "initContinuityErrs.H"
-	#include "readTimeControls.H"
-	#include "compressibleCourantNo.H"
-	#include "setInitialDeltaT.H"
-
-    #endif
-
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
     Info<< "\nStarting time loop\n" << endl;
 
     while (runTime.run())
     {
-        #include "readTimeControls.H"
-        #include "compressibleCourantNo.H"
-        #include "setDeltaT.H"
+        #include "readDyMControls.H"
+
+        // Store divrhoU from the previous mesh so that it can be mapped
+        // and used in correctPhi to ensure the corrected phi has the
+        // same divergence
+        autoPtr<volScalarField> divrhoU;
+        if (correctPhi)
+        {
+            divrhoU = new volScalarField
+            (
+                "divrhoU",
+                fvc::div(fvc::absolute(phi, rho, U))
+            );
+        }
+
+        if (LTS)
+        {
+            #include "setRDeltaT.H"
+        }
+        else
+        {
+            #include "compressibleCourantNo.H"
+            #include "setDeltaT.H"
+        }
+
+        fvModels.preUpdateMesh();
+
+        // Store momentum to set rhoUf for introduced faces.
+        autoPtr<volVectorField> rhoU;
+        if (rhoUf.valid())
+        {
+            rhoU = new volVectorField("rhoU", rho*U);
+        }
+
+        // Update the mesh for topology change, mesh to mesh mapping
+        mesh.update();
+
 
         runTime++;
 	runTimeStep++;
         Info<< "Time = " << runTime.timeName() << nl << endl;
 
-	if (momentumEquations == true)
-	{
-		#include "rhoEqn.H"
 
-		while (pimple.loop())
-		{
-		    #include "UEqn.H"
+        // --- Pressure-velocity PIMPLE corrector loop
+        while (pimple.loop())
+        {
+            if (!pimple.flow())
+            {
+                if (pimple.models())
+                {
+                    fvModels.correct();
+                }
+
+                if (pimple.thermophysics())
+                {
 		    #include "properties.H"
 		    #include "YEqn.H"
 		    #include "EEqn.H"
+                }
+            }
+            else
+            {
+                if (pimple.firstPimpleIter() || moveMeshOuterCorrectors)
+                {
+                    // Move the mesh
+                    mesh.move();
 
-		    // --- Pressure corrector loop
-		    while (pimple.correct())
-		    {
-			#if OPENFOAM_VERSION >= 40
-		        if (pimple.consistent())
-		        {
-		            #include "pcEqn.H"
-		        }
-		        else
-			#endif
-		        {
-		            #include "pEqn.H"
-		        }
-		    }
+                    if (mesh.changing())
+                    {
+                        MRF.update();
 
-		    if (pimple.turbCorr())
-		    {
-		        turbulence->correct();
-		    }
-		}
-	}
-	else
-	{
-		    #include "properties.H"
+                        if (correctPhi)
+                        {
+                            #include "correctPhi.H"
+                        }
+
+                        if (checkMeshCourantNo)
+                        {
+                            #include "meshCourantNo.H"
+                        }
+                    }
+                }
+
+                if (pimple.firstPimpleIter() && !pimple.simpleRho())
+                {
+                    #include "rhoEqn.H"
+                }
+
+                if (pimple.models())
+                {
+                    fvModels.correct();
+                }
+
+                #include "UEqn.H"
+
+                if (pimple.thermophysics())
+                {
+                    #include "properties.H"
 		    #include "YEqn.H"
 		    #include "EEqn.H"
-		    turbulence->correct();
-	}
+                }
+
+                // --- Pressure corrector loop
+                while (pimple.correct())
+                {
+                    #include "pEqn.H"
+                }
+
+                if (pimple.turbCorr())
+                {
+                    turbulence->correct();
+                }
+            }
+        }
+
+        rho = thermo.rho();
 
         runTime.write();
 

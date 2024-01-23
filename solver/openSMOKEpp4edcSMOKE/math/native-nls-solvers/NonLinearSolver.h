@@ -16,7 +16,7 @@
 |                                                                         |
 |   This file is part of OpenSMOKE++ framework.                           |
 |                                                                         |
-|	License                                                               |
+|   License                                                               |
 |                                                                         |
 |   Copyright(C) 2016  Alberto Cuoci                                      |
 |   OpenSMOKE++ is free software: you can redistribute it and/or modify   |
@@ -44,7 +44,8 @@
 namespace NlsSMOKE
 {
 	// Static variables
-	extern bool stopNlsIntegration = false;
+	static bool stopNlsIntegration = false;
+	extern bool stopNlsIntegration;
 
 	//!  A class to solve non-linear systems with different techniques
 	/*!
@@ -168,7 +169,6 @@ namespace NlsSMOKE
 		*@param xx0 new first guess solution
 		*/
 		void Reset(const Eigen::VectorXd& xx0);
-
 
 		/**
 		*@brief Returns the number of iterations

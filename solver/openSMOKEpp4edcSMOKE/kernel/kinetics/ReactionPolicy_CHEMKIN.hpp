@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------*\
+/*-----------------------------------------------------------------------*\
 |    ___                   ____  __  __  ___  _  _______                  |
 |   / _ \ _ __   ___ _ __ / ___||  \/  |/ _ \| |/ / ____| _     _         |
 |  | | | | '_ \ / _ \ '_ \\___ \| |\/| | | | | ' /|  _| _| |_ _| |_       |
@@ -41,6 +41,7 @@
 #include "PressureLogarithmicRateExpression.h"
 #include "ExtendedPressureLogarithmicRateExpression.h"
 #include "ExtendedFallOff.h"
+#include "ReducedPressureBasedRateExpression.h"
 #include "ReactionPolicy_CHEMKIN.h"
 
 namespace OpenSMOKE
@@ -70,6 +71,7 @@ namespace OpenSMOKE
 		iPlog_ = false;
 		iExtPlog_ = false;
 		iExtLow_ = false;
+		iRPBMR_ = false;
 		pressureDependentSpeciesIndex_ = -1;
 	}
 
@@ -390,6 +392,28 @@ namespace OpenSMOKE
 		
 			// Next lines
 			{
+				// Check for special reactions
+				bool done = false;
+				if (lines.size() > 1)
+				{
+					std::string line = lines[1];
+					std::string keyword;
+					OpenSMOKE_Utilities::LookForKeyWord(line, keyword);
+
+					if (boost::iequals(keyword, "RPBMR"))
+					{
+						iRPBMR_ = true;
+						ReducedPressureBasedRateExpression rpbmr;
+						rpbmr.SetKineticParameters(A_, beta_, E_);
+						rpbmr.SetStoichiometry(reactant_nu_indices_, reactant_nu_, product_nu_indices_, product_nu_);
+						rpbmr.SetReactionOrders(reactant_lambda_indices_, reactant_lambda_, product_lambda_indices_, product_lambda_);
+						rpbmr.Setup(lines);
+						done = true;
+					}	
+
+				}
+
+				if (done == false)
 				for (unsigned int l=1;l<lines.size();l++)
 				{
 					std::string line = lines[l];
@@ -460,9 +484,9 @@ namespace OpenSMOKE
 								std::cout << "The CHEB option can be used only for pressure-dependent reactions with the (+M) option!" << std::endl;
 								return false;
 							}
-							if (iLow_ == true || iHigh_ == true || troe_.size()!=0 || sri_.size()!=0 || iFit1_ == true || iJan_ == true || iLandauTeller_ == true || iPlog_ == true || iExtPlog_ == true || iExtLow_ == true)
+							if (iLow_ == true || iHigh_ == true || troe_.size()!=0 || sri_.size()!=0 || iFit1_ == true || iJan_ == true || iLandauTeller_ == true || iPlog_ == true || iExtPlog_ == true || iExtLow_ == true || iRPBMR_ == true)
 							{
-								std::cout << "The CHEB option cannot be used together with the following options: LOW | HIGH | TROE | SRI | FIT1 | JAN | LT | PLOG | PLOGMX | PLOGSP | LOWMX | LOWSP" << std::endl;
+								std::cout << "The CHEB option cannot be used together with the following options: LOW | HIGH | TROE | SRI | FIT1 | JAN | LT | PLOG | PLOGMX | PLOGSP | LOWMX | LOWSP | RPBMR" << std::endl;
 								return false;
 							}
 
@@ -499,9 +523,9 @@ namespace OpenSMOKE
 								std::cout << "The FIT1 option is used more than once!" << std::endl;
 								return false;
 							}
-							if (iChebyshev_ == true || chebyshev_pressure_limits_.size()!=0 || chebyshev_temperature_limits_.size()!=0 || iJan_ == true || iLandauTeller_ == true || iPlog_ == true || iExtPlog_ == true || iExtLow_ == true)
+							if (iChebyshev_ == true || chebyshev_pressure_limits_.size()!=0 || chebyshev_temperature_limits_.size()!=0 || iJan_ == true || iLandauTeller_ == true || iPlog_ == true || iExtPlog_ == true || iExtLow_ == true || iRPBMR_ == true)
 							{
-								std::cout << "The FIT1 option cannot be used together with the following options: CHEB | TCHEB | PCHEB | JAN | LT | PLOG | PLOGMX | PLOGSP | LOWMX | LOWSP" << std::endl;
+								std::cout << "The FIT1 option cannot be used together with the following options: CHEB | TCHEB | PCHEB | JAN | LT | PLOG | PLOGMX | PLOGSP | LOWMX | LOWSP | RPBMR" << std::endl;
 								return false;
 							}
 							bool tag = OpenSMOKE_Utilities::ReadReactionKeyWordPlusCoefficients("Power series modified Arrhenus law (FIT1). ", line, 4, fit1_coefficients_);
@@ -556,9 +580,9 @@ namespace OpenSMOKE
 								return false;
 							}
 							if (iLow_ == true || iChebyshev_ == true || chebyshev_pressure_limits_.size()!=0 || chebyshev_temperature_limits_.size()!=0 ||
-								iLandauTeller_ == true || iPlog_ == true || iExtPlog_ == true || iExtLow_ == true)
+								iLandauTeller_ == true || iPlog_ == true || iExtPlog_ == true || iExtLow_ == true || iRPBMR_ == true)
 							{
-								std::cout << "The HIGH option cannot be used together with the following options: LOW | CHEB | TCHEB | PCHEB | LT | PLOG | PLOGMX | PLOGSP | LOWMX | LOWSP" << std::endl;
+								std::cout << "The HIGH option cannot be used together with the following options: LOW | CHEB | TCHEB | PCHEB | LT | PLOG | PLOGMX | PLOGSP | LOWMX | LOWSP | RPBMR" << std::endl;
 								return false;
 							}
 
@@ -587,9 +611,9 @@ namespace OpenSMOKE
 								std::cout << "The JAN option is used more than once!" << std::endl;
 								return false;
 							}
-							if (iChebyshev_ == true || chebyshev_pressure_limits_.size()!=0 || chebyshev_temperature_limits_.size()!=0 || iFit1_ == true || iLandauTeller_ == true || iPlog_ == true || iExtPlog_ == true || iExtLow_ == true)
+							if (iChebyshev_ == true || chebyshev_pressure_limits_.size()!=0 || chebyshev_temperature_limits_.size()!=0 || iFit1_ == true || iLandauTeller_ == true || iPlog_ == true || iExtPlog_ == true || iExtLow_ == true || iRPBMR_ == true)
 							{
-								std::cout << "The JAN option cannot be used together with the following options: CHEB | TCHEB | PCHEB | FIT1 | LT | PLOG || PLOGMX | PLOGSP | LOWMX | LOWSP" << std::endl;
+								std::cout << "The JAN option cannot be used together with the following options: CHEB | TCHEB | PCHEB | FIT1 | LT | PLOG || PLOGMX | PLOGSP | LOWMX | LOWSP | RPBMR" << std::endl;
 								return false;
 							}
 							bool tag = OpenSMOKE_Utilities::ReadReactionKeyWordPlusCoefficients("Janev-Langer reaction rate (JAN). ", line, 9, janev_langer_coefficients_);
@@ -734,9 +758,9 @@ namespace OpenSMOKE
 								return false;
 							}
 							if (iChebyshev_ == true || chebyshev_pressure_limits_.size()!=0 || chebyshev_temperature_limits_.size()!=0 || iFit1_ == true || iJan_ == true ||
-								iLow_ == true || iHigh_ == true || iTroe_ == true || iSRI_ == true || iPlog_ == true || iExtPlog_ == true || iExtLow_ == true)
+								iLow_ == true || iHigh_ == true || iTroe_ == true || iSRI_ == true || iPlog_ == true || iExtPlog_ == true || iExtLow_ == true || iRPBMR_ == true)
 							{
-								std::cout << "The LT option cannot be used together with the following options: CHEB | TCHEB | PCHEB | FIT1 | JAN | LOW | HIGH | TROE | SRI | PLOG | PLOGMX | PLOGSP | LOWMX | LOWSP" << std::endl;
+								std::cout << "The LT option cannot be used together with the following options: CHEB | TCHEB | PCHEB | FIT1 | JAN | LOW | HIGH | TROE | SRI | PLOG | PLOGMX | PLOGSP | LOWMX | LOWSP | RPBMR" << std::endl;
 								return false;
 							}
 							bool tag = OpenSMOKE_Utilities::ReadReactionKeyWordPlusCoefficients("Landau Teller reaction rate (LT). ", line, 2, landau_teller_coefficients_);
@@ -760,9 +784,9 @@ namespace OpenSMOKE
 								std::cout << "The PCHEB option is used more than once!" << std::endl;
 								return false;
 							}
-							if (iLow_ == true || iHigh_ == true || troe_.size()!=0 || sri_.size()!=0 || iFit1_==true || iJan_ == true || iLandauTeller_ == true || iPlog_ == true || iExtPlog_ == true || iExtLow_ == true)
+							if (iLow_ == true || iHigh_ == true || troe_.size()!=0 || sri_.size()!=0 || iFit1_==true || iJan_ == true || iLandauTeller_ == true || iPlog_ == true || iExtPlog_ == true || iExtLow_ == true || iRPBMR_ == true)
 							{
-								std::cout << "The PCHEB option cannot be used together with the following options: LOW | HIGH | TROE | SRI | FIT1 | JAN | LT | PLOG | PLOGMX | PLOGSP | LOWMX | LOWSP" << std::endl;
+								std::cout << "The PCHEB option cannot be used together with the following options: LOW | HIGH | TROE | SRI | FIT1 | JAN | LT | PLOG | PLOGMX | PLOGSP | LOWMX | LOWSP | iRPBMR" << std::endl;
 								return false;
 							}
 
@@ -777,9 +801,9 @@ namespace OpenSMOKE
 								return false;
 							}
 							if (iLow_ == true || iHigh_ == true || troe_.size()!=0 || sri_.size()!=0 || iFit1_ == true || iJan_ == true || iLandauTeller_ == true ||
-								iChebyshev_ == true || chebyshev_pressure_limits_.size() != 0 || chebyshev_temperature_limits_.size() != 0 || iExtPlog_ == true || iExtLow_ == true)
+								iChebyshev_ == true || chebyshev_pressure_limits_.size() != 0 || chebyshev_temperature_limits_.size() != 0 || iExtPlog_ == true || iExtLow_ == true || iRPBMR_ == true)
 							{
-								std::cout << "The PLOG option cannot be used together with the following options: LOW | HIGH | TROE | SRI | FIT1 | JAN | LT | CHEB | PCHEB | TCHEB | PLOG | LOWMX | LOWSP" << std::endl;
+								std::cout << "The PLOG option cannot be used together with the following options: LOW | HIGH | TROE | SRI | FIT1 | JAN | LT | CHEB | PCHEB | TCHEB | PLOG | LOWMX | LOWSP | RPBMR" << std::endl;
 								return false;
 							}
 
@@ -798,9 +822,9 @@ namespace OpenSMOKE
 								return false;
 							}
 							if (iLow_ == true || iHigh_ == true || troe_.size() != 0 || sri_.size() != 0 || iFit1_ == true || iJan_ == true || iLandauTeller_ == true ||
-								iChebyshev_ == true || chebyshev_pressure_limits_.size() != 0 || chebyshev_temperature_limits_.size() != 0 || iPlog_ == true || iExtLow_ == true)
+								iChebyshev_ == true || chebyshev_pressure_limits_.size() != 0 || chebyshev_temperature_limits_.size() != 0 || iPlog_ == true || iExtLow_ == true || iRPBMR_ == true)
 							{
-								std::cout << "The PLOGMX option cannot be used together with the following options: LOW | HIGH | TROE | SRI | FIT1 | JAN | LT | CHEB | PCHEB | TCHEB | PLOG | LOWMX | LOWSP" << std::endl;
+								std::cout << "The PLOGMX option cannot be used together with the following options: LOW | HIGH | TROE | SRI | FIT1 | JAN | LT | CHEB | PCHEB | TCHEB | PLOG | LOWMX | LOWSP | RPBMR" << std::endl;
 								return false;
 							}
 
@@ -838,9 +862,9 @@ namespace OpenSMOKE
 								return false;
 							}
 							if (iLow_ == true || iHigh_ == true || troe_.size() != 0 || sri_.size() != 0 || iFit1_ == true || iJan_ == true || iLandauTeller_ == true ||
-								iChebyshev_ == true || chebyshev_pressure_limits_.size() != 0 || chebyshev_temperature_limits_.size() != 0 || iPlog_ == true || iExtLow_ == true)
+								iChebyshev_ == true || chebyshev_pressure_limits_.size() != 0 || chebyshev_temperature_limits_.size() != 0 || iPlog_ == true || iExtLow_ == true || iRPBMR_ == true)
 							{
-								std::cout << "The PLOGSP option cannot be used together with the following options: LOW | HIGH | TROE | SRI | FIT1 | JAN | LT | CHEB | PCHEB | TCHEB | PLOG | LOWMX | LOWSP" << std::endl;
+								std::cout << "The PLOGSP option cannot be used together with the following options: LOW | HIGH | TROE | SRI | FIT1 | JAN | LT | CHEB | PCHEB | TCHEB | PLOG | LOWMX | LOWSP | RPBMR" << std::endl;
 								return false;
 							}
 
@@ -953,6 +977,11 @@ namespace OpenSMOKE
 								}
 							}
 						}
+						else if (boost::iequals(keyword, "RPBMR"))
+						{
+							std::cout << "Sorry! The " << keyword << " option is not currently available. You are supposed not be here!" << std::endl;
+							return false;
+						}
 						else if (boost::iequals(keyword, "SRI"))
 						{
 							if (pressureDependentReaction == "none")
@@ -965,9 +994,9 @@ namespace OpenSMOKE
 								std::cout << "The SRI option is used more than once!" << std::endl;
 								return false;
 							}
-							if (troe_.size()!=0 || iChebyshev_ == true || chebyshev_pressure_limits_.size()!=0 || chebyshev_temperature_limits_.size()!=0 || iLandauTeller_ == true || iPlog_ == true || iExtPlog_ == true || iExtLow_ == true)
+							if (troe_.size()!=0 || iChebyshev_ == true || chebyshev_pressure_limits_.size()!=0 || chebyshev_temperature_limits_.size()!=0 || iLandauTeller_ == true || iPlog_ == true || iExtPlog_ == true || iExtLow_ == true || iRPBMR_ == true)
 							{
-								std::cout << "The SRI option cannot be used together with the following options: TROE | CHEB | TCHEB | PCHEB | LT | PLOG | PLOGMX | PLOGSP | LOWMX | LOWSP" << std::endl;
+								std::cout << "The SRI option cannot be used together with the following options: TROE | CHEB | TCHEB | PCHEB | LT | PLOG | PLOGMX | PLOGSP | LOWMX | LOWSP | RPBMR" << std::endl;
 								return false;
 							}
 
@@ -1081,9 +1110,9 @@ namespace OpenSMOKE
 								std::cout << "The TCHEB option is used more than once!" << std::endl;
 								return false;
 							}
-							if (iLow_ == true || iHigh_ == true || troe_.size()!=0 || sri_.size()!=0 || iFit1_ == true || iJan_ == true || iLandauTeller_ == true || iPlog_ == true || iExtPlog_ == true || iExtLow_ == true)
+							if (iLow_ == true || iHigh_ == true || troe_.size()!=0 || sri_.size()!=0 || iFit1_ == true || iJan_ == true || iLandauTeller_ == true || iPlog_ == true || iExtPlog_ == true || iExtLow_ == true || iRPBMR_ == true)
 							{
-								std::cout << "The TCHEB option cannot be used together with the following options: LOW | HIGH | TROE | SRI | FIT1 | JAN | LT | PLOG | PLOGMX | PLOGSP | LOWMX | LOWSP" << std::endl;
+								std::cout << "The TCHEB option cannot be used together with the following options: LOW | HIGH | TROE | SRI | FIT1 | JAN | LT | PLOG | PLOGMX | PLOGSP | LOWMX | LOWSP | RPBMR" << std::endl;
 								return false;
 							}
 
@@ -1107,9 +1136,9 @@ namespace OpenSMOKE
 								std::cout << "The TROE option is used more than once!" << std::endl;
 								return false;
 							}
-							if (sri_.size()!=0 || iChebyshev_ == true || chebyshev_pressure_limits_.size()!=0 || chebyshev_temperature_limits_.size()!=0 || iLandauTeller_ == true || iPlog_ == true || iExtPlog_ == true || iExtLow_ == true)
+							if (sri_.size()!=0 || iChebyshev_ == true || chebyshev_pressure_limits_.size()!=0 || chebyshev_temperature_limits_.size()!=0 || iLandauTeller_ == true || iPlog_ == true || iExtPlog_ == true || iExtLow_ == true || iRPBMR_ == true)
 							{
-								std::cout << "The TROE option cannot be used together with the following options: SRI | CHEB | TCHEB | PCHEB | LT | PLOG | PLOGMX | PLOGSP | LOWMX | LOWSP" << std::endl;
+								std::cout << "The TROE option cannot be used together with the following options: SRI | CHEB | TCHEB | PCHEB | LT | PLOG | PLOGMX | PLOGSP | LOWMX | LOWSP | RPBMR" << std::endl;
 								return false;
 							}
 
@@ -1277,7 +1306,7 @@ namespace OpenSMOKE
 			}
 
 			// Cross-checks
-			if (pressureDependentReaction == "all" && iHigh_ == false && iLow_ == false && iChebyshev_ == false && iExtLow_ == false)
+			if (pressureDependentReaction == "all" && iHigh_ == false && iLow_ == false && iChebyshev_ == false && iExtLow_ == false && iRPBMR_ == false)
 			{
 				std::cout << "No pressure dependence option defined." << std::endl;
 				return false;
@@ -1311,6 +1340,8 @@ namespace OpenSMOKE
 					tag_reaction_ = PhysicalConstants::REACTION_TROE_CABR;
 				else if (iSRI_ == true && iHigh_ == true)
 					tag_reaction_ = PhysicalConstants::REACTION_SRI_CABR;
+				else if (iRPBMR_ == true)
+					tag_reaction_ = PhysicalConstants::REACTION_REDUCEDPRESSUREBASEDMIXRULE;
 			}
 			else
 			{
@@ -1361,9 +1392,19 @@ namespace OpenSMOKE
 		sumLambdaReactants_ = 0.;
 		for(unsigned int i=0;i<reactant_lambda_.size();i++)
 			sumLambdaReactants_ += reactant_lambda_[i];
-		sumLambdaProducts_ = 0.;
-		for(unsigned int i=0;i<product_lambda_.size();i++)
-			sumLambdaProducts_ += product_lambda_[i];
+		
+		if (iReversible_ == true || iExplicitlyReversible_ == true)
+		{
+			sumLambdaProducts_ = 0.;
+			for (unsigned int i = 0; i < product_lambda_.size(); i++)
+				sumLambdaProducts_ += product_lambda_[i];
+		}
+		else
+		{
+			sumLambdaProducts_ = 0.;
+			for (unsigned int i = 0; i < product_nu_.size(); i++)
+				sumLambdaProducts_ += product_nu_[i];
+		}
 
 		if ( tag_reaction_ == PhysicalConstants::REACTION_THIRDBODY)
 		{
@@ -1575,15 +1616,30 @@ namespace OpenSMOKE
 
 	void ReactionPolicy_CHEMKIN::GetReactionStringCHEMKIN(	const std::vector<std::string>& list_species, std::stringstream& reaction_data) const
 	{
+		std::string dummy_string = "";
+
+		GetReactionStringCHEMKIN( list_species, reaction_data, dummy_string);
+	}
+
+	void ReactionPolicy_CHEMKIN::GetReactionStringCHEMKIN(	const std::vector<std::string>& list_species, std::stringstream& reaction_data, const std::string& strong_comment) const
+	{
 		std::vector<bool> isReducedSpecies(list_species.size());
 		for(unsigned int i=0;i<list_species.size();i++)
 			isReducedSpecies[i] = true;
 
-		GetReactionStringCHEMKIN( list_species, reaction_data, isReducedSpecies);
+		GetReactionStringCHEMKIN( list_species, reaction_data, isReducedSpecies, strong_comment);
 	}
 
 	void ReactionPolicy_CHEMKIN::GetReactionStringCHEMKIN(const std::vector<std::string>& list_species,
                 std::stringstream& reaction_data, const std::vector<bool>& isReducedSpecies) const
+	{
+		std::string dummy_string = "";
+
+		GetReactionStringCHEMKIN( list_species, reaction_data, isReducedSpecies, dummy_string);
+	}
+
+	void ReactionPolicy_CHEMKIN::GetReactionStringCHEMKIN(const std::vector<std::string>& list_species,
+                std::stringstream& reaction_data, const std::vector<bool>& isReducedSpecies, const std::string& strong_comment) const
 	{
         std::string reaction_string;
         GetReactionString(list_species, reaction_string);
@@ -1603,8 +1659,11 @@ namespace OpenSMOKE
             reaction_data.width(9);
 			reaction_data << std::fixed << std::right << beta_;
             reaction_data.precision(2);
-            reaction_data << std::setw(13) << std::right <<E_over_R() * PhysicalConstants::R_cal_mol << std::endl;
-            
+			if (strong_comment.length() > 2)
+				reaction_data << std::setw(13) << std::right << E_over_R() * PhysicalConstants::R_cal_mol << "     " << strong_comment << std::endl;
+			else
+				reaction_data << std::setw(13) << std::right << E_over_R() * PhysicalConstants::R_cal_mol << std::endl;
+
             if(IsDuplicate() == true)
                 reaction_data << " DUPLICATE" << std::endl;
             
@@ -1624,15 +1683,11 @@ namespace OpenSMOKE
             {
                 reaction_data.unsetf(std::ios_base::floatfield);
                 reaction_data.precision(6);
-                for(unsigned int k = 0; k < plog_coefficients_.size() - 2; k++)
-                {
-                    if(k % 4 == 0)
-                        reaction_data << " PLOG /  ";
-                    reaction_data << std::showpoint << std::setw(12) << std::left << plog_coefficients_[k];
-                    
-                    if((k+1) % 4 == 0 || k == plog_coefficients_.size() - 3)
-                        reaction_data << "/" << std::endl;
-                }                    
+
+				const double conversion_factor_A = std::pow(1.e3, 1. - sumLambdaReactants_);
+				OpenSMOKE::PressureLogarithmicRateExpression pressureLogarithmic;
+				pressureLogarithmic.Setup(plog_coefficients_);
+				pressureLogarithmic.WriteCHEMKINReactionData(reaction_data, conversion_factor_A);
             }
 
 			if (IsExtendedPressureLog() == true)
@@ -2039,6 +2094,11 @@ namespace OpenSMOKE
 				fOut << std::endl;
 			}
 		}
+
+		else if (iRPBMR_ == true)
+		{
+			// TODO
+		}
 		
 	}
 
@@ -2057,21 +2117,39 @@ namespace OpenSMOKE
 
 		// Pressure dependent reactions
 		if (tag_reaction_ == PhysicalConstants::REACTION_LINDEMANN_FALLOFF || tag_reaction_ == PhysicalConstants::REACTION_TROE_FALLOFF ||
-			tag_reaction_ == PhysicalConstants::REACTION_SRI_FALLOFF || tag_reaction_ == PhysicalConstants::REACTION_LINDEMANN_CABR || 
-			tag_reaction_ == PhysicalConstants::REACTION_TROE_CABR || tag_reaction_ == PhysicalConstants::REACTION_SRI_CABR)	
+			tag_reaction_ == PhysicalConstants::REACTION_SRI_FALLOFF || tag_reaction_ == PhysicalConstants::REACTION_LINDEMANN_CABR ||
+			tag_reaction_ == PhysicalConstants::REACTION_TROE_CABR || tag_reaction_ == PhysicalConstants::REACTION_SRI_CABR)
 		{
+			double conversion_factor_A = 1.;
+			double conversion_factor_AInf = 1.;
+
+			if (tag_reaction_ == PhysicalConstants::REACTION_LINDEMANN_FALLOFF || tag_reaction_ == PhysicalConstants::REACTION_TROE_FALLOFF ||
+				tag_reaction_ == PhysicalConstants::REACTION_SRI_FALLOFF)
+			{
+				conversion_factor_A = std::pow(1.e3, -sumLambdaReactants_);
+				conversion_factor_AInf = std::pow(1.e3, 1. - sumLambdaReactants_);
+			}
+
+			if (tag_reaction_ == PhysicalConstants::REACTION_LINDEMANN_CABR || tag_reaction_ == PhysicalConstants::REACTION_TROE_CABR || 
+				tag_reaction_ == PhysicalConstants::REACTION_SRI_CABR)
+			{
+				conversion_factor_A = std::pow(1.e3, 1. - sumLambdaReactants_);
+				conversion_factor_AInf = std::pow(1.e3, 2. - sumLambdaReactants_);
+			}
+		
+
 			fOut << std::setw(9) << " ";
 			fOut << TagASCII() << std::endl;
 		
 			fOut << std::setw(9) << " ";
 			fOut << std::setw(9) << std::left << "k0:";
-			fOut << std::scientific << std::setprecision(6) << std::right << A_ << "\t";
+			fOut << std::scientific << std::setprecision(6) << std::right << A_/conversion_factor_A << "\t";
 			fOut << std::setw(8)    << std::setprecision(2) << std::fixed << std::right << beta_;
 			fOut << std::setw(14)	  << std::setprecision(2) << std::fixed << std::right << E_/Conversions::J_from_kcal   << std::endl;
 
 			fOut << std::setw(9) << " ";
 			fOut << std::setw(9) << std::left << "kInf:";
-			fOut << std::scientific << std::setprecision(6) << std::right << AInf_	<< "\t"; 
+			fOut << std::scientific << std::setprecision(6) << std::right << AInf_/conversion_factor_AInf << "\t";
 			fOut << std::setw(8)    << std::setprecision(2) << std::fixed << std::right << betaInf_;
 			fOut << std::setw(14)   << std::setprecision(2) << std::fixed << std::right << EInf_/Conversions::J_from_kcal << std::endl;
 		}
@@ -2081,25 +2159,29 @@ namespace OpenSMOKE
 		}
 		else	// Conventional reactions
 		{
+			const double conversion_factor_A = std::pow(1.e3, 1. - sumLambdaReactants_);
+
 			fOut << std::setw(9)  << " ";
 			fOut << std::setw(9)  << std::left << "k:";
-			fOut << std::scientific	<< std::setprecision(6) << std::right << A_ << "\t";
+			fOut << std::scientific	<< std::setprecision(6) << std::right << A_/conversion_factor_A << "\t";
 			fOut << std::setw(8) << std::setprecision(2) << std::fixed << std::right << beta_;
 			fOut << std::setw(14) << std::setprecision(2) << std::fixed << std::right << E_/Conversions::J_from_kcal << std::endl;
 
 			if (reverse_parameters.size() > 0)
 			{
+				const double conversion_factor_Arev = std::pow(1.e3, 1. - sumLambdaProducts_);
+
 				fOut << std::setw(9) << " ";
 				fOut << std::setw(9) << std::left << "kRev:";
 				if (reverse_parameters.size() == 3)
 				{
-					fOut << std::scientific << std::setprecision(6) << std::right << std::exp(reverse_parameters(0)) << "\t";
+					fOut << std::scientific << std::setprecision(6) << std::right << std::exp(reverse_parameters(0))/conversion_factor_Arev << "\t";
 					fOut << std::setw(8) << std::setprecision(2) << std::fixed << std::right << reverse_parameters(2);
 					fOut << std::setw(14) << std::setprecision(2) << std::fixed << std::right << reverse_parameters(1)/Conversions::J_from_kcal << std::endl;
 				}
 				else if(reverse_parameters.size() == 2)
 				{
-					fOut << std::scientific << std::setprecision(6) << std::right << std::exp(reverse_parameters(0)) << "\t";
+					fOut << std::scientific << std::setprecision(6) << std::right << std::exp(reverse_parameters(0))/conversion_factor_Arev << "\t";
 					fOut << std::setw(8) << std::setprecision(2) << std::fixed << std::right << 0.;
 					fOut << std::setw(14) << std::setprecision(2) << std::fixed << std::right << reverse_parameters(1)/Conversions::J_from_kcal << std::endl;
 				}
@@ -2171,6 +2253,7 @@ namespace OpenSMOKE
 		// Chebyshev Polynomials
 		if (iChebyshev_ == true)
 		{	
+			// No conversion to be applied, because already in [mol, cm3, s]
 			OpenSMOKE::ChebyshevPolynomialRateExpression chebyshev;
 			chebyshev.Setup(chebyshev_coefficients_, chebyshev_pressure_limits_, chebyshev_temperature_limits_);
 			chebyshev.WriteShortSummaryOnASCIIFile(fOut);	
@@ -2179,14 +2262,16 @@ namespace OpenSMOKE
 		// Logarithmic-Pressure Dependence
 		if (iPlog_ == true)
 		{	
+			const double conversion_factor_A = std::pow(1.e3, 1. - sumLambdaReactants_);
 			OpenSMOKE::PressureLogarithmicRateExpression pressureLogarithmic;
 			pressureLogarithmic.Setup(plog_coefficients_);
-			pressureLogarithmic.WriteShortSummaryOnASCIIFile(fOut);
+			pressureLogarithmic.WriteShortSummaryOnASCIIFile(fOut, conversion_factor_A);
 		}
 
 		// Logarithmic-Pressure Dependence
 		if (iExtPlog_ == true)
 		{
+			// Conversion is managed internally
 			OpenSMOKE::ExtendedPressureLogarithmicRateExpression extendedPressureLogarithmic;
 			extendedPressureLogarithmic.Setup(extendedplog_coefficients_);
 			extendedPressureLogarithmic.WriteShortSummaryOnASCIIFile(fOut);
@@ -2195,9 +2280,16 @@ namespace OpenSMOKE
 		// Extended-Falloff Reactions
 		if (iExtLow_ == true)
 		{
+			// Conversion is managed internally
 			OpenSMOKE::ExtendedFallOff extendedFallOffReaction;
 			extendedFallOffReaction.Setup(extendedfalloff_coefficients_);
 			extendedFallOffReaction.WriteShortSummaryOnASCIIFile(fOut);
+		}
+
+		// Reduced-Pressure Based Mixture Rule Reactions
+		if (iRPBMR_ == true)
+		{
+			// TODO
 		}
 
 		// Single species acting as third body
@@ -2223,11 +2315,13 @@ namespace OpenSMOKE
 		// Reverse Rate
 		if (iExplicitlyReversible_ == true)
 		{
+			const double conversion_factor_Arev = std::pow(1.e3, 1. - sumLambdaProducts_);
+
 			fOut << std::setw(9) << " ";
 			fOut << "This reaction has the explicit reverse reaction: ";
 			fOut << std::setw(9)  << " ";
 			fOut << std::setw(9)  << std::left << "krev:";
-			fOut << std::scientific	<< std::setprecision(6) << std::right << ARev_ << "\t";
+			fOut << std::scientific	<< std::setprecision(6) << std::right << ARev_/conversion_factor_Arev << "\t";
 			fOut << std::setw(8) << std::setprecision(2) << std::fixed << std::right << betaRev_;
 			fOut << std::setw(14) << std::setprecision(2) << std::fixed << std::right << ERev_/Conversions::J_from_kcal << std::endl;
 		}
@@ -2404,6 +2498,7 @@ namespace OpenSMOKE
 		else if (iThirdBody_ == false && iPlog_ == true)			fOutput << 140 << std::endl;
 		else if (iExtPlog_ == true)									ErrorMessage("WriteKineticsDataOnASCIIFileOldStyle", "PLOGMX and PLOGSP reactions are not available in the old format...");
 		else if (iExtLow_ == true)									ErrorMessage("WriteKineticsDataOnASCIIFileOldStyle", "LOWMX and LOWSP reactions are not available in the old format...");
+		else if (iRPBMR_ == true)									ErrorMessage("WriteKineticsDataOnASCIIFileOldStyle", "RPBMR reactions are not available in the old format...");
 		//	else if (iThirdBody_ == true  && iPlog_ == true)				ErrorMessage("PLOG and THREE-BODY option are mutually exclusive...");
 	//	else if (iThirdBody_ == false && iCollisionEfficiency_ == true)	fOutput << 150;
 	//	else if (iThirdBody_ == true  && iCollisionEfficiency_ == true)	ErrorMessage("COLLEFF and THREE-BODY option are mutually exclusive...");

@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------*\
+/*-----------------------------------------------------------------------*\
 |    ___                   ____  __  __  ___  _  _______                  |
 |   / _ \ _ __   ___ _ __ / ___||  \/  |/ _ \| |/ / ____| _     _         |
 |  | | | | '_ \ / _ \ '_ \\___ \| |\/| | | | | ' /|  _| _| |_ _| |_       |
@@ -16,7 +16,7 @@
 |                                                                         |
 |   This file is part of OpenSMOKE++ framework.                           |
 |                                                                         |
-|	License                                                               |
+|   License                                                               |
 |                                                                         |
 |   Copyright(C) 2014, 2013, 2012  Alberto Cuoci                          |
 |   OpenSMOKE++ is free software: you can redistribute it and/or modify   |
@@ -98,7 +98,8 @@ namespace OpenSMOKE
 		else if (type_ == VECTOR_STRING )			type_ascii_ = "vector_string";
 		else if (type_ == VECTOR_BOOL )				type_ascii_ = "vector_bool";
 		else if (type_ == VECTOR_MEASURE )			type_ascii_ = "vector_measure";
-		else if (type_ == VECTOR_STRING_DOUBLE )	type_ascii_ = "vector_string_double";
+		else if (type_ == VECTOR_STRING_DOUBLE)		type_ascii_ = "vector_string_double";
+		else if (type_ == VECTOR_INT_STRING)		type_ascii_ = "vector_int_string";
 		else if (type_ == SEQUENCE_STRING )			type_ascii_ = "sequence_string";
 		else ErrorMessage("The keyword type is not specified correctly.");
 	}
@@ -146,6 +147,7 @@ namespace OpenSMOKE
 		else if (*tok_blank == "vector_bool")			type_ = VECTOR_BOOL;
 		else if (*tok_blank == "vector_measure")		type_ = VECTOR_MEASURE;
 		else if (*tok_blank == "vector_string_double")	type_ = VECTOR_STRING_DOUBLE;
+		else if (*tok_blank == "vector_int_string")		type_ = VECTOR_INT_STRING;
 		else if (*tok_blank == "sequence_string")	    type_ = SEQUENCE_STRING;
 		else ErrorMessage("The keyword type is not specified correctly.");
 

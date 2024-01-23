@@ -37,7 +37,7 @@
 #ifndef OpenSMOKE_CHEMEQ2_H
 #define OpenSMOKE_CHEMEQ2_H
 
-#include "ode/OpenSMOKE_OdeSystemSolver.h"
+#include "math/external-ode-solvers/OpenSMOKE_OdeSystemSolver.h"
 
 namespace OpenSMOKE
 {

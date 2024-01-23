@@ -59,6 +59,7 @@ namespace OpenSMOKE
 		areTheContributionOfRateOfFormationMatricesAvailable_ = false;
 		non_elementary_reactions_direct_ = 0;
 		non_elementary_reactions_reverse_ = 0;
+		frozen_species_.resize(0);
 	}
 
 	StoichiometricMap::StoichiometricMap(const unsigned int nspecies, const unsigned int nreactions, bool verbose)
@@ -73,6 +74,7 @@ namespace OpenSMOKE
 		areTheContributionOfRateOfFormationMatricesAvailable_ = false;
 		non_elementary_reactions_direct_ = 0;
 		non_elementary_reactions_reverse_ = 0;
+		frozen_species_.resize(0);
 	}
 
 	void StoichiometricMap::ReadFromASCIIFile(std::istream& fInput)
@@ -253,6 +255,156 @@ namespace OpenSMOKE
 		BuildNonElementaryReactions();
 	}
 
+	void StoichiometricMap::ExplictlyBuildFromData(
+		const std::vector<unsigned int>& numDir1, const std::vector<unsigned int>& numDir2, const std::vector<unsigned int>& numDir3, const std::vector<unsigned int>& numDir4, const std::vector<unsigned int>& numDir5,
+		const std::vector<unsigned int>& numRevTot1, const std::vector<unsigned int>& numRevTot2, const std::vector<unsigned int>& numRevTot3, const std::vector<unsigned int>& numRevTot4, const std::vector<unsigned int>& numRevTot5,
+		const std::vector<unsigned int>& numRevEq1, const std::vector<unsigned int>& numRevEq2, const std::vector<unsigned int>& numRevEq3, const std::vector<unsigned int>& numRevEq4, const std::vector<unsigned int>& numRevEq5,
+		const std::vector<unsigned int>& jDir1, const std::vector<unsigned int>& jDir2, const std::vector<unsigned int>& jDir3, const std::vector<unsigned int>& jDir4, const std::vector<unsigned int>& jDir5,
+		const std::vector<unsigned int>& jRevTot1, const std::vector<unsigned int>& jRevTot2, const std::vector<unsigned int>& jRevTot3, const std::vector<unsigned int>& jRevTot4, const std::vector<unsigned int>& jRevTot5,
+		const std::vector<unsigned int>& jRevEq1, const std::vector<unsigned int>& jRevEq2, const std::vector<unsigned int>& jRevEq3, const std::vector<unsigned int>& jRevEq4, const std::vector<unsigned int>& jRevEq5,
+		const std::vector<double>& valueDir5, const std::vector<double>& valueRevTot5, const std::vector<double>& valueRevEq5,		
+		const bool explicit_reaction_orders,
+		const std::vector<unsigned int>& lambda_jDir1, const std::vector<unsigned int>& lambda_jDir2, const std::vector<unsigned int>& lambda_jDir3, const std::vector<unsigned int>& lambda_jDir4, const std::vector<unsigned int>& lambda_jDir5,
+		const std::vector<unsigned int>& lambda_jRevEq1, const std::vector<unsigned int>& lambda_jRevEq2, const std::vector<unsigned int>& lambda_jRevEq3, const std::vector<unsigned int>& lambda_jRevEq4, const std::vector<unsigned int>& lambda_jRevEq5,
+		const std::vector<unsigned int>& lambda_numDir1, const std::vector<unsigned int>& lambda_numDir2, const std::vector<unsigned int>& lambda_numDir3, const std::vector<unsigned int>& lambda_numDir4, const std::vector<unsigned int>& lambda_numDir5,
+		const std::vector<unsigned int>& lambda_numRevEq1, const std::vector<unsigned int>& lambda_numRevEq2, const std::vector<unsigned int>& lambda_numRevEq3, const std::vector<unsigned int>& lambda_numRevEq4, const std::vector<unsigned int>& lambda_numRevEq5,
+		const std::vector<double>& lambda_valueDir5, const std::vector<double>& lambda_valueRevEq5,
+		const std::vector<double>& changeOfMoles)
+	{
+		numDir1_ = numDir1;
+		numDir2_ = numDir2;
+		numDir3_ = numDir3;
+		numDir4_ = numDir4;
+		numDir5_ = numDir5;
+
+		numRevTot1_ = numRevTot1;
+		numRevTot2_ = numRevTot2;
+		numRevTot3_ = numRevTot3;
+		numRevTot4_ = numRevTot4;
+		numRevTot5_ = numRevTot5;
+
+		numRevEq1_ = numRevEq1;
+		numRevEq2_ = numRevEq2;
+		numRevEq3_ = numRevEq3;
+		numRevEq4_ = numRevEq4;
+		numRevEq5_ = numRevEq5;
+
+		jDir1_ = jDir1;
+		jDir2_ = jDir2;
+		jDir3_ = jDir3;
+		jDir4_ = jDir4;
+		jDir5_ = jDir5;
+		valueDir5_ = valueDir5;
+
+		for (unsigned int i = 0; i < jDir1_.size(); i++)	jDir1_[i] -= 1;
+		for (unsigned int i = 0; i < jDir2_.size(); i++)	jDir2_[i] -= 1;
+		for (unsigned int i = 0; i < jDir3_.size(); i++)	jDir3_[i] -= 1;
+		for (unsigned int i = 0; i < jDir4_.size(); i++)	jDir4_[i] -= 1;
+		for (unsigned int i = 0; i < jDir5_.size(); i++)	jDir5_[i] -= 1;
+
+		jRevTot1_ = jRevTot1;
+		jRevTot2_ = jRevTot2;
+		jRevTot3_ = jRevTot3;
+		jRevTot4_ = jRevTot4;
+		jRevTot5_ = jRevTot5;
+		valueRevTot5_ = valueRevTot5;
+
+		for (unsigned int i = 0; i < jRevTot1_.size(); i++)	jRevTot1_[i] -= 1;
+		for (unsigned int i = 0; i < jRevTot2_.size(); i++)	jRevTot2_[i] -= 1;
+		for (unsigned int i = 0; i < jRevTot3_.size(); i++)	jRevTot3_[i] -= 1;
+		for (unsigned int i = 0; i < jRevTot4_.size(); i++)	jRevTot4_[i] -= 1;
+		for (unsigned int i = 0; i < jRevTot5_.size(); i++)	jRevTot5_[i] -= 1;
+
+		jRevEq1_ = jRevEq1;
+		jRevEq2_ = jRevEq2;
+		jRevEq3_ = jRevEq3;
+		jRevEq4_ = jRevEq4;
+		jRevEq5_ = jRevEq5;
+		valueRevEq5_ = valueRevEq5;
+
+		for (unsigned int i = 0; i<jRevEq1_.size(); i++)	jRevEq1_[i] -= 1;
+		for (unsigned int i = 0; i<jRevEq2_.size(); i++)	jRevEq2_[i] -= 1;
+		for (unsigned int i = 0; i<jRevEq3_.size(); i++)	jRevEq3_[i] -= 1;
+		for (unsigned int i = 0; i<jRevEq4_.size(); i++)	jRevEq4_[i] -= 1;
+		for (unsigned int i = 0; i<jRevEq5_.size(); i++)	jRevEq5_[i] -= 1;
+
+
+		changeOfMoles_ = changeOfMoles;
+
+		if (explicit_reaction_orders == false)
+		{
+			lambda_numDir1_ = numDir1_;
+			lambda_numDir2_ = numDir2_;
+			lambda_numDir3_ = numDir3_;
+			lambda_numDir4_ = numDir4_;
+			lambda_numDir5_ = numDir5_;
+
+			lambda_numRevEq1_ = numRevEq1_;
+			lambda_numRevEq2_ = numRevEq2_;
+			lambda_numRevEq3_ = numRevEq3_;
+			lambda_numRevEq4_ = numRevEq4_;
+			lambda_numRevEq5_ = numRevEq5_;
+
+			lambda_jDir1_ = jDir1_;
+			lambda_jDir2_ = jDir2_;
+			lambda_jDir3_ = jDir3_;
+			lambda_jDir4_ = jDir4_;
+			lambda_jDir5_ = jDir5_;
+			lambda_valueDir5_ = valueDir5_;
+
+			lambda_jRevEq1_ = jRevEq1_;
+			lambda_jRevEq2_ = jRevEq2_;
+			lambda_jRevEq3_ = jRevEq3_;
+			lambda_jRevEq4_ = jRevEq4_;
+			lambda_jRevEq5_ = jRevEq5_;
+			lambda_valueRevEq5_ = valueRevEq5_;
+		}
+		else
+		{
+			lambda_numDir1_ = lambda_numDir1;
+			lambda_numDir2_ = lambda_numDir2;
+			lambda_numDir3_ = lambda_numDir3;
+			lambda_numDir4_ = lambda_numDir4;
+			lambda_numDir5_ = lambda_numDir5;
+
+			lambda_numRevEq1_ = lambda_numRevEq1;
+			lambda_numRevEq2_ = lambda_numRevEq2;
+			lambda_numRevEq3_ = lambda_numRevEq3;
+			lambda_numRevEq4_ = lambda_numRevEq4;
+			lambda_numRevEq5_ = lambda_numRevEq5;
+
+			lambda_jDir1_ = lambda_jDir1;
+			lambda_jDir2_ = lambda_jDir2;
+			lambda_jDir3_ = lambda_jDir3;
+			lambda_jDir4_ = lambda_jDir4;
+			lambda_jDir5_ = lambda_jDir5;
+			lambda_valueDir5_ = lambda_valueDir5;
+
+			for (unsigned int i = 0; i < lambda_jDir1_.size(); i++)	lambda_jDir1_[i] -= 1;
+			for (unsigned int i = 0; i < lambda_jDir2_.size(); i++)	lambda_jDir2_[i] -= 1;
+			for (unsigned int i = 0; i < lambda_jDir3_.size(); i++)	lambda_jDir3_[i] -= 1;
+			for (unsigned int i = 0; i < lambda_jDir4_.size(); i++)	lambda_jDir4_[i] -= 1;
+			for (unsigned int i = 0; i < lambda_jDir5_.size(); i++)	lambda_jDir5_[i] -= 1;
+
+			lambda_jRevEq1_ = lambda_jRevEq1;
+			lambda_jRevEq2_ = lambda_jRevEq2;
+			lambda_jRevEq3_ = lambda_jRevEq3;
+			lambda_jRevEq4_ = lambda_jRevEq4;
+			lambda_jRevEq5_ = lambda_jRevEq5;
+			lambda_valueRevEq5_ = lambda_valueRevEq5;
+
+			for (unsigned int i = 0; i < lambda_jRevEq1_.size(); i++)	lambda_jRevEq1_[i] -= 1;
+			for (unsigned int i = 0; i < lambda_jRevEq2_.size(); i++)	lambda_jRevEq2_[i] -= 1;
+			for (unsigned int i = 0; i < lambda_jRevEq3_.size(); i++)	lambda_jRevEq3_[i] -= 1;
+			for (unsigned int i = 0; i < lambda_jRevEq4_.size(); i++)	lambda_jRevEq4_[i] -= 1;
+			for (unsigned int i = 0; i < lambda_jRevEq5_.size(); i++)	lambda_jRevEq5_[i] -= 1;
+		}
+
+		BuildStoichiometricMatrix();
+		BuildReactionOrdersMatrix();
+		BuildNonElementaryReactions();
+	}
+
 	void StoichiometricMap::BuildNonElementaryReactions()
 	{
 		// Recognize non elementary reactions: direct reactions
@@ -282,8 +434,8 @@ namespace OpenSMOKE
 				}
 			}
 
-			// Number of non elemetary direct reactions 
-			non_elementary_reactions_direct_ = std::count(is_non_elementary_reaction_direct_.begin(), is_non_elementary_reaction_direct_.end(), true);;
+			// Number of non elementary direct reactions 
+			non_elementary_reactions_direct_ = static_cast<unsigned int>(std::count(is_non_elementary_reaction_direct_.begin(), is_non_elementary_reaction_direct_.end(), true));
 		}
 
 		// Recognize non elementary reactions: reverse reactions
@@ -311,8 +463,8 @@ namespace OpenSMOKE
 				}
 			}
 
-			// Number of non elemetary reverse reactions 
-			non_elementary_reactions_reverse_ = std::count(is_non_elementary_reaction_reverse_.begin(), is_non_elementary_reaction_reverse_.end(), true);;
+			// Number of non elementary reverse reactions 
+			non_elementary_reactions_reverse_ = static_cast<unsigned int>(std::count(is_non_elementary_reaction_reverse_.begin(), is_non_elementary_reaction_reverse_.end(), true));
 		}
 
 		if (verbose_output_ == true)
@@ -496,8 +648,10 @@ namespace OpenSMOKE
 
 	void StoichiometricMap::Summary(std::ostream &fOut) const
 	{
-		unsigned int reactions_thermodynamically_reversible = indices_of_reactions_without_change_of_moles_.size() + indices_of_reactions_with_change_of_moles_plus_one_.size() +
-			indices_of_reactions_with_change_of_moles_minus_one_.size() + indices_of_reactions_with_change_of_moles_.size();
+		const unsigned int reactions_thermodynamically_reversible = indices_of_reactions_without_change_of_moles_.size() + 
+																	indices_of_reactions_with_change_of_moles_plus_one_.size() +
+																	indices_of_reactions_with_change_of_moles_minus_one_.size() + 
+																	indices_of_reactions_with_change_of_moles_.size();
 
 		fOut << "----------------------------------------------------------------------------" << std::endl;
 		fOut << " Reversible reactions (by thermodynamics)    " << reactions_thermodynamically_reversible << std::endl;
@@ -623,7 +777,7 @@ namespace OpenSMOKE
 					else
 					{
 						const double m = (std::tanh(K*C + H) + 1.) / 2.;	// transition is for 9.e-6 < C < 1.5e-5 [kmol/m3]
-						const double gamma = m*pow(C + m / delta, lambda) + (1. - m)*pow(Cstar, lambda - 1.)*C;
+						const double gamma = m*std::pow(C + m / delta, lambda) + (1. - m)*std::pow(Cstar, lambda - 1.)*C;
 						productDirect[j] *= gamma;
 					}
 				}
@@ -645,7 +799,7 @@ namespace OpenSMOKE
 					else
 					{
 						const double m = (std::tanh(K*C + H) + 1.) / 2.;	// transition is for 9.e-6 < C < 1.5e-5 [kmol/m3]
-						const double gamma = m*pow(C + m / delta, lambda) + (1. - m)*pow(Cstar, lambda - 1.)*C;
+						const double gamma = m*std::pow(C + m / delta, lambda) + (1. - m)*std::pow(Cstar, lambda - 1.)*C;
 						productReverse[j] *= gamma;
 					}
 				}
@@ -726,6 +880,10 @@ namespace OpenSMOKE
 
 			R[i] = rate;
 		}
+
+		// Freeze species (if required)
+		for (unsigned int i = 0; i < frozen_species_.size(); i++)
+			R[frozen_species_[i]] = 0.;
 	}
 
 	// This version calculates direct and reverse reaction rates
@@ -819,6 +977,13 @@ namespace OpenSMOKE
 				D[i] = destruction;
 			}
 		}
+
+		// Freeze species (if required)
+		for (unsigned int i = 0; i < frozen_species_.size(); i++)
+		{
+			P[frozen_species_[i]] = 0.;
+			D[frozen_species_[i]] = 0.;
+		}
 	}
 
 	void StoichiometricMap::ProductionAndDestructionRatesFromReactionRates(double* P, double* D, const double* r)
@@ -910,6 +1075,13 @@ namespace OpenSMOKE
 				P[i] = production;
 				D[i] = destruction;
 			}
+		}
+
+		// Freeze species (if required)
+		for (unsigned int i = 0; i < frozen_species_.size(); i++)
+		{
+			P[frozen_species_[i]] = 0.;
+			D[frozen_species_[i]] = 0.;
 		}
 	}
 
@@ -1030,9 +1202,7 @@ namespace OpenSMOKE
 			if (verbose_output_ == true)
 				std::cout << "   non-zero stoichiometric coefficients: " << estimation_of_entries_reactants + estimation_of_entries_products << " /"
 				<< number_of_reactions_*number_of_species_ << " ("
-				<< (estimation_of_entries_reactants + estimation_of_entries_products) / double(number_of_reactions_*number_of_species_)*100. << "%)" << std::endl;
-
-			//std::cout	<< "Mean number of species per reaction: " << (estimation_of_entries_reactants+estimation_of_entries_products)/number_of_reactions_ << std::endl;
+				<< (estimation_of_entries_reactants + estimation_of_entries_products) / std::max(1.,static_cast<double>(number_of_reactions_*number_of_species_))*100. << "%)" << std::endl;
 
 			tripletList_reactants.reserve(estimation_of_entries_reactants);
 			tripletList_products.reserve(estimation_of_entries_products);
@@ -1150,7 +1320,7 @@ namespace OpenSMOKE
 			if (verbose_output_ == true)
 				std::cout << "   non-zero reaction-order coefficients: " << estimation_of_entries_reactants + estimation_of_entries_products << " /"
 				<< number_of_reactions_*number_of_species_ << " ("
-				<< (estimation_of_entries_reactants + estimation_of_entries_products) / double(number_of_reactions_*number_of_species_)*100. << "%)" << std::endl;
+				<< (estimation_of_entries_reactants + estimation_of_entries_products) / std::max(1., static_cast<double>(number_of_reactions_*number_of_species_))*100. << "%)" << std::endl;
 
 			//std::cout	<< "Mean number of species per reaction: " << (estimation_of_entries_reactants+estimation_of_entries_products)/number_of_reactions_ << std::endl;
 
@@ -1594,7 +1764,7 @@ namespace OpenSMOKE
 			ropa.destruction_reaction_indices[k].resize(count);
 			unsigned int j1 = 0;
 			for (Eigen::SparseMatrix<double>::InnerIterator it(Cd, k); it; ++it)
-				ropa.destruction_reaction_indices[k][j1++] = it.row();
+				ropa.destruction_reaction_indices[k][j1++] = static_cast<unsigned int>(it.row());
 
 			// Writes the coefficients (not normalized)
 			ropa.destruction_coefficients[k].resize(count);
@@ -1621,7 +1791,7 @@ namespace OpenSMOKE
 			ropa.production_reaction_indices[k].resize(count);
 			unsigned int j1 = 0;
 			for (Eigen::SparseMatrix<double>::InnerIterator it(Cp, k); it; ++it)
-				ropa.production_reaction_indices[k][j1++] = it.row();
+				ropa.production_reaction_indices[k][j1++] = static_cast<unsigned int>(it.row());
 
 			// Writes the coefficients (not normalized)
 			ropa.production_coefficients[k].resize(count);
@@ -1650,6 +1820,117 @@ namespace OpenSMOKE
 		{
 			for (Eigen::SparseMatrix<double>::InnerIterator it(stoichiometric_matrix_products_, k); it; ++it)
 				sum_nu(it.row()) += it.value();
+		}
+	}
+
+        void ReorderLocalROPACoefficients(	const std::vector<unsigned int>& positive_indices, const std::vector<unsigned int>& negative_indices,
+						const std::vector<double>& positive_coefficients, const std::vector<double>& negative_coefficients,
+						std::vector<int>& reordered_positive_indices, std::vector<double>& reordered_positive_coefficients,
+						std::vector<int>& reordered_negative_indices, std::vector<double>& reordered_negative_coefficients )
+	{
+		// Positive coefficients
+		reordered_positive_indices.resize(positive_indices.size());
+		reordered_positive_coefficients.resize(positive_indices.size());
+		for (unsigned int i = 0; i<positive_coefficients.size(); i++)
+		{
+			reordered_positive_indices[i] = positive_indices[i];
+			reordered_positive_coefficients[i] = positive_coefficients[i];
+		}
+		OpenSMOKE_Utilities::ReorderPairsOfVectors(reordered_positive_coefficients, reordered_positive_indices);
+		std::reverse(reordered_positive_indices.begin(), reordered_positive_indices.end());
+		std::reverse(reordered_positive_coefficients.begin(), reordered_positive_coefficients.end());
+
+		// Negative coefficients
+		reordered_negative_indices.resize(negative_indices.size());
+		reordered_negative_coefficients.resize(negative_indices.size());
+		for (unsigned int i = 0; i<negative_coefficients.size(); i++)
+		{
+			reordered_negative_indices[i] = negative_indices[i];
+			reordered_negative_coefficients[i] = -negative_coefficients[i];
+		}
+		OpenSMOKE_Utilities::ReorderPairsOfVectors(reordered_negative_coefficients, reordered_negative_indices);
+		//	std::reverse(reordered_negative_indices.begin(), reordered_negative_indices.end());
+		//	std::reverse(reordered_negative_coefficients.begin(), reordered_negative_coefficients.end());
+	}
+
+	void ROPA_Data::PrintOnFile(std::ofstream& fOut, OpenSMOKE::ThermodynamicsMap_CHEMKIN& thermodynamicsMap, const std::vector<std::string>& reaction_names, const double* P, const double* D)
+	{
+		const double threshold_contributions = 0.03;
+		const double threshold_formation_rate = 1.e-32;
+
+		// Loop over all the species
+		for (unsigned int i = 0; i < thermodynamicsMap.NumberOfSpecies(); i++)
+		{
+			const unsigned int index_of_species = i;
+			std::cout << "DEBUG: " << i << " " << thermodynamicsMap.NamesOfSpecies()[index_of_species] << std::endl;
+
+			// Reorder species
+			std::cout << "DEBUG: " << "Reorder" << std::endl;
+			std::vector<int> reordered_positive_indices;
+			std::vector<double> reorder_positive_coefficients;
+			std::vector<int> reordered_negative_indices;
+			std::vector<double> reorder_negative_coefficients;
+			ReorderLocalROPACoefficients(production_reaction_indices[index_of_species],
+				destruction_reaction_indices[index_of_species],
+				production_coefficients[index_of_species], destruction_coefficients[index_of_species],
+				reordered_positive_indices, reorder_positive_coefficients,
+				reordered_negative_indices, reorder_negative_coefficients);
+
+			if (P[index_of_species] >= threshold_formation_rate || D[index_of_species] >= threshold_formation_rate)
+			{
+				std::cout << "DEBUG: " << "Writing" << std::endl;
+				// Write 
+				fOut << std::setw(30) << std::left << thermodynamicsMap.NamesOfSpecies()[index_of_species];
+				fOut << "Formation: " << std::setw(12) << std::left << std::setprecision(2) << std::scientific << P[index_of_species];
+				fOut << "Consumption: " << std::setw(12) << std::left << std::setprecision(2) << std::scientific << -D[index_of_species];
+				fOut << "Net: " << std::setw(12) << std::left << std::setprecision(2) << std::scientific << P[index_of_species] - D[index_of_species];
+				fOut << std::endl;
+				fOut << "-----------------------------------------------------------------------------------------------------------" << std::endl;
+
+				// Production contribution
+				const double sum_positive_coefficients = std::accumulate(reorder_positive_coefficients.begin(), reorder_positive_coefficients.end(), 0.);
+				if (sum_positive_coefficients > 0.)
+				{
+					for (unsigned int i = 0; i < reordered_positive_indices.size(); i++)
+					{
+						const double percentage = reorder_positive_coefficients[i] / sum_positive_coefficients;
+						if (percentage > threshold_contributions)
+						{
+							unsigned int j = reordered_positive_indices[i];
+							fOut << std::setw(6) << std::left << j;
+							fOut << std::setw(10) << std::right << std::setprecision(2) << std::scientific << reorder_positive_coefficients[i];
+							fOut << std::setw(10) << std::right << std::setprecision(1) << std::fixed << percentage*100. << "%";
+						//	fOut << std::setw(10) << std::right << std::setprecision(2) << std::scientific << kineticsMap.A(j);
+						//	fOut << std::setw(8) << std::right << std::setprecision(2) << std::fixed << kineticsMap.Beta(j);
+						//	fOut << std::setw(12) << std::right << std::setprecision(2) << std::fixed << kineticsMap.E_over_R(j)* PhysicalConstants::R_cal_mol;
+							fOut << std::left << "   " << reaction_names[j] << std::endl;
+						}
+					}
+				}
+
+				// Consumption contributions
+				const double sum_negative_coefficients = std::accumulate(reorder_negative_coefficients.begin(), reorder_negative_coefficients.end(), 0.);
+				if (sum_negative_coefficients > 0.)
+				{
+					for (unsigned int i = 0; i < reordered_negative_indices.size(); i++)
+					{
+						const double percentage = reorder_negative_coefficients[i] / sum_negative_coefficients;
+						if (percentage > threshold_contributions)
+						{
+							unsigned int j = reordered_negative_indices[i];
+							fOut << std::setw(6) << std::left << j;
+							fOut << std::setw(10) << std::right << std::setprecision(2) << std::scientific << -reorder_negative_coefficients[i];
+							fOut << std::setw(10) << std::right << std::setprecision(1) << std::fixed << -percentage*100. << "%";
+						//	fOut << std::setw(10) << std::right << std::setprecision(2) << std::scientific << kineticsMap.A(j);
+						//	fOut << std::setw(8) << std::right << std::setprecision(2) << std::fixed << kineticsMap.Beta(j);
+						//	fOut << std::setw(12) << std::right << std::setprecision(2) << std::fixed << kineticsMap.E_over_R(j)* PhysicalConstants::R_cal_mol;
+							fOut << std::left << "   " << reaction_names[j] << std::endl;
+						}
+					}
+				}
+
+				fOut << std::endl;
+			}
 		}
 	}
 }

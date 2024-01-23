@@ -169,8 +169,12 @@ namespace OpenSMOKE
 		*/	
 		void ReadOption(const std::string name_of_keyword, std::vector<std::string>& strings, std::vector<double>& values);
 
-                
-       		/**
+		/**
+		* Returns the option values as a vector of int and a vector of strings
+		*/
+		void ReadOption(const std::string name_of_keyword, std::vector<int>& values, std::vector<std::string>& names);
+           
+       	/**
 		* Returns the option values as a vector of double and a vector of strings
 		*/	
 		void ReadOption(const std::string name_of_keyword, std::vector<double>& values, std::vector<std::string>& strings);

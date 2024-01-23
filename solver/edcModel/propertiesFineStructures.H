@@ -91,15 +91,10 @@
 
 				const scalarField& TCells = T.internalField();
 				const scalarField& pCells = p.internalField(); 
-				#if OPENFOAM_VERSION >= 40
-				      scalarField& tauChemCells = tauChem.ref(); 
-				      scalarField& DaCells = Da.ref(); 
-				      scalarField& ReTCells = ReT.ref();
-				#else
-				      scalarField& tauChemCells = tauChem.internalField(); 
-				      scalarField& DaCells = Da.internalField(); 
-				      scalarField& ReTCells = ReT.internalField();
-				#endif 
+
+			        scalarField& tauChemCells = tauChem.ref(); 
+			        scalarField& DaCells = Da.ref(); 
+			        scalarField& ReTCells = ReT.ref();
 
 				forAll(tauStar, i)
 				{
@@ -188,18 +183,14 @@
 		#if STEADYSTATE == 0
 		if (iLES == true)
 		{
-			#if OPENFOAM_VERSION >= 40
 			const Foam::compressible::LESModel& lesModel = U.db().lookupObject<Foam::compressible::LESModel>("turbulenceProperties");
-			#else
-			const Foam::compressible::LESModel& lesModel = U.db().lookupObject<Foam::compressible::LESModel>("LESProperties");
-			#endif
 
 		        epsilonSGS = 0.54433*pow((k+ksmall_), 1.5)/lesModel.delta();
 		        tauMix =  sqrt( (1.2247*lesModel.delta()/sqrt(k+ksmall_))*sqrt(mu/rho/epsilonSGS) ); //geometrical mean of Kolmogorov scale and filter size scale
 
 			Info<< " * min/max(epsilon(ssg)) = " << min(epsilonSGS).value() 	<< ", " << max(epsilonSGS).value() 		<< endl;
 			Info<< " * min/max(epsilon(les)) = " << min(lesModel.epsilon()).value() << ", " << max(lesModel.epsilon()).value() 	<< endl;
-			Info<< " * min/max(mut)          = " << min(turbulence->mut()).value() 	<< ", " << max(turbulence->mut()).value() 	<< endl;
+			Info<< " * min/max(nut)          = " << min(turbulence->nut()).value() 	<< ", " << max(turbulence->nut()).value() 	<< endl;
 			Info<< " * min/max(taumix)       = " << min(tauMix).value() 		<< ", " << max(tauMix).value()	 		<< endl;
 
 		}
@@ -223,7 +214,7 @@
 			}
 
 			Info<< " * min/max(epsilon)  = " << min(epsilon).value() 		<< ", " << max(epsilon).value() << endl;
-			Info<< " * min/max(mut)      = " << min(turbulence->mut()).value()	<< ", " << max(turbulence->mut()).value() << endl;
+			Info<< " * min/max(nut)      = " << min(turbulence->nut()).value()	<< ", " << max(turbulence->nut()).value() << endl;
 			Info<< " * min/max(taumix)   = " << min(tauMix).value() 		<< ", " << max(tauMix).value() << endl;
 		}
 
@@ -242,17 +233,10 @@
 			const scalarField& TCells = T.internalField();
 			const scalarField& pCells = p.internalField(); 
 			const scalarField& tauMixCells = tauMix.internalField(); 
-			#if OPENFOAM_VERSION >= 40
 			      scalarField& tauChemCells = tauChem.ref(); 
 			      scalarField& DaCells = Da.ref(); 
 			      scalarField& kappaCells = kappa.ref(); 
-			#else
-			      scalarField& tauChemCells = tauChem.internalField(); 
-			      scalarField& DaCells = Da.internalField(); 
-			      scalarField& kappaCells = kappa.internalField(); 
-			#endif 
 			      
-
 			forAll(tauStar, i)
 			{
 				const double Ti = TCells[i];

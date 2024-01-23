@@ -42,45 +42,19 @@
 |                                                                         |
 \*-----------------------------------------------------------------------*/
 
-#if OPENFOAM_VERSION >= 40
+#include "createRDeltaT.H"
 
-	#include "createRDeltaT.H"
+Info<< nl << "Reading thermophysicalProperties" << endl;
 
-	Info<< nl << "Reading thermophysicalProperties" << endl;
-
-	#if OPENFOAM_VERSION >=60
-	autoPtr<psiReactionThermo> pThermo
-	(
-		psiReactionThermo::New(mesh)
-	);
-	psiReactionThermo& thermo = pThermo();
-	#else
-	autoPtr<combustionModels::psiCombustionModel> reaction
-	(
-	    combustionModels::psiCombustionModel::New(mesh)
-	);
-	psiReactionThermo& thermo = reaction->thermo();
-	#endif
-
-#else
-
-	Info<< nl << "Reading thermophysicalProperties" << endl;
-
-	autoPtr<combustionModels::psiCombustionModel> reaction
-	(
-	    combustionModels::psiCombustionModel::New(mesh)
-	);
-
-	psiReactionThermo& thermo = reaction->thermo();
-
-#endif
-
+autoPtr<fluidReactionThermo> pThermo
+(
+	fluidReactionThermo::New(mesh)
+);
+fluidReactionThermo& thermo = pThermo();
 thermo.validate(args.executable(), "h", "e");
 
-basicMultiComponentMixture& composition = thermo.composition();
+basicSpecieMixture& composition = thermo.composition();
 PtrList<volScalarField>& Y = composition.Y();
-
-const word inertSpecie(thermo.lookup("inertSpecie"));
 
 volScalarField rho
 (
@@ -110,47 +84,39 @@ volVectorField U
 volScalarField& p = thermo.p();
 const volScalarField& psi = thermo.psi();
       volScalarField& T = thermo.T();
-const label inertIndex(composition.species()[inertSpecie]);
 
 #include "compressibleCreatePhi.H"
 
-#if OPENFOAM_VERSION >= 40
+pressureReference pressureReference(p, pimple.dict(), false);
+mesh.schemes().setFluxRequired(p.name());
 
-	dimensionedScalar rhoMax
-	(
-	    dimensionedScalar::lookupOrDefault
-	    (
-		"rhoMax",
-		pimple.dict(),
-		dimDensity,
-		GREAT
-	    )
-	);
 
-	dimensionedScalar rhoMin
-	(
-	    dimensionedScalar::lookupOrDefault
-	    (
-		"rhoMin",
-		pimple.dict(),
-		dimDensity,
-		0
-	    )
-	);
+dimensionedScalar rhoMax
+(
+    dimensionedScalar::lookupOrDefault
+    (
+	"rhoMax",
+	pimple.dict(),
+	dimDensity,
+	GREAT
+    )
+);
 
-	mesh.setFluxRequired(p.name());
-
-#else
-
-	dimensionedScalar rhoMax(pimple.dict().lookup("rhoMax"));
-	dimensionedScalar rhoMin(pimple.dict().lookup("rhoMin"));
-
-#endif
+dimensionedScalar rhoMin
+(
+    dimensionedScalar::lookupOrDefault
+    (
+	"rhoMin",
+	pimple.dict(),
+	dimDensity,
+	0
+    )
+);
 
 Info << "Creating turbulence model.\n" << nl;
-autoPtr<compressible::turbulenceModel> turbulence
+autoPtr<compressible::momentumTransportModel> turbulence
 (
-    compressible::turbulenceModel::New
+    compressible::momentumTransportModel::New
     (
         rho,
         U,
@@ -159,16 +125,10 @@ autoPtr<compressible::turbulenceModel> turbulence
     )
 );
 
-#if OPENFOAM_VERSION >=60
+
 Info<< "Creating reaction model\n" << endl;
-autoPtr<CombustionModel<psiReactionThermo>> reaction
-(
-    CombustionModel<psiReactionThermo>::New(thermo, turbulence())
-);
-#else
-// Set the turbulence into the reaction model
-reaction->setTurbulence(turbulence());
-#endif
+autoPtr<combustionModel> reaction(combustionModel::New(thermo, turbulence()));
+
 
 Info<< "Creating field dpdt\n" << endl;
 volScalarField dpdt
@@ -186,6 +146,7 @@ volScalarField dpdt
 Info<< "Creating field kinetic energy K\n" << endl;
 volScalarField K("K", 0.5*magSqr(U));
 
+dimensionedScalar initialMass = fvc::domainIntegrate(rho);
 
 multivariateSurfaceInterpolationScheme<scalar>::fieldTable fields;
 
@@ -195,9 +156,9 @@ forAll(Y, i)
 }
 fields.add(thermo.he());
 
-#if OPENFOAM_VERSION >= 40
 #include "createMRF.H"
-#endif
+#include "createFvModels.H"
+#include "createFvConstraints.H"
 
 fileName path = args.rootPath()+"/"+args.globalCaseName();
 OFstream Pav(path+"/p.Vessel");

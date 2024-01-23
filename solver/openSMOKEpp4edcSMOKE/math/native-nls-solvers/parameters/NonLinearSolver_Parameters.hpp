@@ -16,7 +16,7 @@
 |                                                                         |
 |   This file is part of OpenSMOKE++ framework.                           |
 |                                                                         |
-|	License                                                               |
+|   License                                                               |
 |                                                                         |
 |   Copyright(C) 2014, 2013, 2012  Alberto Cuoci                          |
 |   OpenSMOKE++ is free software: you can redistribute it and/or modify   |
@@ -35,7 +35,6 @@
 \*-----------------------------------------------------------------------*/
 
 #include "NonLinearSolver_Parameters_Grammar.h"
-#include "math/OpenSMOKEStdInclude.h"
 
 namespace NlsSMOKE
 {
@@ -71,13 +70,9 @@ namespace NlsSMOKE
 
 		sparse_linear_algebra_ = false;
         
-       // #ifdef __APPLE__
-        jacobian_solver_ = OpenSMOKE::SOLVER_SPARSE_EIGEN_SPARSE_LU;
+		jacobian_structure_ = OpenSMOKE::JACOBIAN_STRUCTURE_DENSE;
+        	jacobian_solver_ = OpenSMOKE::SOLVER_SPARSE_EIGEN_SPARSE_LU;
 		preconditioner_ = OpenSMOKE::PRECONDITIONER_SPARSE_ILUT;
-       // #else
-	//	jacobian_solver_ = OpenSMOKE::SparsePreconditionerType::SOLVER_SPARSE_EIGEN_SPARSE_LU;
-	//	preconditioner_ = OpenSMOKE::SparsePreconditionerType::PRECONDITIONER_SPARSE_ILUT;
-       // #endif
 
 		scaling_policy_ = 1;
 	}
@@ -122,11 +117,17 @@ namespace NlsSMOKE
 				std::string name;
 				dictionary.ReadString("@Jacobian", name);
 
-				if (name == "TridiagonalBlock")		sparse_linear_algebra_ = false;
-				else if (name == "Band")			sparse_linear_algebra_ = false;
-				else if (name == "Sparse")			sparse_linear_algebra_ = true;
+				if (name == "Dense")			sparse_linear_algebra_ = false;
+				else if (name == "Band")		sparse_linear_algebra_ = false;
+				else if (name == "TridiagonalBlock")	sparse_linear_algebra_ = false;
+				else if (name == "Sparse")		sparse_linear_algebra_ = true;
+				else OpenSMOKE::FatalErrorMessage("Unknown @Jacobian. Available options: Dense | Band | TridiagonalBlock | Sparse");
 
-				else OpenSMOKE::FatalErrorMessage("Unknown @Jacobian. Available options: Band (default) | TridiagonalBlock | Sparse");
+				if (name == "Dense")			jacobian_structure_ = OpenSMOKE::JACOBIAN_STRUCTURE_DENSE;
+				else if (name == "Band")		jacobian_structure_ = OpenSMOKE::JACOBIAN_STRUCTURE_BAND;
+				else if (name == "TridiagonalBlock")	jacobian_structure_ = OpenSMOKE::JACOBIAN_STRUCTURE_TRIDIAGONAL_BLOCK;
+				else if (name == "Sparse")		jacobian_structure_ = OpenSMOKE::JACOBIAN_STRUCTURE_SPARSE;
+				else OpenSMOKE::FatalErrorMessage("Unknown @Jacobian. Available options: Dense | Band | TridiagonalBlock | Sparse");
 			}
 
 			if (dictionary.CheckOption("@SparseSolver") == true)
@@ -143,13 +144,13 @@ namespace NlsSMOKE
 				else if (name == "SuperLUSerial")   jacobian_solver_ = OpenSMOKE::SOLVER_SPARSE_EIGEN_SUPERLU_SERIAL;
 				else if (name == "UMFPack")			jacobian_solver_ = OpenSMOKE::SOLVER_SPARSE_EIGEN_UMFPACK;
                 #else
-				if (name == "EigenSparseLU")		jacobian_solver_ = OpenSMOKE::SOLVER_SPARSE_EIGEN_SPARSE_LU;
-				else if (name == "EigenBiCGSTAB")   jacobian_solver_ = OpenSMOKE::SOLVER_SPARSE_EIGEN_BICGSTAB;
-				else if (name == "EigenGMRES")		jacobian_solver_ = OpenSMOKE::SOLVER_SPARSE_EIGEN_GMRES;
-				else if (name == "EigenDGMRES")		jacobian_solver_ = OpenSMOKE::SOLVER_SPARSE_EIGEN_DGMRES;
-				else if (name == "Pardiso")			jacobian_solver_ = OpenSMOKE::SOLVER_SPARSE_EIGEN_PARDISO;
-				else if (name == "SuperLUSerial")   jacobian_solver_ = OpenSMOKE::SOLVER_SPARSE_EIGEN_SUPERLU_SERIAL;
-				else if (name == "UMFPack")			jacobian_solver_ = OpenSMOKE::SOLVER_SPARSE_EIGEN_UMFPACK;
+				if (name == "EigenSparseLU")		jacobian_solver_ = OpenSMOKE::SparseSolverType::SOLVER_SPARSE_EIGEN_SPARSE_LU;
+				else if (name == "EigenBiCGSTAB")   jacobian_solver_ = OpenSMOKE::SparseSolverType::SOLVER_SPARSE_EIGEN_BICGSTAB;
+				else if (name == "EigenGMRES")		jacobian_solver_ = OpenSMOKE::SparseSolverType::SOLVER_SPARSE_EIGEN_GMRES;
+				else if (name == "EigenDGMRES")		jacobian_solver_ = OpenSMOKE::SparseSolverType::SOLVER_SPARSE_EIGEN_DGMRES;
+				else if (name == "Pardiso")			jacobian_solver_ = OpenSMOKE::SparseSolverType::SOLVER_SPARSE_EIGEN_PARDISO;
+				else if (name == "SuperLUSerial")   jacobian_solver_ = OpenSMOKE::SparseSolverType::SOLVER_SPARSE_EIGEN_SUPERLU_SERIAL;
+				else if (name == "UMFPack")			jacobian_solver_ = OpenSMOKE::SparseSolverType::SOLVER_SPARSE_EIGEN_UMFPACK;
                 #endif
 
 				else OpenSMOKE::FatalErrorMessage("Unknown @SparseSolver. Available options: EigenSparseLU (default) | EigenBiCGSTAB | EigenGMRES | EigenDGMRES | Pardiso | SuperLUSerial | UMFPack");
@@ -164,8 +165,8 @@ namespace NlsSMOKE
                 if (name == "ILUT")			   preconditioner_ = OpenSMOKE::PRECONDITIONER_SPARSE_ILUT;
 				else if (name == "diagonal")   preconditioner_ = OpenSMOKE::PRECONDITIONER_SPARSE_DIAGONAL;
                 #else
-				if (name == "ILUT")			   preconditioner_ = OpenSMOKE::PRECONDITIONER_SPARSE_ILUT;
-				else if (name == "diagonal")   preconditioner_ = OpenSMOKE::PRECONDITIONER_SPARSE_DIAGONAL;
+				if (name == "ILUT")			   preconditioner_ = OpenSMOKE::SparsePreconditionerType::PRECONDITIONER_SPARSE_ILUT;
+				else if (name == "diagonal")   preconditioner_ = OpenSMOKE::SparsePreconditionerType::PRECONDITIONER_SPARSE_DIAGONAL;
                 #endif
 
 				else OpenSMOKE::FatalErrorMessage("Unknown @Preconditioner. Available options: ILUT (default) | diagonal");

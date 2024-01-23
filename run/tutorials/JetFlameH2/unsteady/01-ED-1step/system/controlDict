@@ -23,7 +23,7 @@ startTime       0;
 
 stopAt          endTime;
 
-endTime         0.5;
+endTime         1.0;
 
 deltaT          1e-7;
 
@@ -47,12 +47,12 @@ runTimeModifiable true;
 
 adjustTimeStep  yes;
 
-maxCo           0.1;
+maxCo           0.2;
 
 
 // ************************************************************************* //
 
-
+/*
 functions
 {
 	outputFrequency 1000;
@@ -132,3 +132,6 @@ functions
     		);
   	}
 }
+
+*/
+

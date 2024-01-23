@@ -51,25 +51,8 @@ namespace OpenSMOKE
 	{
 	public:
 
-		FluxAnalysisMap(OpenSMOKE::ThermodynamicsMap_CHEMKIN& thermodynamicsMapXML, 
-					 OpenSMOKE::KineticsMap_CHEMKIN& kineticsMapXML) :
-		thermodynamicsMapXML_(thermodynamicsMapXML), kineticsMapXML_(kineticsMapXML)
-		{
-			NC = thermodynamicsMapXML_.NumberOfSpecies();
-			NR = kineticsMapXML_.NumberOfReactions();
-
-			max_width_ = 5;
-			max_depth_ = 3;
-			min_percentage_threshold_ = 0.01;
-			normal_thickness_ = false;
-			normal_tags_ = true;
-			destruction_analysis_ = true;
-			logarithmic_thickness_ = true;
-			global_important_indices_.resize(NC);
-			global_important_normal_fluxes_.resize(NC);
-			global_important_fluxes_.resize(NC);
-			global_relative_thickness_.resize(NC);
-		}
+		FluxAnalysisMap(OpenSMOKE::ThermodynamicsMap_CHEMKIN& thermodynamicsMapXML,
+						OpenSMOKE::KineticsMap_CHEMKIN& kineticsMapXML);
 
 		void SetDestructionAnalysis(const bool flag) { destruction_analysis_ = flag; }
 
@@ -101,12 +84,20 @@ namespace OpenSMOKE
 
 		void WriteStoichiometricMatrix( const std::string file_name );
 
+	protected:
 
+		std::vector<unsigned int> list_of_analyzed_species_;
+		std::vector<std::vector<unsigned int> > global_important_indices_;
+		std::vector<std::vector<double>	>		global_important_normal_fluxes_;
+		std::vector<std::vector<double>	>		global_important_fluxes_;
+		std::vector<std::vector<double>	>		global_relative_thickness_;
+		bool normal_tags_;
+		bool logarithmic_thickness_;
+	
 	private:
-
+	
 		OpenSMOKE::ThermodynamicsMap_CHEMKIN&  thermodynamicsMapXML_;
-		OpenSMOKE::KineticsMap_CHEMKIN& kineticsMapXML_;
-
+		OpenSMOKE::KineticsMap_CHEMKIN& kineticsMapXML_;	
 		unsigned int NC;
 		unsigned int NR;
 		unsigned int index_atom_;
@@ -114,12 +105,9 @@ namespace OpenSMOKE
 		int max_width_;
 		int max_depth_;
 		double min_percentage_threshold_;
-		std::vector<unsigned int> list_of_analyzed_species_;
 		std::ofstream fOut;
 		bool normal_thickness_;
-		bool normal_tags_;
 		bool destruction_analysis_;
-		bool logarithmic_thickness_;
 
 		void AnalyzeNetFluxes(	const unsigned int index_j, std::vector<unsigned int>& important_indices,
 								std::vector<double>& important_normal_fluxes, std::vector<double>& important_fluxes);
@@ -128,11 +116,6 @@ namespace OpenSMOKE
 									std::vector<double>& local_thickness,
 									std::vector<double>& local_normal_fluxes,
 									std::vector<double>& local_fluxes);
-
-		std::vector<std::vector<unsigned int> > global_important_indices_;
-		std::vector<std::vector<double>	>		global_important_normal_fluxes_;
-		std::vector<std::vector<double>	>		global_important_fluxes_;
-		std::vector<std::vector<double>	>		global_relative_thickness_;
 	};
 }
 

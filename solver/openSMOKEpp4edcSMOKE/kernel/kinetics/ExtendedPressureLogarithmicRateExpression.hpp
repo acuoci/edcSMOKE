@@ -148,7 +148,7 @@ namespace OpenSMOKE
 
 			p_[index][i] = coefficients[count++]*101325.;
 			lnp_[index][i] = std::log(p_[index][i]);
-			lnA_[index][i] = std::log(std::max(coefficients[count++]*conversion_A_, threshold)) ;
+			lnA_[index][i] = std::log( (std::max)( coefficients[count++]*conversion_A_, threshold ) ) ;
 			Beta_[index][i] = coefficients[count++];
 			E_over_R_[index][i] = (coefficients[count++] * conversion_E) / PhysicalConstants::R_J_kmol;
 		}
@@ -231,7 +231,7 @@ namespace OpenSMOKE
 			fOutput << std::setw(9)									<< " "; 
 			fOutput << std::scientific << j+1						<< "\t";
 			fOutput << std::scientific << std::setprecision(6) << std::right << p_[index][j]/101325.     << "\t";
-			fOutput << std::scientific << std::setprecision(6) << std::right << std::exp(lnA_[index][j]) << "\t";
+			fOutput << std::scientific << std::setprecision(6) << std::right << std::exp(lnA_[index][j])/conversion_A_ << "\t";
 			fOutput << std::setw(8) << std::setprecision(2) << std::fixed << std::right << Beta_[index][j];
 			fOutput << std::setw(14) << std::setprecision(2) << std::fixed << std::right << E_over_R_[index][j] * PhysicalConstants::R_J_kmol / Conversions::J_from_kcal << std::endl;
 		}

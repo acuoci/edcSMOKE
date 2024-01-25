@@ -1,0 +1,21 @@
+EXE_INC = \
+    -w \
+    -DWM_PROJECT_VERSION=$(WM_PROJECT_VERSION) \
+    $(MKL_SUPPORT) \
+    -I. \
+    -I$(BOOST_LIBRARY_PATH)/include \
+    -I$(EIGEN_LIBRARY_PATH) \
+    -I../openSMOKEpp4edcSMOKE \
+    -I$(MKL_PATH)/include
+
+EXE_LIBS = \
+    -L$(FOAM_USER_LIBBIN) \
+    -L$(BOOST_LIBRARY_PATH)/lib \
+    $(MKL_LIBS) \
+    -lsampling \
+    -lboost_date_time \
+    -lboost_filesystem \
+    -lboost_system \
+    -lboost_regex \
+    -lboost_program_options
+

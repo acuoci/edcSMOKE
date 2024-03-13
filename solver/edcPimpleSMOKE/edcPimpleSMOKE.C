@@ -121,6 +121,7 @@ int main(int argc, char *argv[])
 	#include "createFields.H"
 	#include "createOpenSMOKEFields.H"
 	#include "createRhoUfIfPresent.H"
+
 	#include "createRadiationModel.H"
 
 	turbulence->validate();

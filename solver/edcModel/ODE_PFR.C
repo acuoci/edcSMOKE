@@ -82,6 +82,7 @@ ODE_PFR::ODE_PFR(
 	checkMassFractions_ = false;	
 	drgAnalysis_ = false;
 	energyEquation_ = true;
+	debug_ = false;
 }
 
 int ODE_PFR::Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y, OpenSMOKE::OpenSMOKEVectorDouble& dy)

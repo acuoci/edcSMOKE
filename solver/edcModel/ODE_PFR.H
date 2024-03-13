@@ -74,6 +74,12 @@ public:
 		energyEquation_ = energyEquation;
 	}
 
+	// Set debug
+	void SetDebug(	const double flag)
+	{
+		debug_ = flag;
+	}
+
 	void SetCheckMassFractions( const bool flag ) { checkMassFractions_ = flag; };
 	unsigned int NumberOfEquations() const { return number_of_equations_; }
 
@@ -108,6 +114,8 @@ private:
 
 	OpenSMOKE::DRG* drg_;
 	bool drgAnalysis_;
+
+	bool debug_;
 };
 
 #include "ODE_PFR.C"

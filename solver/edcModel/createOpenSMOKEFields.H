@@ -63,7 +63,7 @@ OpenSMOKE::KineticsMap_CHEMKIN* kineticsMapXML;
 OpenSMOKE::TransportPropertiesMap_CHEMKIN* transportMapXML;
 
 {	
-	word kinetics(combustionOptionsDictionary.lookup("kineticMechanism"));
+	Foam::string kinetics = combustionOptionsDictionary.lookup("folder");
 	boost::filesystem::path path_kinetics = kinetics;
 	boost::property_tree::ptree ptree;
     	boost::property_tree::read_xml( (path_kinetics / "kinetics.xml").c_str(), ptree );
@@ -118,12 +118,12 @@ Switch energyEquation(combustionOptionsDictionary.lookup("energyEquation"));
 // RAS or LES
 Switch iLES = false;
 {
-	Info<< "Reading turbulenceProperties dictionary\n" << endl;
-	IOdictionary turbulencePropertiesDictionary
+	Info<< "Reading momentumTransport dictionary\n" << endl;
+	IOdictionary momentumTransportDictionary
 	(
 		IOobject
 		(
-			"turbulenceProperties",
+			"momentumTransport",
 			U.time().constant(),
 			U.db(),
 			IOobject::MUST_READ,
@@ -131,7 +131,7 @@ Switch iLES = false;
 		)
 	);
 
-	word simulationType(turbulencePropertiesDictionary.lookup("simulationType"));
+	word simulationType(momentumTransportDictionary.lookup("simulationType"));
 	if (simulationType == "RAS")
 	{
 		iLES = false;
@@ -547,6 +547,10 @@ if (combustionModel == "EDC" || combustionModel == "PaSR")
 	//- Maximum order of integration (only for OpenSMOKE solver)
 	label maximumOrder = readLabel(odeParametersFineStructuresDictionary.lookup("maximumOrder"));
 	odeParametersFineStructures.SetMaximumOrder(maximumOrder);
+
+	//- Maximum number of steps (only for OpenSMOKE solver)
+	label maximumNumberOfSteps = readLabel(odeParametersFineStructuresDictionary.lookup("maximumNumberOfSteps"));
+	odeParametersFineStructures.SetMaximumNumberOfSteps(maximumNumberOfSteps);
 	
 	// Type
 	word homogeneousODESolverString(odeParametersFineStructuresDictionary.lookup("odeSolver"));

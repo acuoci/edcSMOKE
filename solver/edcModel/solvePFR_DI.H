@@ -47,7 +47,7 @@
 	odeSolverPFR.SetInitialConditions(t0, yStar0);
 
 	// Additional ODE solver options
-	if (celli == 0)
+	//if (celli == 0)
 	{
 		// Set linear algebra options
 		odeSolverPFR.SetLinearAlgebraSolver(odeParametersFineStructures.linear_algebra());

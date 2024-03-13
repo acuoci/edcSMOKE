@@ -118,7 +118,14 @@
 
 			// Extract the mean mass fractions
 			for(unsigned int i=0;i<ns;i++)
-				omegaMean[i+1] = Y[i].internalField()[celli];
+				omegaMean[i+1] = std::max(1.e-16, Y[i].internalField()[celli]);
+
+			// Normalize the mass fractions
+			double sumOmegaMean = 0.;
+			for(unsigned int i=1;i<=ns;i++)
+				sumOmegaMean += omegaMean[i];
+			for(unsigned int i=1;i<=ns;i++)
+				omegaMean[i] /= sumOmegaMean;		
 
 			// Convert to mole fractions
 			thermodynamicsMapXML->MoleFractions_From_MassFractions(xMean.GetHandle(), MWMean, omegaMean.GetHandle());
@@ -235,6 +242,7 @@
 			{
 				if (drg_analysis == false)
 				{
+					
 					tf = (1.-gammaStarDen[celli])/max(mDotStar[celli], SMALL);
 
 					for(unsigned int i=0;i<ns;i++)
@@ -244,6 +252,7 @@
 					yStar0(ne-1) = 0.;
 
 					fine_structure_ode_pfr.Set(pCells[celli]);
+					fine_structure_ode_pfr.SetCheckMassFractions(true);
 				}
 				else
 				{

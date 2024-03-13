@@ -15,6 +15,9 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+folder		        "kinetics/kinetics";
+inertSpecie 		N2;
+
 homogeneousReactions 	on;		// chemistry on/off
 momentumEquations       on;		// momentum equations on/off
 energyEquation		on;		// energy equation on/off

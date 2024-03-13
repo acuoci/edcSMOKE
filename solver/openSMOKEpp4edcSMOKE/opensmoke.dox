@@ -1,0 +1,157 @@
+/*----------------------------------------------------------------------*\
+|    ___                   ____  __  __  ___  _  _______                  |
+|   / _ \ _ __   ___ _ __ / ___||  \/  |/ _ \| |/ / ____| _     _         |
+|  | | | | '_ \ / _ \ '_ \\___ \| |\/| | | | | ' /|  _| _| |_ _| |_       |
+|  | |_| | |_) |  __/ | | |___) | |  | | |_| | . \| |__|_   _|_   _|      |
+|   \___/| .__/ \___|_| |_|____/|_|  |_|\___/|_|\_\_____||_|   |_|        |
+|        |_|                                                              |
+|                                                                         |
+|   Author: Alberto Cuoci <alberto.cuoci@polimi.it>                       |
+|   CRECK Modeling Group <http://creckmodeling.chem.polimi.it>            |
+|   Department of Chemistry, Materials and Chemical Engineering           |
+|   Politecnico di Milano                                                 |
+|   P.zza Leonardo da Vinci 32, 20133 Milano                              |
+|                                                                         |
+|-------------------------------------------------------------------------|
+|                                                                         |
+|   This file is part of OpenSMOKE++ framework.                           |
+|                                                                         |
+|	License                                                               |
+|                                                                         |
+|   Copyright(C) 2014, 2013, 2012  Alberto Cuoci                          |
+|   OpenSMOKE++ is free software: you can redistribute it and/or modify   |
+|   it under the terms of the GNU General Public License as published by  |
+|   the Free Software Foundation, either version 3 of the License, or     |
+|   (at your option) any later version.                                   |
+|                                                                         |
+|   OpenSMOKE++ is distributed in the hope that it will be useful,        |
+|   but WITHOUT ANY WARRANTY; without even the implied warranty of        |
+|   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         |
+|   GNU General Public License for more details.                          |
+|                                                                         |
+|   You should have received a copy of the GNU General Public License     |
+|   along with OpenSMOKE++. If not, see <http://www.gnu.org/licenses/>.   |
+|                                                                         |
+\*-----------------------------------------------------------------------*/
+
+/*! \mainpage OpenSMOKE
+ *
+ * \section intro_sec Introduction
+ *
+ * OpenSMOKE is a C++ library for the numerical modeling of reacting flows with detailed kinetic mechanisms. \n
+ * The OpenSMOKE library is written in C++, since this is a good programming language for scientific work. 
+ * It is widely available on all platforms and, being based on C, is fast. 
+ * Several studies (Cary et al., 1997; Dubois-Pelerin and Zimmermann, 1993) indicate no significant difference in performance
+ * between Fortran and the C group of languages. The OpenSMOKE library is based on template programming and strongly relies
+ * on the concept of policies and policy classes (Alexandrescu, 2001), an important class design technique that enable the creation
+ * of flexible, highly reusable libraries. In brief, policy-based class design fosters assembling a class with complex behavior out
+ * of many little classes (called policies), each of which takes care of only one behavioral or structural aspect. As the name
+ * suggests, a policy establishes an interface pertaining to a specific issue. The user can implement policies in various ways as
+ * long as the policy interface is respected. Since policies can be mixed and matched, a combinatorial set of behaviors can be
+ * achieved by using a small core of elementary components. \n
+ * One of the main objective of OpenSMOKE library is to make easy the management of complex reacting mixtures in new and/or
+ * existing numerical codes. For this purpose the main classes are designed by exploiting policy design and inheritance techniques.
+ * The main, basic class is the Species class, which manages the properties of a single chemical species.
+ * The Species class is based on several policies concerning the sub-models used to evaluate the thermodynamic (density,
+ * specific heats, enthalpy, entropy, etc.) and transport properties (thermal conductivity, viscosity, mass diffusivity, etc.).
+ * The user can easily choose the policies to be used which better fit his needs or can easily implement a new policy.
+ * The only requirement is that the new policy respects the policy interface. The main advantage of this approach is that,
+ * if a new policy is needed, no changes to the existing code are needed. As an example, if a new equation of state is needed
+ * for evaluating the thermodynamic properties, the new corresponding policy can be added to the OpenSMOKE library, 
+ * but the source code of the original OpenSMOKE library does not have to be changed. 
+ * The chemical species described by the Species classes can be collected together to create the Mixture class, whose main purpose
+ * is to allow the user to easily and efficiently evaluate thermodynamic and transport properties of a mixture.
+ * The Mixture class is built using a number of policies concerning the mixing rules for the evaluation of mixture properties
+ * (e.g. mean specific heat at constant pressure, thermal conductivity, etc.). The Mixture class does not need to know the
+ * details behind the calculations of properties of every species, but only how to “mix” these properties to evaluate the
+ * corresponding mean mixture values. This is easily achieved because the different species involved in the mixture expose
+ * a common interface to the Mixture class. Moreover, the user can access the properties of single species of the mixture,
+ * without knowing what kind of species is being considered, because the exposed interface is always the same, independently
+ * of the policy. More important, since policies are implemented on the basis of template programming, there is no CPU-time
+ * penalty in this approach. 
+ * The chemical reactions are described through the Reaction class, which manages the data about the stoichiometry and
+ * the kinetic parameters of a single reaction. The Reaction class is designed as a virtual class, from which a large number
+ * of classes is derived, each of them describing a particular kind of reaction (fall-off reactions, Chebishev, bimolecular
+ * activated reactions, etc.). Details about the implementation of each derived class are hidden to the user.
+ * The OpenSMOKE::Chemistry class provides a collection of reactions involved in a kinetic scheme. This class does not have
+ * to know the details about the implementation of every OpenSMOKE:Reaction derived class. The most important functions which
+ * have to be exposed to the OpenSMOKE::Chemistry class are the evaluation of the reaction rate and the access to the
+ * stoichiometric coefficients. The OpenSMOKE::Chemistry class provides all the functions to evaluate the formation rates of 
+ * every chemical species, which are usually the most important data required in the simulation of reacting flows.
+ * It is quite easy to recognize that the OpenSMOKE C++ Library can be easily extended and adapted to the needs of the user,
+ * by adding new thermodynamic and/or transport policies and by introducing new classes of chemical reactions. \n
+ * Efficiency
+ * According to (Smooke et al., 1983), in typical reacting flow calculations with detailed kinetic schemes, more than 90%
+ * of CPU time is spent for the numerical evaluation of Jacobian matrices. Since the construction of Jacobian usually
+ * involves the evaluation of thermodynamic and transport properties and the calculation of formation rates of every species
+ * a large number of times, the OpenSMOKE C++ library tries to make the calculations of these properties as fast as possible.
+ * This goal can be reached by exploiting the object oriented nature of C++. In particular, a new class,
+ * called OpenSMOKE::MixtureMap, is specifically conceived for calculating thermodynamic, transport properties and kinetics
+ * data in a fast way, without using complex interfaces. The idea is quite simple: from every OpenSMOKE::Mixture object
+ * (working as a sort of C++ Factory [REF]) a number of independent OpenSMOKE::MixtureMap objects can be created.
+ * The user can register in each of these OpenSMOKE::MixtureMap objects the properties which have to be calculated.
+ * Then, when these properties are needed, the user has only to update the status of the OpenSMOKE::MixtureMap object
+ * and ask for the property in which he is interested. The details about how calculations are performed are completely hidden
+ * to the user, who does not need to recur to complex interfaces in which a long number of parameters have to be passed
+ * or to remember the exact order in which the different functions must be called. This is possible mainly because of the
+ * object oriented programming. Moreover the OpenSMOKE::MixtureMap objects know the kind of mixture from which they were
+ * originated and the OpenSMOKE::Mixture object knows every map that it created. In this way if a change is applied to the
+ * OpenSMOKE::Mixture object (e.g. a new reaction is added, or new kinetic parameters are applied, etc.), such changes are
+ * automatically applied to all the maps which were created by the OpenSMOKE::Mixture object. Efficiency is achieved by
+ * the OpenSMOKE::MixtureMap using several techniques:/n
+ * caching: the code is written in order to cache as much as possible, which means storing items for future use in order
+ * to avoid retrieving or recalculating them. Only calculations which are strictly necessary are performed on the fly. 
+ * If some variables can be calculated only once, they are stored so that they are available for future needs; \n
+ * \arg object pools: they are a technique for avoiding the creation and deletion of a large number of objects during
+ * the code execution. If the user knows that his code needs a large number of short-lived objects of the same type,
+ * he creates a pool of those objects. Whenever he needs an object in his code, he asks the pool for one. When the user
+ * is done with the object, he returns it to the pool. The object pool creates the objects only once, so their constructor
+ * is called only once, not each time they are used. Thus, object pools are appropriate when the constructor performs some 
+ * setup actions that apply to many uses of the object, and when the user can set instance-specific parameters 
+ * on the object through non-constructor method calls; \n
+ * \arg optimized functions: the numerical algorithms are often reformulated in order to exploit the Intel® MKL Vector Mathematical
+ * Functions Library (VML). VML includes a set of highly optimized functions (arithmetic, power, trigonometric, exponential,
+ * hyperbolic, special, and rounding) that operate on vectors of real and complex numbers; \n
+ * \arg code reformulation: many parts of the numerical algorithms are reformulated in a less intuitive way in order to minimize
+ * the number of flops needed to perform some calculations or to avoid the usage of CPU-expensive functions. As an example,
+ * the kinetic constants are not evaluated using the usual direct approach: TODO . On the contrary they are evaluated using
+ * the following formulation:  TODO. The first formulation requires for the calculation of the kinetic constant two expensive
+ * functions: a power and an exponential. The second formulation only one expensive exponential function. The  coefficient 
+ * must be evaluated only once and stored and it does not need to be re-evaluated every time. It is quite clear that
+ * by using this simple reformulation, the user can save a lot of CPU time, considering that detailed kinetic schemes
+ * involves thousands of reactions. \n
+ * Moreover, the OpenSMOKE code tries always to handle objects efficiently, using only pass-by-reference and 
+ * return-by-reference techniques, without over-using costly language features (such as exceptions, virtual methods
+ * and RTTI) and strongly applying inline methods.
+ *
+ * \section install_sec Compiling OpenSMOKE
+ *
+ * \subsection step1 Step 1: Build Dependencies
+ *
+ * These directions assume you are using a Linux or Windows system with the following installed:
+ * \arg A C++ compiler (g++ or Visual Studio 2010)
+ * \arg A Boost (>= 1.40)
+ * \arg Eigen (>= 3.0)
+ * \arg rapidxml
+
+ * In order to solve the ideal reactors and/or the 1D flames you need also at least one of the following libraries:
+ * \arg BzzMath 6.0
+ * \arg DVODE
+ * \arg Sundials (>= 2.4)
+ * \arg RADAU
+
+ * In order to have the best performances we strongly suggest to compile the code using the following:
+ * \arg Intel C++ Compiler
+ * \arg Intel MKL 
+
+ * Additional dependencies for processing documentation:
+ * \arg Doxygen (>= 1.8.0)
+
+ * \code{.c}
+   class Mixture:
+     double mixture;
+  \endcode
+ * \section additional_sec Additional information
+ * Please visit our web-sites: http://opensmoke.polimi.it and  http://creckmodeling.chem.polimi.it \n
+ */
+

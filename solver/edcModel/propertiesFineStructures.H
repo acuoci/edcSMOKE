@@ -108,9 +108,11 @@
 					const double tauLocal = chemicalTimes->CalculateCharacteristicChemicalTime(Ti,pi,yStar);
 					
 					// Coefficients
-					const scalar nu = (mu[i]+SMALL)/(rho[i] + SMALL);
-					const scalar DaLocal = max(min(Foam::sqrt(nu/(epsilon[i] + SMALL))/tauLocal, maximum_Da), minimum_Da);
-					const scalar ReTLocal = CRe_coefficient*sqr(k[i])/(nu*epsilon[i] + SMALL);
+					const scalar nu = std::max( 1.e-16, (mu[i]+SMALL)/(rho[i] + SMALL) );
+					const scalar eps = std::max( 1.e-16, epsilon[i] + SMALL );
+					const scalar kappa = std::max( 1.e-16, k[i] + SMALL );
+					const scalar DaLocal = max(min(Foam::sqrt(nu/eps)/tauLocal, maximum_Da), minimum_Da);
+					const scalar ReTLocal = CRe_coefficient*sqr(kappa)/(nu*eps + SMALL);
 
 					const scalar C1 = Foam::sqrt(Ctau_coefficient/3.);
 		        		const scalar CtauLocal = max( min(C1/(DaLocal*Foam::sqrt(ReTLocal + 1)), 5), 0.40825);
@@ -122,8 +124,8 @@
 					ReTCells[i] = ReTLocal;
 				
 					// Fine structure properties
-					tauStar[i] = CtauLocal * Foam::sqrt( nu / (epsilon[i]+SMALL) );
-					gammaL[i]  = CgammaLocal * pow025(nu*epsilon[i]/(sqr(k[i]) + SMALL));
+					tauStar[i] = CtauLocal * Foam::sqrt( nu / eps );
+					gammaL[i]  = CgammaLocal * pow025(nu*eps/(sqr(kappa) + SMALL));
 				}
 
 				const double tEnd = OpenSMOKE::OpenSMOKEGetCpuTime();
@@ -148,11 +150,21 @@
 		{
 
 			// Fine structures: characteristic time [s]
-			tauStar = Ctau * sqrt( (mu+musmall_)/rho / (epsilon+epsilonsmall_) );
+			tmp<volScalarField> tnu_over_epsilon = (mu+musmall_)/rho/(epsilon+epsilonsmall_);
+			volScalarField& nu_over_epsilon = tnu_over_epsilon.ref();
+			nu_over_epsilon.max(1.e-16);
+
+			const double tauStarMax = 1.e3;
+			tauStar = Ctau * sqrt( nu_over_epsilon );
+			tauStar.min(tauStarMax);
 			mDotStar = 1./tauStar;
 
 			// Fine structure properties: volumetric fraction
-			gammaL = Ccsi * pow025( (mu+musmall_)/rho * epsilon / sqr(k+ksmall_));	
+			tmp<volScalarField> tnu_epsilon_over_k =  (mu+musmall_)/rho * epsilon / sqr(k+ksmall_);
+			volScalarField& nu_epsilon_over_k = tnu_epsilon_over_k.ref();
+			nu_epsilon_over_k.max(1.e-16);
+
+			gammaL = Ccsi * pow025( nu_epsilon_over_k );	
 			gammaL = min(maxGammaL, gammaL);
 			gammaStarNum = pow(gammaL,edc_exp_1);
 			gammaStarDen = pow(gammaL,edc_exp_2);

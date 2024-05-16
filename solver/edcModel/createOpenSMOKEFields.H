@@ -187,7 +187,7 @@ volScalarField tauStar
 	mesh,
 	IOobject::NO_READ,
 	IOobject::AUTO_WRITE,
-	false
+	true
     ),
     mesh,
     dimensionedScalar("tauStar", dimensionSet(0,0,1,0,0,0,0), 0.0)
@@ -217,7 +217,7 @@ volScalarField gammaL
 	mesh,
 	IOobject::NO_READ,
 	IOobject::AUTO_WRITE,
-	false
+	true
     ),
     mesh,
     dimensionedScalar("gammaL", dimensionSet(0,0,0,0,0,0,0), 0.0)

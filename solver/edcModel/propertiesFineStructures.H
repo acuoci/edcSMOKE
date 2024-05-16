@@ -148,6 +148,9 @@
 		}
 		else
 		{
+			// TODO: Provisional fields (for post-processing purposes only)
+			mix_mu = thermo.mu();
+			mix_nu = mix_mu/thermo.rho();
 
 			// Fine structures: characteristic time [s]
 			tmp<volScalarField> tnu_over_epsilon = (mu+musmall_)/rho/(epsilon+epsilonsmall_);

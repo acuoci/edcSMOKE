@@ -172,4 +172,32 @@
 	    dimensionedScalar("cpu::reaction_times", dimensionSet(0, 0, 0, 0, 0), 0.0)
 	);
 
+	volScalarField mix_nu
+	(
+	    IOobject
+	    (
+		"mix::nu",
+		runTime.timeName(),
+		mesh,
+		IOobject::NO_READ,
+		IOobject::AUTO_WRITE
+	    ),
+	    mesh,
+	    dimensionedScalar("mix::nu", dimensionSet(0, 2, -1, 0, 0), 0)
+	);
+
+	volScalarField mix_mu
+	(
+	    IOobject
+	    (
+		"mix::mu",
+		runTime.timeName(),
+		mesh,
+		IOobject::NO_READ,
+		IOobject::AUTO_WRITE
+	    ),
+	    mesh,
+	    dimensionedScalar("mix::mu", dimensionSet(1, -1, -1, 0, 0), 0)
+	);
+
 

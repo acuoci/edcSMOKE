@@ -137,5 +137,13 @@ if (closedVolume && !thermo.incompressible())
     p.correctBoundaryConditions();
 }
 
+// 
+const scalar minP = 1e4;
+const scalar maxP = 1e7;
+p.max(minP);
+p.min(maxP);
+	
+Info<< "min/max(p) = " << min(p).value() << ", " << max(p).value() << endl;
+
 rho = thermo.rho();
 rho.relax();

@@ -172,6 +172,8 @@
 	    dimensionedScalar("cpu::reaction_times", dimensionSet(0, 0, 0, 0, 0), 0.0)
 	);
 
+	// TODO: Provisional fields (for post-processing purposes only)
+	/*
 	volScalarField mix_nu
 	(
 	    IOobject
@@ -199,5 +201,5 @@
 	    mesh,
 	    dimensionedScalar("mix::mu", dimensionSet(1, -1, -1, 0, 0), 0)
 	);
-
+	*/
 

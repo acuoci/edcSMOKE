@@ -9,7 +9,7 @@ EXE_INC = \
     -I$(EIGEN_LIBRARY_PATH) \
     -I$(SUNDIALS_PATH)/include \
     -I$(MKL_PATH)/include \
-    -I$(ISAT_INCLUDE) \
+    -I$(ISAT_INCLUDE)/ \
     -I$(LIB_SRC)/MomentumTransportModels/momentumTransportModels/lnInclude \
     -I$(LIB_SRC)/MomentumTransportModels/compressible/lnInclude \
     -I$(LIB_SRC)/ThermophysicalTransportModels/lnInclude \

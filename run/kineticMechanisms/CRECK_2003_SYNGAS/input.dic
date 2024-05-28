@@ -14,10 +14,22 @@
 
 Dictionary CHEMKIN_PreProcessor
 {
-		@Thermodynamics 	../thermodynamics/POLIMI1412.CKT;
-		@Transport		../transport/POLIMI1412.TRC;
-		@Kinetics 		kinetics.CKI;
+		@Thermodynamics 	CRECK_2003_SYNGAS.CKT;
+		@Kinetics 		CRECK_2003_SYNGAS.CKI;
+		@Transport		CRECK_2003_SYNGAS.TRC;
 		
-		@Output			kinetics-H2-1Step;
+		@Output			kinetics;
+		
+		@Comments 		CRECK-Signature;
+		
+		@SpeciesBundling	true;
+		@ReverseFitting		true;
+		@CollisionRateAnalysis 	true;
 }
 
+Dictionary CRECK-Signature
+{
+	@Author 	CRECK Modeling Group;
+	@Place  	Politecnico di Milano (Italy);
+	@Comments	This kinetic mechanism can be downloaded at: www.creckmodeling.chem.polimi.it;
+}

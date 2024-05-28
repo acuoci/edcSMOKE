@@ -60,11 +60,11 @@ Two main different options are available to compile the code, according to the l
 Preprocessing of CHEMKIN files
 -----------------------------------------------------
 In order to run a simulation with edcSMOKE++, a CHEMKIN mechanism (kinetics, thermodynamic and transport properties) has to be pre-processed using the `chemkin2OpenSMOKE++PreProcessor` utility (see above). 
-Examples of mechanisms ready to be pre-processed are available in the `run/kinetic-mechanisms` folder. In particular, for in each mechanism folder you can find the three files corresponding to the CHEMKIN input (kinetics, thermodynamics, and transport properties) and an additional `input.dic` file, containing the instructions for the `chemkin2OpenSMOKE++PreProcessor`.
-In order to pre-process a kinetic mechanisms, the operations to carry out are very simple. As an example, for `POLIMI_H2CO_1412` mechanism:
-1. Go to the `run/kinetic-mechanisms/POLIMI_H2CO_1412`
+Examples of mechanisms ready to be pre-processed are available in the `run/kineticMechanisms` folder. In particular, for in each mechanism folder you can find the three files corresponding to the CHEMKIN input (kinetics, thermodynamics, and transport properties) and an additional `input.dic` file, containing the instructions for the `chemkin2OpenSMOKE++PreProcessor`.
+In order to pre-process a kinetic mechanisms, the operations to carry out are very simple. As an example, for `CRECK_2003_SYNGAS` mechanism:
+1. Go to the `run/kineticMechanisms/CRECK_2003_SYNGAS`
 2. Type `chemkin2OpenSMOKE++PreProcessor`
-3. If everything works correctly, a `kinetics-POLIMI_H2CO_1412` folder will be created, including the preprocessed CHEMKIN files (in XML folder). This is the folder which has to be supplied to the `edcSMOKE++` solvers.
+3. If everything works correctly, a `kinetics` folder will be created, including the preprocessed CHEMKIN files (in XML format). This is the folder which has to be supplied to the edcSMOKE++ solvers.
 
 # Tutorials
 ## 1. Turbulent jet flame fed with H2 (unsteady simulation)

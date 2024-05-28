@@ -15,6 +15,9 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+folder		        "kinetics/kinetics";
+inertSpecie 		N2;
+
 homogeneousReactions 	on;		// chemistry on/off
 momentumEquations       on;		// momentum equations on/off
 energyEquation		on;		// energy equation on/off
@@ -81,6 +84,7 @@ Ode
         absTolerance                            1e-10;                  // ODE absolute tolerance (default: 1e-10)
         fullPivoting                            false;                  // full pivoting during LU factorization (default: false)
         maximumOrder                            5;                      // maximum order of ODE integration (only for OpenSMOKE++ solver, default: 5)
+	maximumNumberOfSteps			100000;			// maximum number of steps
 }
 
 Nls
@@ -97,7 +101,7 @@ Spark
 	position        	(5e-3  0 5.e-3);
 	time            	0;
 	temperature     	2500;
-	duration        	50;
+	duration        	1e-2;
 	diameter        	5e-3;
 	additionalMassFraction	1e-3;
 }

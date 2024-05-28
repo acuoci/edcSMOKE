@@ -9,43 +9,26 @@ FoamFile
 {
     format      ascii;
     class       dictionary;
-    location    "system";
-    object      controlDict;
+    location    "constant";
+    object      physicalProperties;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-application     edcSimpleSMOKE;
+thermoType
+{
 
-startFrom       latestTime;
+    type            hePsiThermo;
+    mixture         multiComponentMixture;
+    transport       sutherland;
+    thermo          janaf;
+    energy          sensibleEnthalpy;
+    equationOfState perfectGas;
+    specie          specie;
+}
 
-startTime       0;
+inertSpecie N2;
 
-stopAt          endTime;
-
-endTime         100000;
-
-deltaT          1;
-
-writeControl    timeStep;
-
-writeInterval   1000;
-
-purgeWrite      0;
-
-writeFormat     ascii;
-
-writePrecision  12;
-
-writeCompression off;
-
-timeFormat      general;
-
-timePrecision   6;
-
-graphFormat     raw;
-
-runTimeModifiable true;
+#include "speciesThermo"
 
 // ************************************************************************* //
 
-// ************************************************************************* //

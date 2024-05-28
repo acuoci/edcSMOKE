@@ -9,43 +9,24 @@ FoamFile
 {
     format      ascii;
     class       dictionary;
-    location    "system";
-    object      controlDict;
+    location    "constant";
+    object      momentumTransport;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-application     edcSimpleSMOKE;
+simulationType   RAS;
 
-startFrom       latestTime;
+RAS
+{
+    model           kEpsilon;
 
-startTime       0;
+    kEpsilonCoeffs
+    {
+        Prt 0.85;
+    }
 
-stopAt          endTime;
-
-endTime         100000;
-
-deltaT          1;
-
-writeControl    timeStep;
-
-writeInterval   1000;
-
-purgeWrite      0;
-
-writeFormat     ascii;
-
-writePrecision  12;
-
-writeCompression off;
-
-timeFormat      general;
-
-timePrecision   6;
-
-graphFormat     raw;
-
-runTimeModifiable true;
-
-// ************************************************************************* //
+    turbulence      on;
+    printCoeffs     on;
+}
 
 // ************************************************************************* //

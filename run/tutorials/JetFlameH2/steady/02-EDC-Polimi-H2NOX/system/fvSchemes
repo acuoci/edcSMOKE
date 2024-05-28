@@ -1,52 +1,65 @@
 /*--------------------------------*- C++ -*----------------------------------*\
-| =========                 |                                                 |
-| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
-|  \\    /   O peration     | Version:  2.2.2                                 |
-|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
-|    \\/     M anipulation  |                                                 |
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  7
+     \\/     M anipulation  |
 \*---------------------------------------------------------------------------*/
 FoamFile
 {
     version     2.0;
     format      ascii;
     class       dictionary;
-    location    "system";
+    location    "system/reacting";
     object      fvSchemes;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 ddtSchemes
 {
-    default         steadyState;
+	default	      steadyState;
 }
 
 gradSchemes
 {
-    default         Gauss linear;
+	default         Gauss linear;
 }
 
 divSchemes
 {
-    default                        none;
-    div(phi,U)                     bounded Gauss upwind;
-    div(phi,h)                     bounded Gauss upwind;
-    div(phi,epsilon)               bounded Gauss upwind;
-    div(phi,k)                     bounded Gauss upwind;
-    div(phi,K)                     bounded Gauss upwind;
-    div(phi,Yi)                    Gauss limitedLinear01 1;
-    div((muEff*dev2(T(grad(U)))))  Gauss linear;
+	default none;
+
+	// Second-order discretization
+	/*
+	    div(phi,U)      			Gauss limitedLinearV 1;
+	    div(phi,Yi)   			Gauss limitedLinear01 1;
+	    div(phi,K)      			Gauss limitedLinear 1;
+	    div(phid,p)     			Gauss limitedLinear 1;
+	    div(phi,epsilon) 			Gauss limitedLinear 1;
+	    div(phi,k) 				Gauss limitedLinear 1;
+	    div(((rho*nuEff)*dev2(T(grad(U))))) Gauss linear;
+	*/
+
+	// First-order upwind
+	div(phi,U)      			bounded Gauss upwind;
+	div(phi,Yi)   				        Gauss upwind;
+	div(phi,Yi_h)   				Gauss upwind;
+	div(phi,K)      			bounded Gauss upwind;
+	div(phi,h)      			bounded Gauss upwind;
+	div(phid,p)     			bounded Gauss upwind;
+	div(phi,epsilon) 			bounded Gauss upwind;
+	div(phi,k) 				bounded Gauss upwind;
+	div(((rho*nuEff)*dev2(T(grad(U))))) 	Gauss linear;    
 }
 
 laplacianSchemes
 {
-    default         			Gauss linear corrected;
+    default         Gauss linear corrected;
 }
 
 interpolationSchemes
 {
-	default         	none;
-	interpolate((rho*HbyA))	linear;
-	interpolate(rho)	linear;
+    default         linear;
 }
 
 snGradSchemes
@@ -57,8 +70,7 @@ snGradSchemes
 fluxRequired
 {
     default         no;
-    p               ;
+    p;
 }
-
 
 // ************************************************************************* //

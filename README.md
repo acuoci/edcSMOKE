@@ -67,7 +67,7 @@ In order to pre-process a kinetic mechanisms, the operations to carry out are ve
 3. If everything works correctly, a `kinetics` folder will be created, including the preprocessed CHEMKIN files (in XML format). This is the folder which has to be supplied to the edcSMOKE++ solvers.
 
 # Tutorials
-## 1. Turbulent jet flame fed with H2 (unsteady simulation)
+## 1. Turbulent jet flame fed with H2
 In the first tutorial we are going to simulate a turbulent jet flame fed with pure H2, burning in regular air. The flame is unconfined. Since the fuel and oxidizer nozzles have a circular section, a 2D axysymmetric simulation is carried out.
 
 The tutorial is available in the [run/tutorials/JetFlameH2/unsteady/](run/tutorials/JetFlameH2/unsteady/) folder.
@@ -103,6 +103,15 @@ We are now ready to run the EDC simulation with a detailed kinetic mechanism (32
 4. Prepare the kinetic mechanism in the OpenFOAM format (please follow exactly the same procedure described for the ED model).
 5. Prepare the first guess (i.e., initial) solution. Copy the steady-state solution from the ED simulation (which we are assuming is at time 0.6 s): `cp -r ../01-ED-1step/0.6 0`. Remove the `uniform` folder: `rm -r 0/uniform`. Copy the `Ydefault` file: `cp ../01-ED-1step/0/Ydefault 0/`.
 6. We are now ready to run the simulation by means of the `edcPimpleSMOKE` solver. From the main folder, simply type: `edcPimpleSMOKE`. Since we start already from a steady-state simulation, the time needed to reach the new steady state conditions is smaller. In this specific example, about 0.2 s of simulation time are sufficient.
+
+#### 3. EDC (Eddy Dissipation Concept) staedy-state simulation
+The EDC model is computationally very expensive. Thus, if we are interested in the steady-state solution only, it is more convenient to solve the trasnport equations of mass, momentum, species and energy directly in their steady-state formulation, using the `edcSimpleSMOKE` steady-state solver. However, it is important that the edcSimpleSMOKE solver is applied only if a have a reasonable first-guess solution. 
+1. Go to the `run/tutorials/JetFlameH2/steady/02-EDC-Polimi-H2NOX` folder.
+2. Build the mesh using the `blockMesh` utility.
+3. Prepare the kinetic mechanism in the OpenSMOKE++ format (please follow exactly the same procedure described for the ED model).
+4. Prepare the kinetic mechanism in the OpenFOAM format (please follow exactly the same procedure described for the ED model).
+5. Prepare the first guess (i.e., initial) solution. Copy the steady-state solution from the unsteady EDC simulation (which we are assuming is at time 0.2 s): `cp -r ../../unsteady/02-EDC-Polimi-H2NOX/0.2/ 0`. Remove the `uniform` folder: `rm -r 0/uniform`.
+6. We are now ready to run the simulation by means of the `edcSimpleSMOKE` solver. From the main folder, simply type: `edcSimpleSMOKE`.
    
    
 [1]: https://www.opensmokepp.polimi.it/

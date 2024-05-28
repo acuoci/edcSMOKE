@@ -60,3 +60,11 @@ Kinetics_Summary.out
 ehthumbs.db
 Thumbs.db
 
+# edcSMOKE++ #
+##############
+**/kinetics/kinetics/
+p.Vessel
+**/constant/speciesThermo
+**/constant/reactions
+mybashrc.local
+

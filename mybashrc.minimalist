@@ -2,6 +2,11 @@
 export EIGEN_LIBRARY_PATH=/software/chimica2/libraries/eigen/eigen-3.4.0
 export BOOST_LIBRARY_PATH=/software/chimica2/libraries/boost/boost-1.78.0-gcc-9.2.0/
 
+
+# --------------------------------------------------- #
+# DO NOT MODIFY
+# --------------------------------------------------- #
+
 #Options: 1+M diffusion model
 export ONEPLUSM_SUPPORT='-DONEPLUSM=0'
 

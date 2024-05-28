@@ -94,6 +94,15 @@ The first step consists in running the unsteady simulation using the simplest tu
 3. Prepare the kinetic mechanism in the OpenSMOKE++ format. The kinetic mechanism is provided in the `kinetics` folder, which includes the usual CHEMKIN files for chemical reactions (`kinetics.cki`), thermodynamics (`therm.dat`), and transport properties (`tran.trc`). From the kinetics folder, run the `chemkin2OpenSMOKE++PreProcessor` utility to transform the kinetic mechanism from the CHEMKIN format to the OpenSMOKE++ format. If everything works well, a new subfolder with name `kinetics` will be created in the main `kinetics` folder.
 4. Prepare the kinetic mechanism in the OpenFOAM format. Unfortunately, the current version of edcSMOKE++ requires a double version of the kinetic mechanism, which must be included in the `chemkin` folder. This folder includes three file: the thermodynamic file which is exactly the same available in the `kinetics` folder (`therm.dat`); the kinetic mechanism file already provided in the `kinetics` folder, but without chemical reactions (i.e., it must include the list of species only, exactly in the same order); a file called `transportProperties` which is always the same, independently of the kinetic mechanism adopted. In order to process these three files and transform them in the OpenFOAM format, the `chemkinToFoam` utility must be used. From the main folder of the case, run the following command: `chemkinToFoam chemkin/kinetics.cki chemkin/therm.dat chemkin/transportProperties constant/reactions constant/speciesThermo`. If everything works properly, a `speciesThermo` and a `reactions` file will be created in the `constant` folder.
 5. We are now ready to run the simulation by means of the `edcPimpleSMOKE` solver. From the main folder, simply type: `edcPimpleSMOKE`. In this specific example, about 0.6 s of simulation time are needed to reach a steady-state solution.
-   
 
+#### 2. EDC (Eddy Dissipation Concept) simulation
+We are now ready to run the EDC simulation with a detailed kinetic mechanism (32 species and 173 rections) including also NOx chemistry. The starting point is obviously the steady-state solution obtained using the ED model (see step 1 above).    
+1. Go to the `run/tutorials/JetFlameH2/unsteady/02-EDC-Polimi-H2NOX` folder.
+2. Build the mesh using the `blockMesh` utility.
+3. Prepare the kinetic mechanism in the OpenSMOKE++ format (please follow exactly the same procedure described for the ED model).
+4. Prepare the kinetic mechanism in the OpenFOAM format (please follow exactly the same procedure described for the ED model).
+5. Prepare the first guess (i.e., initial) solution. Copy the steady-state solution from the ED simulation (which we are assuming is at time 0.6 s): `cp -r ../01-ED-1step/0.6 0`. Remove the `uniform` folder: `rm -r 0/uniform`. Copy the `Ydefault` file: `cp ../01-ED-1step/0/Ydefault 0/`.
+6. We are now ready to run the simulation by means of the `edcPimpleSMOKE` solver. From the main folder, simply type: `edcPimpleSMOKE`. Since we start already from a steady-state simulation, the time needed to reach the new steady state conditions is smaller. In this specific example, about 0.2 s of simulation time are sufficient.
+   
+   
 [1]: https://www.opensmokepp.polimi.it/

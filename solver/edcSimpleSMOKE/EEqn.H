@@ -44,66 +44,125 @@
 
 if (energyEquation == true)
 {
-	T.max(minT);
-    	T.min(maxT);
-
-	if (combustionModel == "EDC")
+	if (combustionModel == "laminar")
 	{
-		TStar_[0].max(minT);
-    		TStar_[0].min(maxT);
-	}
-	volScalarField& he = thermo.he();
+		T.max(minT);
+	    	T.min(maxT);
 
-	if (laminarDiffusion == true)
-	{
-		dimensionedScalar zero("zero", dimensionSet(1,-1,-3,0,0,0,0), scalar(0.)); 
-		massDiffusionInEnergyEquation = zero;
+		if (laminarDiffusion == true)
+		{
+			dimensionedScalar zero("zero", dimensionSet(1,-1,-3,0,0,0,0), scalar(0.)); 
+			massDiffusionInEnergyEquation = zero;
 
-		forAll(Y, i)
-		{ 
-			volScalarField& Yi = Y[i];
-			volScalarField& Dmixi = Dmix_[i];
-			volScalarField& HeSpeciesi = HeSpecies_[i];
+			forAll(Y, i)
+			{ 
+				volScalarField& Yi = Y[i];
+				volScalarField& Dmixi = Dmix_[i];
+				volScalarField& HeSpeciesi = HeSpecies_[i];
 
-			massDiffusionInEnergyEquation += HeSpeciesi* (fvc::laplacian(rho*Dmixi, Yi)); 
+				massDiffusionInEnergyEquation += HeSpeciesi* (fvc::laplacian(rho*Dmixi, Yi)); 
+			}
 		}
-	}
 
-	// Energy equation
-	{
-		
-		fvScalarMatrix EEqn
-		(
-			fvm::div(phi, he)
-		        + (
-			    he.name() == "e"
-			  ? fvc::div(phi, volScalarField("Ekp", 0.5*magSqr(U) + p/rho))
-			  : fvc::div(phi, volScalarField("K", 0.5*magSqr(U)))
-			  )
-			- fvm::laplacian(rho*turbulence->nut()/Prt, he)
-			- radiation->Sh(thermo, he)
-                        + massDiffusionInEnergyEquation
-			==
-			Qdot +
-			fvModels.source(rho, he)
-		);
+		// Energy equation
+		{
+			volScalarField& he = thermo.he();
 
-    		EEqn.relax();
+			fvScalarMatrix TEqn
+			(
+				  thermo.Cp()*fvm::div(phi, T)	    
+				==
+				  fvm::laplacian(rho*thermo.Cp()*turbulence->nut()/Prt,T) 
+		                + massDiffusionInEnergyEquation
+				+ ( radiation->Ru() - fvm::Sp(radiation->Rp()*pow3(T), T) )
+				+ sourceExplicit_[Y.size()] + fvm::Sp(sourceImplicit_[Y.size()],T)
+				+ thermo.Cp()*fvModels.source(rho, T)
+			);
 
-    		fvConstraints.constrain(EEqn);
+			TEqn.relax();
 
-   		EEqn.solve();
+			fvConstraints.constrain(TEqn);
 
-    		fvConstraints.constrain(he);
+			TEqn.solve("T");
 
-    		thermo.correct();
-    		radiation->correct();
-	}
+			fvConstraints.constrain(T);
 
-	T.max(minT);
-    	T.min(maxT);
+			Info<< " * T gas min/max (after transport)   = " << min(T).value() << ", " << max(T).value() << endl;
+
+	    		thermo.correct();
+	    		radiation->correct();
+		}
+
+		T.max(minT);
+	    	T.min(maxT);
 	
-	Info<< "min/max(T) = " << min(T).value() << ", " << max(T).value() << endl;
+		Info<< "min/max(T) = " << min(T).value() << ", " << max(T).value() << endl;
 
-	#include "sparkPatch.H"
+		#include "sparkPatch.H"
+	}
+	else
+	{
+		T.max(minT);
+	    	T.min(maxT);
+
+		if (combustionModel == "EDC")
+		{
+			TStar_[0].max(minT);
+	    		TStar_[0].min(maxT);
+		}
+		volScalarField& he = thermo.he();
+
+		if (laminarDiffusion == true)
+		{
+			dimensionedScalar zero("zero", dimensionSet(1,-1,-3,0,0,0,0), scalar(0.)); 
+			massDiffusionInEnergyEquation = zero;
+
+			forAll(Y, i)
+			{ 
+				volScalarField& Yi = Y[i];
+				volScalarField& Dmixi = Dmix_[i];
+				volScalarField& HeSpeciesi = HeSpecies_[i];
+
+				massDiffusionInEnergyEquation += HeSpeciesi* (fvc::laplacian(rho*Dmixi, Yi)); 
+			}
+		}
+
+		// Energy equation
+		{
+		
+			fvScalarMatrix EEqn
+			(
+				fvm::div(phi, he)
+				+ (
+				    he.name() == "e"
+				  ? fvc::div(phi, volScalarField("Ekp", 0.5*magSqr(U) + p/rho))
+				  : fvc::div(phi, volScalarField("K", 0.5*magSqr(U)))
+				  )
+				- fvm::laplacian(rho*turbulence->nut()/Prt, he)
+				- radiation->Sh(thermo, he)
+		                + massDiffusionInEnergyEquation
+				==
+				Qdot +
+				fvModels.source(rho, he)
+			);
+
+	    		EEqn.relax();
+
+	    		fvConstraints.constrain(EEqn);
+
+	   		EEqn.solve();
+
+	    		fvConstraints.constrain(he);
+
+	    		thermo.correct();
+	    		radiation->correct();
+		}
+
+		T.max(minT);
+	    	T.min(maxT);
+	
+		Info<< "min/max(T) = " << min(T).value() << ", " << max(T).value() << endl;
+
+		#include "sparkPatch.H"
+	}
 }

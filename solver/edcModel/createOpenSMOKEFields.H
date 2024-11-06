@@ -483,10 +483,18 @@ Switch pasrOldIntegrationTime = true;
 		// Characteristic chemical type options
 		pasrOldIntegrationTime = Switch(PaSRSubDictionary.lookupOrDefault(word("pasrOldIntegrationTime"), word("on")));
 	}
+	// Laminar model Constants
+	else if (combustionModel == "laminar")
+	{
+		combustion_model_tag = "laminar";
+
+		numberIterationsToUpdateChemistry = 1;
+		counterToUpdateChemistry = numberIterationsToUpdateChemistry;
+	}
 	// Error Message
 	else
 	{
-		FatalError << "Combustion model available: ED || EDFR || EDC || PaSR" << endl;
+		FatalError << "Combustion model available: ED || EDFR || EDC || PaSR || laminar" << endl;
 	}
 
 
@@ -527,10 +535,10 @@ Switch pasrOldIntegrationTime = true;
 	}
 }
 
-// Ode parameters
+// Ode parameters for fine structures
 OpenSMOKE::ODE_Parameters odeParametersFineStructures;
 
-if (combustionModel == "EDC" || combustionModel == "PaSR")
+if (combustionModel == "EDC" || combustionModel == "PaSR" || combustionModel == "laminar")
 {
 	const dictionary& odeParametersFineStructuresDictionary = combustionOptionsDictionary.subDict("Ode");
 
@@ -577,7 +585,7 @@ if (combustionModel == "EDC" || combustionModel == "PaSR")
 // Nls parameters
 NonLinearSystemParameters nlsParametersFineStructures;
 
-if (combustionModel == "EDC")
+if (combustionModel == "EDC" || combustionModel == "laminar")
 {
 	const dictionary& nlsParametersFineStructuresDictionary = combustionOptionsDictionary.subDict("Nls");
 
@@ -803,7 +811,7 @@ volScalarField kappa
 		);
 
 		// check if field exists and can be read
-		if (combustionModel == "EDC" || combustionModel == "PaSR")
+		if (combustionModel == "EDC" || combustionModel == "PaSR" || combustionModel == "laminar")
 		{
 			if (header.headerOk())
 			{
@@ -915,7 +923,7 @@ volScalarField kappa
 }
 
 // TStar
-if (combustionModel == "EDC" || combustionModel == "PaSR")
+if (combustionModel == "EDC" || combustionModel == "PaSR" || combustionModel == "laminar")
 {
 	std::cout << " * Reading TStar field..." << std::endl;
 	{
@@ -973,6 +981,118 @@ if (combustionModel == "EDC" || combustionModel == "PaSR")
 		}
 	}
 }
+
+// Source terms
+#if STEADYSTATE == 1
+
+//- Chemical source terms: implicit contribution
+PtrList<volScalarField> sourceImplicit_;
+
+//- Chemical source terms: explicit contribution
+PtrList<volScalarField> sourceExplicit_;
+
+//- Saved Jacobian matrix
+std::vector<Eigen::VectorXd> Jstored_;
+
+//- Chemistry linear model
+autoPtr<ChemistryLinearModel> chemistryLinearModel_;
+
+
+if (combustionModel == "laminar")
+{
+	Info << " * Allocating memory for implicit/explicit chemical source terms..." << endl;
+	{
+		chemistryLinearModel_.reset( new ChemistryLinearModel(mesh, *thermodynamicsMapXML, *kineticsMapXML) );
+			
+		if (chemistryLinearModel_().jacobianUpdate() != 1)
+		{
+			Jstored_.resize(mesh.nCells());
+			for(int i=0;i<mesh.nCells();i++)
+				Jstored_[i].resize(Y.size()+1);
+		}
+
+		sourceImplicit_.resize(Y.size()+1);
+		sourceExplicit_.resize(Y.size()+1);
+
+		forAll(Y,i)
+		{
+			sourceImplicit_.set
+			(
+				i,
+				new volScalarField
+				(
+					IOobject
+					(
+						"mix:SI_" + Y[i].name(),
+						mesh.time().timeName(),
+						mesh,
+						IOobject::NO_READ,
+						IOobject::NO_WRITE
+					),
+					mesh,
+					dimensionedScalar("mix:SI", dimensionSet(1, -3, -1, 0, 0), 0.0)
+				)
+			);
+
+			sourceExplicit_.set
+			(
+				i,
+				new volScalarField
+				(
+					IOobject
+					(
+						"mix:SE_" + Y[i].name(),
+						mesh.time().timeName(),
+						mesh,
+						IOobject::NO_READ,
+						IOobject::NO_WRITE
+					),
+					mesh,
+					dimensionedScalar("mix:SE", dimensionSet(1, -3, -1, 0, 0), 0.0)
+				)
+			);
+		}
+
+		sourceImplicit_.set
+		(
+			Y.size(),
+			new volScalarField
+			(
+				IOobject
+				(
+					"mix:SI_T",
+					mesh.time().timeName(),
+					mesh,
+					IOobject::NO_READ,
+					IOobject::NO_WRITE
+				),
+				mesh,
+				dimensionedScalar("mix:SI_T", dimensionSet(1, -1, -3, -1, 0), 0.0)
+			)
+		);
+
+		sourceExplicit_.set
+		(
+			Y.size(),
+			new volScalarField
+			(
+				IOobject
+				(
+					"mix:SE_T",
+					mesh.time().timeName(),
+					mesh,
+					IOobject::NO_READ,
+					IOobject::NO_WRITE
+				),
+				mesh,
+				dimensionedScalar("mix:SE_T", dimensionSet(1, -1, -3, 0, 0), 0.0)
+			)
+		);
+	}
+
+}
+
+#endif
 
 volScalarField Qdot
 (
@@ -1055,7 +1175,7 @@ volScalarField one_over_tauStar
 }
 
 // Normalize the mass fractions (fine structures)
-if (combustionModel == "EDC" || combustionModel == "PaSR")
+if (combustionModel == "EDC" || combustionModel == "PaSR" || combustionModel == "laminar")
 {
 	Info << "Normalizing mass fractions (on entry...)" << endl;
 
@@ -1232,11 +1352,17 @@ ODE_PFR fine_structure_ode_pfr(*thermodynamicsMapXML, *kineticsMapXML);
 if (odeParametersFineStructures.type() != OpenSMOKE::ODE_Parameters::ODE_INTEGRATOR_OPENSMOKE)
 	fine_structure_ode_pfr.SetCheckMassFractions(true);
 
-// ODE Solvers
+// ODE Solvers (EDC)
 typedef OdeSMOKE::KernelDense<OpenSMOKE::ODE_PFR_OpenSMOKE> denseOdePFR;
 typedef OdeSMOKE::MethodGear<denseOdePFR> methodGearPFR;
 OdeSMOKE::MultiValueSolver<methodGearPFR> odeSolverPFR;
 odeSolverPFR.SetReactor(&fine_structure_ode_pfr);
+
+// ODE Solvers (laminar)
+typedef OdeSMOKE::KernelDense<OpenSMOKE::ODE_PFR_Laminar_OpenSMOKE> denseOdePFRLaminar;
+typedef OdeSMOKE::MethodGear<denseOdePFR> methodGearPFRLaminar;
+OdeSMOKE::MultiValueSolver<methodGearPFR> odeSolverPFRLaminar;
+odeSolverPFRLaminar.SetReactor(&fine_structure_ode_pfr);
 
 // External ODE solvers (requires third-party libraries)
 #if OPENSMOKE_USE_DVODE == 1

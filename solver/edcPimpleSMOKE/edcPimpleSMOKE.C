@@ -89,6 +89,8 @@
 #include "ODE_PSR_Interface.H"
 #include "ODE_PFR.H"
 #include "ODE_PFR_Interface.H"
+#include "ODE_PFR_Laminar.H"
+#include "ODE_PFR_Laminar_Interface.H"
 
 // NLS Systems
 #include "NLS_PSR.H"

@@ -42,14 +42,67 @@
 |                                                                         |
 \*-----------------------------------------------------------------------*/
 
-if (homogeneousReactions == true)
+#ifndef ODE_PFR_Laminar_H
+#define ODE_PFR_Laminar_H
+
+namespace OpenSMOKE
 {
-	if (combustionModel == "ED" || combustionModel == "EDFR")
-		#include "EDFR.H"
-	else if (combustionModel == "EDC")
-		#include "EDC.H"
-	else if (combustionModel == "PaSR")
-		#include "PaSR.H"
-	else if (combustionModel == "laminar")
-		#include "laminar.H"
+	class ThermodynamicsMap_CHEMKIN;
+	class KineticsMap_CHEMKIN;
 }
+
+class ODE_PFR_Laminar
+{
+public:
+
+	ODE_PFR_Laminar(	OpenSMOKE::ThermodynamicsMap_CHEMKIN& 		thermodynamicsMapXML, 
+				OpenSMOKE::KineticsMap_CHEMKIN& 		kineticsMapXML);
+
+	void Set(const double P0_Pa)
+	{
+		P_Pa_ = P0_Pa;
+	}
+
+	// Set debug
+	void SetDebug(const double flag)
+	{
+		debug_ = flag;
+	}
+
+	void SetCheckMassFractions( const bool flag ) { checkMassFractions_ = flag; };
+	unsigned int NumberOfEquations() const { return number_of_equations_; }
+
+	int Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y, OpenSMOKE::OpenSMOKEVectorDouble& dy);
+	int Print(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y);
+
+private:
+
+	unsigned int number_of_equations_;
+	unsigned int number_of_gas_species_;
+	unsigned int number_of_reactions_;
+
+	double P_Pa_;
+	double MWStar_;
+	double cTotStar_;
+	double rhoStar_;
+	double cpStar_;
+
+	OpenSMOKE::ThermodynamicsMap_CHEMKIN& 	thermodynamicsMapXML_;
+	OpenSMOKE::KineticsMap_CHEMKIN& 	kineticsMapXML_;
+
+	OpenSMOKE::OpenSMOKEVectorDouble omegaStar_;
+	OpenSMOKE::OpenSMOKEVectorDouble xStar_;
+	OpenSMOKE::OpenSMOKEVectorDouble cStar_;
+	OpenSMOKE::OpenSMOKEVectorDouble RStar_;
+	OpenSMOKE::OpenSMOKEVectorDouble rStar_;
+
+	bool checkMassFractions_;
+	bool energyEquation_;
+
+	bool debug_;
+};
+
+#include "ODE_PFR_Laminar.C"
+
+#endif // ODE_PFR_Laminar_H
+

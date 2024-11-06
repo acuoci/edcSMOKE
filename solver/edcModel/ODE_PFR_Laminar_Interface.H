@@ -42,14 +42,38 @@
 |                                                                         |
 \*-----------------------------------------------------------------------*/
 
-if (homogeneousReactions == true)
+#include "math/OpenSMOKEVector.h"
+#include "math/external-ode-solvers/OpenSMOKE_OdeSystemObject.h"
+
+#include "ODE_PFR_Laminar.H"
+
+#ifndef ODE_PFR_Laminar_Interface_H
+#define ODE_PFR_Laminar_Interface_H
+
+namespace OpenSMOKE
 {
-	if (combustionModel == "ED" || combustionModel == "EDFR")
-		#include "EDFR.H"
-	else if (combustionModel == "EDC")
-		#include "EDC.H"
-	else if (combustionModel == "PaSR")
-		#include "PaSR.H"
-	else if (combustionModel == "laminar")
-		#include "laminar.H"
+	class ODE_PFR_Laminar_OpenSMOKE : public ODESystemVirtualClassWithOpenSMOKEVectors
+	{
+	public:
+
+		ODE_PFR_Laminar_OpenSMOKE() {};
+
+		void SetReactor(ODE_PFR_Laminar* reactor) { reactor_ = reactor; }
+
+		virtual void GetEquations(const OpenSMOKE::OpenSMOKEVectorDouble& y, const double t, OpenSMOKE::OpenSMOKEVectorDouble& dy)
+		{
+			reactor_->Equations(t, y, dy);
+		}
+		virtual void PrintResults(const OpenSMOKE::OpenSMOKEVectorDouble& y, const double t)
+		{
+			reactor_->Print(t, y);
+		}
+
+	private:
+
+		ODE_PFR_Laminar* reactor_;
+	};
 }
+
+#endif // ODE_PFR_Laminar_Interface_H
+

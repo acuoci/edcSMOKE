@@ -53,6 +53,113 @@ tmp<fv::convectionScheme<scalar> > mvConvection
 	)
 );
 
+if (combustionModel == "laminar")
+{
+	reaction->correct();
+	#include "chemistry.H"
+
+	label inertIndex = -1;
+	volScalarField Yt(0.0*Y[0]);
+
+	scalar cpuTimeSolve = 0.;
+
+	const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
+
+	if (laminarDiffusion == true)
+	{
+
+		forAll(Y, i)
+		{
+			if (Y[i].name() != inertSpecie)
+			{
+				volScalarField& Yi = Y[i];
+				volScalarField& Dmixi = Dmix_[i];
+
+				fvScalarMatrix YiEqn
+				(
+					mvConvection->fvmDiv(phi, Yi)
+					- fvm::laplacian(rho*(Dmixi+turbulence->nut()/Sct), Yi)
+					==
+					sourceExplicit_[i] + fvm::Sp(sourceImplicit_[i],Yi)
+					+ fvModels.source(rho, Yi)
+				);
+
+				YiEqn.relax();
+
+				fvConstraints.constrain(YiEqn);
+
+				const double tStartSolve = OpenSMOKE::OpenSMOKEGetCpuTime();
+
+                                YiEqn.solve("Yi");
+
+                                const double tEndSolve = OpenSMOKE::OpenSMOKEGetCpuTime();
+
+				cpuTimeSolve += tEndSolve - tStartSolve;
+                                Info << " * CPU time for species solve : " << tEndSolve - tStartSolve << endl;
+
+				fvConstraints.constrain(Yi);
+
+				Yi.max(0.0);
+				Yt += Yi;
+			}
+			else
+			{
+				inertIndex = i;
+			}
+		}
+	}
+	else
+	{
+		forAll(Y, i)
+		{
+			if (Y[i].name() != inertSpecie)
+			{
+				volScalarField& Yi = Y[i];
+
+				fvScalarMatrix YiEqn
+				(
+					mvConvection->fvmDiv(phi, Yi)
+					- fvm::laplacian(rho*turbulence->nuEff()/Sct, Yi)
+					==
+					sourceExplicit_[i] + fvm::Sp(sourceImplicit_[i],Yi)
+					+ fvModels.source(rho, Yi)
+				);
+
+				YiEqn.relax();
+
+				fvConstraints.constrain(YiEqn);
+
+				const double tStartSolve = OpenSMOKE::OpenSMOKEGetCpuTime();
+
+                                YiEqn.solve("Yi");
+
+                                const double tEndSolve = OpenSMOKE::OpenSMOKEGetCpuTime();
+
+				cpuTimeSolve += tEndSolve - tStartSolve;
+                                Info << " * CPU time for species solve : " << tEndSolve - tStartSolve << endl;
+
+				fvConstraints.constrain(Yi);
+
+				Yi.max(0.0);
+				Yt += Yi;
+			}
+			else
+			{
+				inertIndex = i;
+			}
+		}
+	}
+
+	Y[inertIndex] = scalar(1.0) - Yt;
+	Y[inertIndex].max(0.0);
+
+	const double tEnd = OpenSMOKE::OpenSMOKEGetCpuTime();
+
+        Info << "CPU time for species transport (overall): " << tEnd - tStart << " s " << "(" << (tEnd - tStart)/double(mesh.C().size())*1e3 << " ms per cell)" << endl;
+        Info << "CPU time for species transport (solve):   " << cpuTimeSolve << " s " << "(" << (cpuTimeSolve)/double(mesh.C().size())*1e3 << " ms per cell)" << endl;
+}
+
+else
 {
 	reaction->correct();
 	#include "chemistry.H"

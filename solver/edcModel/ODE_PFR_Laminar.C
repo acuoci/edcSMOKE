@@ -42,129 +42,111 @@
 |                                                                         |
 \*-----------------------------------------------------------------------*/
 
-// This is a steady state simulation
-#define STEADYSTATE 1
+// OpenSMOKE
+#include "OpenSMOKE_Definitions.h"
+#include <string>
+#include <iostream>
+#include <numeric>
+#include <Eigen/Dense>
 
-// OpenSMOKE++ Definitions
-#include "OpenSMOKEpp"
+// Base classes
+#include "kernel/thermo/ThermoPolicy_CHEMKIN.h"
+#include "kernel/kinetics/ReactionPolicy_CHEMKIN.h"
+#include "math/PhysicalConstants.h"
+#include "math/OpenSMOKEUtilities.h"
 
-// CHEMKIN maps
-#include "maps/Maps_CHEMKIN"
-
-// OpenSMOKE++ Dictionaries
-#include "dictionary/OpenSMOKE_Dictionary"
-
-// ODE solvers
-#include "math/native-ode-solvers/MultiValueSolver"
-#include "math/external-ode-solvers/ODE_Parameters.h"
-
-// NLS solvers
-#include "math/native-nls-solvers/NonLinearSystemSolver"
-#include "math/native-nls-solvers/parameters/NonLinearSolver_Parameters.h"
-
-// OpenFOAM
-#include "fvCFD.H"
-#include "fluidReactionThermo.H"
-#include "combustionModel.H"
-#include "compressibleMomentumTransportModels.H"
-#include "fluidReactionThermophysicalTransportModel.H"
-#include "multivariateScheme.H"
-#include "simpleControl.H"
-#include "pressureReference.H"
-#include "fvModels.H"
-#include "fvConstraints.H"
-#include "radiationModel.H"
-#include "ChemistryLinearModel.H"
-
-// Utilities
-#include "Utilities.H"
-
-// ODE system
+// DRG
 #include "DRG.H"
-#include "ODE_PSR.H"
-#include "ODE_PSR_Interface.H"
-#include "ODE_PFR.H"
-#include "ODE_PFR_Interface.H"
-#include "ODE_PFR_Laminar.H"
-#include "ODE_PFR_Laminar_Interface.H"
 
-// NLS Systems
-#include "NLS_PSR.H"
-#include "NLS_PSR_Interface.H"
-
-// Characteristic chemical times
-#include "CharacteristicChemicalTimes.H"
-
-// ISAT
-#if EDCSMOKE_USE_ISAT == 1
-    #include "ISAT.h"
-    #include "numericalJacobian4ISAT.H"
-    #include "mappingGradients/mappingGradient4OpenFOAM.h"
-#endif
+// Maps
+#include "maps/ThermodynamicsMap_CHEMKIN.h"
+#include "maps/KineticsMap_CHEMKIN.h"
 
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-int main(int argc, char *argv[])
+ODE_PFR_Laminar::ODE_PFR_Laminar(
+	OpenSMOKE::ThermodynamicsMap_CHEMKIN& thermodynamicsMapXML, 
+	OpenSMOKE::KineticsMap_CHEMKIN& kineticsMapXML) :
+	thermodynamicsMapXML_(thermodynamicsMapXML),
+	kineticsMapXML_(kineticsMapXML)
 {
-    unsigned int runTimeStep = 0;
+	number_of_gas_species_ = thermodynamicsMapXML_.NumberOfSpecies();
+	number_of_reactions_ = kineticsMapXML_.NumberOfReactions();
+	number_of_equations_ = number_of_gas_species_ + 1 + 2;	// species and temperature + 2 dummy variables
 
-	#include "postProcess.H"
+	ChangeDimensions(number_of_gas_species_, &omegaStar_, true);
+	ChangeDimensions(number_of_gas_species_, &xStar_, true);
+	ChangeDimensions(number_of_gas_species_, &cStar_, true);
+	ChangeDimensions(number_of_gas_species_, &RStar_, true);
+	ChangeDimensions(number_of_reactions_, 	 &rStar_, true);
 
-	#include "setRootCaseLists.H"
-	#include "createTime.H"
-	#include "createMesh.H"
-        #include "readGravitationalAcceleration.H"
-	#include "createControl.H"
-	#include "createFields.H"
-        #include "createOpenSMOKEFields.H"
-	#include "createRadiationModel.H"
-	#include "initContinuityErrs.H"
+	checkMassFractions_ = false;
+	energyEquation_ = true;
+	debug_ = false;
+}
 
-	turbulence->validate();
-
-
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-    Info<< "\nStarting time loop\n" << endl;
-
-    while (simple.loop(runTime))
-    {
-        Info<< "Time = " << runTime.userTimeName() << nl << endl;
-
-        fvModels.correct();
-
-	if (momentumEquations == true)
-	{
-		// Pressure-velocity SIMPLE corrector
-		{
-		    #include "UEqn.H"
-		    #include "properties.H"
-		    #include "YEqn.H"
-		    #include "EEqn.H"
-		    #include "pEqn.H"
-		}
+int ODE_PFR_Laminar::Equations(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y, OpenSMOKE::OpenSMOKEVectorDouble& dy)
+{
+	// Recover mass fractions
+	if (checkMassFractions_ == true)
+	{	for(unsigned int i=1;i<=number_of_gas_species_;++i)
+			omegaStar_[i] = min(1., max(y[i], 0.)); 
 	}
 	else
 	{
-		#include "properties.H"
-		#include "YEqn.H"
-		#include "EEqn.H"
+		for(unsigned int i=1;i<=number_of_gas_species_;++i)
+			omegaStar_[i] = y[i];
+	}
+	// Recover temperature
+	const double TStar_ = y[number_of_gas_species_+1];
+
+	// Recover dummy variables
+	// There are 2 additional dummy variables (not needed to recover them)
+
+	// Calculates the pressure and the concentrations of species
+	thermodynamicsMapXML_.MoleFractions_From_MassFractions(xStar_.GetHandle(), MWStar_, omegaStar_.GetHandle());
+	cTotStar_ = P_Pa_/(PhysicalConstants::R_J_kmol * TStar_);
+	rhoStar_ = cTotStar_*MWStar_;
+	Product(cTotStar_, xStar_, &cStar_);
+
+	// Calculates thermodynamic properties
+	thermodynamicsMapXML_.SetTemperature(TStar_);
+	thermodynamicsMapXML_.SetPressure(P_Pa_);
+	cpStar_ = thermodynamicsMapXML_.cpMolar_Mixture_From_MoleFractions(xStar_.GetHandle());
+	cpStar_/=MWStar_;
+
+	// Calculates kinetics
+	kineticsMapXML_.SetTemperature(TStar_);
+	kineticsMapXML_.SetPressure(P_Pa_);
+	kineticsMapXML_.ReactionEnthalpiesAndEntropies();
+	kineticsMapXML_.KineticConstants();
+	kineticsMapXML_.ReactionRates(cStar_.GetHandle());
+	kineticsMapXML_.FormationRates(RStar_.GetHandle());
+
+	// Recovering residuals
+	for (unsigned int i=1;i<=number_of_gas_species_;++i)	
+		dy[i] = thermodynamicsMapXML_.MW(i-1)*RStar_[i]/rhoStar_;
+
+	if (energyEquation_ == true)
+	{	
+		const double Q = 0.; // radiation contribution
+		const double QRStar_ = kineticsMapXML_.HeatRelease(RStar_.GetHandle());
+		dy[number_of_gas_species_+1] = (QRStar_ - Q)/(rhoStar_*cpStar_);
+	}
+	else		
+	{
+		dy[number_of_gas_species_+1] = 0.;
 	}
 
-        turbulence->correct();
+	// Dummy equations
+	dy[number_of_gas_species_+2] = 0.;
+	dy[number_of_gas_species_+3] = 0.;
 
-        runTime.write();
-
-        Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
-            << "  ClockTime = " << runTime.elapsedClockTime() << " s"
-            << nl << endl;
-    }
-
-    Info<< "End\n" << endl;
-
-    return 0;
+	return 0;
 }
 
+int ODE_PFR_Laminar::Print(const double t, const OpenSMOKE::OpenSMOKEVectorDouble& y)
+{
+	//std::cout << t << std::endl;
+	return 0;
+}
 
-// ************************************************************************* //

@@ -193,6 +193,11 @@
 		}
 	}
 
+	if (combustionModel == "laminar")
+	{
+		
+	}
+
 	if (combustionModel == "PaSR")
 	{
 		#if STEADYSTATE == 0

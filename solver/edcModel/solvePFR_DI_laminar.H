@@ -42,14 +42,27 @@
 |                                                                         |
 \*-----------------------------------------------------------------------*/
 
-if (homogeneousReactions == true)
-{
-	if (combustionModel == "ED" || combustionModel == "EDFR")
-		#include "EDFR.H"
-	else if (combustionModel == "EDC")
-		#include "EDC.H"
-	else if (combustionModel == "PaSR")
-		#include "PaSR.H"
-	else if (combustionModel == "laminar")
-		#include "laminar.H"
+{	
+	// Set initial conditions
+	odeSolverPFRLaminar.SetInitialConditions(0, yStar0);
+
+	// Additional ODE solver options
+	//if (celli == 0)
+	{
+		// Set linear algebra options
+		odeSolverPFRLaminar.SetLinearAlgebraSolver(odeParametersFineStructures.linear_algebra());
+		odeSolverPFRLaminar.SetFullPivoting(odeParametersFineStructures.full_pivoting());
+
+		// Set relative and absolute tolerances
+		odeSolverPFRLaminar.SetAbsoluteTolerances(odeParametersFineStructures.absolute_tolerance());
+		odeSolverPFRLaminar.SetRelativeTolerances(odeParametersFineStructures.relative_tolerance());
+
+		// Set minimum and maximum values
+		odeSolverPFRLaminar.SetMinimumValues(yMin);
+		odeSolverPFRLaminar.SetMaximumValues(yMax);
+	}
+						
+	// Solve
+	OdeSMOKE::OdeStatus status = odeSolverPFRLaminar.Solve(deltat);
+	odeSolverPFRLaminar.Solution(yStarf);
 }

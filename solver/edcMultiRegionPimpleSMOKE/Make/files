@@ -1,0 +1,6 @@
+fluid/compressibleCourantNo.C
+solid/solidRegionDiffNo.C
+edcMultiRegionPimpleSMOKE.C
+
+EXE = $(FOAM_USER_APPBIN)/edcMultiRegionPimpleSMOKE
+

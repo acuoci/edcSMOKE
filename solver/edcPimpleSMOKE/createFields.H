@@ -42,8 +42,6 @@
 |                                                                         |
 \*-----------------------------------------------------------------------*/
 
-#include "createRDeltaT.H"
-
 Info<< nl << "Reading thermophysicalProperties" << endl;
 
 autoPtr<fluidReactionThermo> pThermo
@@ -87,9 +85,11 @@ const volScalarField& psi = thermo.psi();
 
 #include "compressibleCreatePhi.H"
 
-pressureReference pressureReference(p, pimple.dict(), false);
-mesh.schemes().setFluxRequired(p.name());
+#if MULTIREGIONSOLVER == 1
 
+#else
+
+pressureReference pressureReference(p, pimple.dict(), false);
 
 dimensionedScalar rhoMax
 (
@@ -112,6 +112,11 @@ dimensionedScalar rhoMin
 	0
     )
 );
+
+#endif
+
+mesh.schemes().setFluxRequired(p.name());
+
 
 Info << "Creating turbulence model.\n" << nl;
 autoPtr<compressible::momentumTransportModel> turbulence

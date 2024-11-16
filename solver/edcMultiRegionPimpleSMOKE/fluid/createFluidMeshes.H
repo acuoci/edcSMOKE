@@ -7,8 +7,7 @@
 
     forAll(fluidNames, i)
     {
-        Info<< "Create fluid mesh for region " << fluidNames[i]
-            << " for time = " << runTime.timeName() << nl << endl;
+        Info << "Create fluid mesh for region " << fluidNames[i] << " for time = " << runTime.timeName() << nl << endl;
 
         fluidRegions.set
         (
@@ -25,3 +24,6 @@
             )
         );
     }
+
+    if (fluidNames[0] != "reacting")
+	FatalErrorIn(args.executable()) << "The first fluid mesh must have reacting name" << exit(FatalError);

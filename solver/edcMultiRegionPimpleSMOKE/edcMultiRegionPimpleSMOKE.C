@@ -26,7 +26,7 @@
 |                                                                         |
 |	License                                                           |
 |                                                                         |
-|   Copyright(C) 2017-2014 A. Cuoci, A. Parente                           |
+|   Copyright(C) 2024-2014 A. Cuoci, A. Parente                           |
 |   edcSMOKE is free software: you can redistribute it and/or modify      |
 |   it under the terms of the GNU General Public License as published by  |
 |   the Free Software Foundation, either version 3 of the License, or     |
@@ -133,28 +133,20 @@ int main(int argc, char *argv[])
 	pimpleMultiRegionControl pimples(fluidRegions, solidRegions);
 	
 	#include "createFields.H"
+	#include "createNonReactingFields.H"
         #include "createSolidFields.H"
 
 	#include "readGravitationalAcceleration.H"
 	#include "createOpenSMOKEFields.H"
 	#include "createRadiationModel.H"
 	#include "initContinuityErrs.H"
-
-	// Complete pressure controls (the fluid region is unique)
-	pimpleNoLoopControl& pimple = pimples.pimple(0);
-	pressureReference pressureReference(p, pimple.dict(), false);
-	scalar cumulativeContErr = 0.;
-
-	// This solver does not support moving mesh but it uses the pressure
-	// equation of one which does, so we need a dummy face-momentum field
-	autoPtr<surfaceVectorField> rhoUf(nullptr);
-
+	#include "createFluidPressureControls.H"
 
 	#include "createTimeControls.H"
 	#include "readSolidTimeControls.H"
 	#include "compressibleMultiRegionCourantNo.H"
 	#include "solidRegionDiffusionNo.H"
-	#include "setInitialMultiRegionDeltaT.H"
+	#include "setInitialMultiRegionDeltaT.H"	
 
 	unsigned int runTimeStep = 0;
 
@@ -193,11 +185,30 @@ int main(int argc, char *argv[])
 					#include "solveSolid.H"
 				}
 
-				forAll(fluidRegions, i)
+				// Reacting region
 				{
-					Info << "\nSolving for fluid region " << fluidRegions[i].name() << endl;
+					Info << "\nSolving for reacting fluid region " << fluidRegions[0].name() << endl;
+
+					// Set reacting fluid fields
+					pimpleNoLoopControl& pimple = pimples.pimple(0);
+					pressureReference& pressureReference = pressureReferenceFluid[0];
+					scalar cumulativeContErr = cumulativeContErrs[0];
+
+					// This solver does not support moving mesh but it uses the pressure
+					// equation of one which does, so we need a dummy face-momentum field
+					autoPtr<surfaceVectorField> rhoUf(nullptr);
+			
 					#include "solveFluid.H"
 				}
+
+				// Non reacting regions
+				for(int i=1;i<fluidRegions.size();i++)
+				{
+					Info << "\nSolving for non-reacting fluid region " << fluidRegions[i].name() << endl;
+					#include "setRegionFluidFields.H"
+					#include "solveNonReactingFluid.H"
+				}
+				
 			}
 		}
 
@@ -208,177 +219,8 @@ int main(int argc, char *argv[])
 			<< nl << endl;
 	}
 
-	Info<< "End\n" << endl;
+	Info << "End\n" << endl;
 
 	return 0;
 }
 
-
-/*
-int main(int argc, char *argv[])
-{
-    unsigned int runTimeStep = 0;
-
-        #define NO_CONTROL
-        #define CREATE_MESH createMeshesPostProcess.H
-        #include "postProcess.H"
-
-        #include "setRootCaseLists.H"
-        #include "createTime.H"
-        #include "createMeshes.H"
-	pimpleMultiRegionControl pimples(fluidRegions, solidRegions);
-	#include "readGravitationalAcceleration.H"
-	#include "createDyMControls.H"
-	#include "initContinuityErrs.H"
-	#include "createFields.H"
-	#include "createOpenSMOKEFields.H"
-	#include "createRhoUfIfPresent.H"
-
-	#include "createRadiationModel.H"
-
-	turbulence->validate();
-
-	if (!LTS)
-	{
-		#include "compressibleCourantNo.H"
-		#include "setInitialDeltaT.H"
-	}
-
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-    Info<< "\nStarting time loop\n" << endl;
-
-    while (runTime.run())
-    {
-        #include "readDyMControls.H"
-
-        // Store divrhoU from the previous mesh so that it can be mapped
-        // and used in correctPhi to ensure the corrected phi has the
-        // same divergence
-        autoPtr<volScalarField> divrhoU;
-        if (correctPhi)
-        {
-            divrhoU = new volScalarField
-            (
-                "divrhoU",
-                fvc::div(fvc::absolute(phi, rho, U))
-            );
-        }
-
-        if (LTS)
-        {
-            #include "setRDeltaT.H"
-        }
-        else
-        {
-            #include "compressibleCourantNo.H"
-            #include "setDeltaT.H"
-        }
-
-        fvModels.preUpdateMesh();
-
-        // Store momentum to set rhoUf for introduced faces.
-        autoPtr<volVectorField> rhoU;
-        if (rhoUf.valid())
-        {
-            rhoU = new volVectorField("rhoU", rho*U);
-        }
-
-        // Update the mesh for topology change, mesh to mesh mapping
-        mesh.update();
-
-
-        runTime++;
-	runTimeStep++;
-        Info<< "Time = " << runTime.timeName() << nl << endl;
-
-
-        // --- Pressure-velocity PIMPLE corrector loop
-        while (pimple.loop())
-        {
-            if (!pimple.flow())
-            {
-                if (pimple.models())
-                {
-                    fvModels.correct();
-                }
-
-                if (pimple.thermophysics())
-                {
-		    #include "properties.H"
-		    #include "YEqn.H"
-		    #include "EEqn.H"
-                }
-            }
-            else
-            {
-                if (pimple.firstPimpleIter() || moveMeshOuterCorrectors)
-                {
-                    // Move the mesh
-                    mesh.move();
-
-                    if (mesh.changing())
-                    {
-                        MRF.update();
-
-                        if (correctPhi)
-                        {
-                            #include "correctPhi.H"
-                        }
-
-                        if (checkMeshCourantNo)
-                        {
-                            #include "meshCourantNo.H"
-                        }
-                    }
-                }
-
-                if (pimple.firstPimpleIter() && !pimple.simpleRho())
-                {
-                    #include "rhoEqn.H"
-                }
-
-                if (pimple.models())
-                {
-                    fvModels.correct();
-                }
-
-                #include "UEqn.H"
-
-                if (pimple.thermophysics())
-                {
-                    #include "properties.H"
-		    #include "YEqn.H"
-		    #include "EEqn.H"
-                }
-
-                // --- Pressure corrector loop
-                while (pimple.correct())
-                {
-                    #include "pEqn.H"
-                }
-
-                if (pimple.turbCorr())
-                {
-                    turbulence->correct();
-                }
-            }
-        }
-
-        rho = thermo.rho();
-
-        runTime.write();
-
-	Pav << runTime.timeName() << "\t" << p.weightedAverage(mesh.V()).value() << endl;
-
-        Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
-            << "  ClockTime = " << runTime.elapsedClockTime() << " s"
-            << nl << endl;
-    }
-
-    Info<< "End\n" << endl;
-
-    return 0;
-}
-*/
-// ************************************************************************* //

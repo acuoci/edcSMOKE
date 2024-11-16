@@ -45,8 +45,7 @@ Foam::scalar Foam::compressibleCourantNo
     scalar meanCoNum =
         0.5*(gSum(sumPhi)/gSum(mesh.V().field()))*runTime.deltaTValue();
 
-    Info<< "Region: " << mesh.name() << " Courant Number mean: " << meanCoNum
-        << " max: " << CoNum << endl;
+    Info << "Region: " << mesh.name() << " Courant Number mean: " << meanCoNum << " max: " << CoNum << endl;
 
     return CoNum;
 }

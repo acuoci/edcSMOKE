@@ -44,8 +44,8 @@
 
 if (energyEquation == true)
 {
-	T.max(minT);
-	T.min(maxT);
+	thermo.T().max(minT);
+	thermo.T().min(maxT);
 
 	if (combustionModel == "EDC")
 	{
@@ -72,7 +72,6 @@ if (energyEquation == true)
 
 	fvScalarMatrix EEqn
 	(
-
 		fvm::ddt(rho, he)
 		+ (
 			mvConvection.valid()
@@ -96,14 +95,18 @@ if (energyEquation == true)
 	);
 
 	EEqn.relax();
+
 	fvConstraints.constrain(EEqn);
+
 	EEqn.solve();
+
 	fvConstraints.constrain(he);
 
 	radiation->correct();
+
 	thermo.correct();
 
-	Info<< "min/max(T) = " << min(T).value() << ", " << max(T).value() << endl;
+	Info<< "min/max(T) = " << min(thermo.T()).value()  << ", " << max(thermo.T()).value() << endl;
 
 	#include "sparkPatch.H" 
 }

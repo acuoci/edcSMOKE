@@ -1,6 +1,22 @@
     scalar CoNum = -great;
 
-    forAll(fluidRegions, regionI)
+    // From reacting region
+    {
+        CoNum = max
+        (
+            compressibleCourantNo
+            (
+                fluidRegions[0],
+                runTime,
+                rho,
+                phi
+            ),
+            CoNum
+        );
+    }
+
+    // From remaining (non-reacting) regions
+    for(int regionI=1;regionI<fluidRegions.size();regionI++)
     {
         CoNum = max
         (
@@ -8,8 +24,8 @@
             (
                 fluidRegions[regionI],
                 runTime,
-                rho,
-                phi
+                rhoFluid[regionI],
+                phiFluid[regionI]
             ),
             CoNum
         );

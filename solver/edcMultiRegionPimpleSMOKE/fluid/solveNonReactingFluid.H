@@ -9,14 +9,12 @@ if (!pimple.flow())
     {
         tmp<fv::convectionScheme<scalar>> mvConvection(nullptr);
 
-	#include "properties.H"
-
         if (Ecorr == 0)
         {
-            #include "YEqn.H"
+            #include "YEqnNonReacting.H"
         }
 
-        #include "EEqn.H"
+        #include "EEqnNonReacting.H"
     }
 }
 else
@@ -33,37 +31,35 @@ else
             fvModels.correct();
         }
 
-        #include "UEqn.H"
+        #include "UEqnNonReacting.H"
     }
 
     if (pimple.thermophysics())
     {
         tmp<fv::convectionScheme<scalar>> mvConvection(nullptr);
 
-	#include "properties.H"
-
         if (Ecorr == 0)
         {
-            #include "YEqn.H"
+        	#include "YEqnNonReacting.H"
         }
-
-        #include "EEqn.H"
+        #include "EEqnNonReacting.H"
     }
 
     if (Ecorr == nEcorr - 1)
     {
-        tmp<fvVectorMatrix>& tUEqn = UEqns[0];
+        tmp<fvVectorMatrix>& tUEqn = UEqns[i];
         fvVectorMatrix& UEqn = tUEqn.ref();
 
         // --- PISO loop
         while (pimple.correct())
         {
-            #include "pEqn.H"
+            	#include "pEqn.H"
         }
 
-        if (pimples.pimpleTurbCorr(0))
+        if (pimples.pimpleTurbCorr(i))
         {
-             turbulence->correct();
+            turbulence.correct();
+            thermophysicalTransport.correct();
         }
 
         if (!mesh.schemes().steady() && pimples.finalPimpleIter())

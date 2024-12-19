@@ -7,7 +7,7 @@ export ONEPLUSM_SUPPORT='-DONEPLUSM=0'
 
 #Options: Intel OneApi MKL (strongly suggested)
 export MKL_SUPPORT='-DOPENSMOKE_USE_MKL=1'
-export MKL_PATH=/home/chimica2/cuoci/intel/oneapi/mkl/latest/
+export MKL_PATH=/software/chimica2/libraries/intel/oneapi/mkl/2024/
 export MKL_LIBS='-Wl,--start-group $(MKL_PATH)/lib/intel64/libmkl_intel_lp64.a $(MKL_PATH)/lib/intel64/libmkl_core.a $(MKL_PATH)/lib/intel64/libmkl_sequential.a -Wl,--end-group -lpthread -lm'
 
 #Options: ISAT support

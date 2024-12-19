@@ -115,7 +115,7 @@
 					const scalar ReTLocal = CRe_coefficient*sqr(kappa)/(nu*eps + SMALL);
 
 					const scalar C1 = Foam::sqrt(Ctau_coefficient/3.);
-		        		const scalar CtauLocal = max( min(C1/(DaLocal*Foam::sqrt(ReTLocal + 1)), 5), 0.40825);
+		            const scalar CtauLocal = max( min(C1/(DaLocal*Foam::sqrt(ReTLocal + 1)), 5), 0.40825);
 					const scalar CgammaLocal = max( min( Cgamma_coefficient *Foam::sqrt(DaLocal*(ReTLocal+1.)), 2.1377), 0.5);
 					
 					// Fill fields
@@ -138,13 +138,30 @@
 				Info<< " * CPU time [s]   = " << tEnd - tStart		<< endl;
 			}
 
+            // Info
+		    Info<< " * min/max(epsilon)   = " << min(epsilon).value() 	<< ", " << max(epsilon).value() 	<< endl;
+		    Info<< " * min/max(k)         = " << min(k).value()		<< ", " << max(k).value()		<< endl;
+
+		    if (edc_version == "v2016")
+		    {
+			    Info<< " * min/max(tc)   = " << min(tauChem).value() 	<< ", " << max(tauChem).value()	<< endl;
+			    Info<< " * min/max(Da)   = " << min(Da).value()		<< ", " << max(Da).value()	<< endl;
+			    Info<< " * min/max(ReT)  = " << min(ReT).value()	<< ", " << max(ReT).value()	<< endl;
+		    }
+
 			// Fine structures: characteristic time [s]
+            tauStar.max(1.e-16);    // to limit the minim value to 1.e-16
+            Info<< " * min/max(tauStar)   = " << min(tauStar).value()	<< ", " << max(tauStar).value()		<< endl;
 			mDotStar = 1./tauStar;
+            Info<< " * min/max(mDotStar)     = " << gMin(mDotStar) << ", " <<gMax(mDotStar) << endl;
 
 			// Fine structure properties: volumetric fraction
 			gammaL = min(maxGammaL, gammaL);
+            Info<< " * min/max(gammaL)       = " << min(gammaL).value()	<< ", " << max(gammaL).value() << endl;
 			gammaStarNum = pow(gammaL,edc_exp_1);
+            Info<< " * min/max(gammaStarNum) = " << min(gammaStarNum) << ", " << max(gammaStarNum) << endl;
 			gammaStarDen = pow(gammaL,edc_exp_2);
+		    Info<< " * min/max(gammaStarDen) = " << min(gammaStarDen) << ", " << max(gammaStarDen) << endl;
 		}
 		else
 		{
@@ -175,21 +192,22 @@
 
 		// EDC coefficient
 		edc_coefficient = rho * mDotStar * gammaStarNum / (1.-gammaStarDen);
+        Info<< " * min/max(edcCoeff)   = " << gMin(edc_coefficient)	<< ", " << gMax(edc_coefficient) << endl;
 		tfStar = (1.-gammaStarDen)/(mDotStar);		
 
 		// Info
-		Info<< " * min/max(epsilon)   = " << min(epsilon).value() 	<< ", " << max(epsilon).value() 	<< endl;
-		Info<< " * min/max(k)         = " << min(k).value()		<< ", " << max(k).value()		<< endl;
-		Info<< " * min/max(gammaL)    = " << min(gammaL).value()	<< ", " << max(gammaL).value()		<< endl;
-		Info<< " * min/max(gammaStar) = " << min(gammaStarDen)		<< ", " << max(gammaStarDen) 		<< endl;
-		Info<< " * min/max(tauStar)   = " << min(tauStar).value()	<< ", " << max(tauStar).value() 	<< endl;
-		Info<< " * min/max(tfStar)    = " << min(tfStar)	 	<< ", " << max(tfStar)	 		<< endl;
+		Info<< " * min/max(epsilon)   = " << min(epsilon).value() << ", " << max(epsilon).value() << endl;
+		Info<< " * min/max(k)         = " << min(k).value() << ", " << max(k).value() << endl;
+		Info<< " * min/max(gammaL)    = " << min(gammaL).value() << ", " << max(gammaL).value() << endl;
+		Info<< " * min/max(gammaStar) = " << min(gammaStarDen) << ", " << max(gammaStarDen) << endl;
+		Info<< " * min/max(tauStar)   = " << min(tauStar).value() << ", " << max(tauStar).value() << endl;
+		Info<< " * min/max(tfStar)    = " << min(tfStar) << ", " << max(tfStar) << endl;
 
 		if (edc_version == "v2016")
 		{
-			Info<< " * min/max(tc)   = " << min(tauChem).value() 	<< ", " << max(tauChem).value()	<< endl;
-			Info<< " * min/max(Da)   = " << min(Da).value()		<< ", " << max(Da).value()	<< endl;
-			Info<< " * min/max(ReT)  = " << min(ReT).value()	<< ", " << max(ReT).value()	<< endl;
+			Info<< " * min/max(tc)   = " << min(tauChem).value() << ", " << max(tauChem).value()	<< endl;
+			Info<< " * min/max(Da)   = " << min(Da).value() << ", " << max(Da).value()	<< endl;
+			Info<< " * min/max(ReT)  = " << min(ReT).value() << ", " << max(ReT).value()	<< endl;
 		}
 	}
 

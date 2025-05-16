@@ -26,7 +26,7 @@
 |                                                                         |
 |	License                                                           |
 |                                                                         |
-|   Copyright(C) 2024-2014 A. Cuoci, A. Parente                           |
+|   Copyright(C) 2017-2014 A. Cuoci, A. Parente                           |
 |   edcSMOKE is free software: you can redistribute it and/or modify      |
 |   it under the terms of the GNU General Public License as published by  |
 |   the Free Software Foundation, either version 3 of the License, or     |
@@ -42,8 +42,8 @@
 |                                                                         |
 \*-----------------------------------------------------------------------*/
 
-// This is a unsteady simulation
-#define STEADYSTATE 0
+// This is a steady state solver
+#define STEADYSTATE 1
 
 // This is a multi-region solver
 #define MULTIREGIONSOLVER 1
@@ -72,29 +72,18 @@
 #include "compressibleMomentumTransportModels.H"
 #include "fluidReactionThermophysicalTransportModel.H"
 #include "multivariateScheme.H"
+#include "simpleControl.H"
 #include "pressureReference.H"
 #include "fvModels.H"
 #include "fvConstraints.H"
-#include "coordinateSystem.H"
-#include "pimpleMultiRegionControl.H"
-#include "pressureReference.H"
-#include "hydrostaticInitialisation.H"
 #include "radiationModel.H"
-
-// Solid
-#include "compressibleCourantNo.H"
-#include "fixedGradientFvPatchFields.H"
-#include "regionProperties.H"
-#include "solidRegionDiffNo.H"
-#include "solidThermo.H"
+#include "ChemistryLinearModel.H"
 
 // Utilities
 #include "Utilities.H"
 
-// DRG
+// ODE system
 #include "DRG.H"
-
-// ODE systems
 #include "ODE_PSR.H"
 #include "ODE_PSR_Interface.H"
 #include "ODE_PFR.H"
@@ -116,110 +105,153 @@
     #include "mappingGradients/mappingGradient4OpenFOAM.h"
 #endif
 
+// Solid
+#include "compressibleCourantNo.H"
+#include "fixedGradientFvPatchFields.H"
+#include "regionProperties.H"
+#include "solidRegionDiffNo.H"
+#include "solidThermo.H"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 int main(int argc, char *argv[])
 {
-	#define NO_CONTROL
-	#define CREATE_MESH createMeshesPostProcess.H
+    unsigned int runTimeStep = 0;
+
 	#include "postProcess.H"
 
 	#include "setRootCaseLists.H"
 	#include "createTime.H"
 
+	// Create multiple meshes
 	#include "createMeshes.H"
 	fvMesh& mesh = fluidRegions[0];
 
-	pimpleMultiRegionControl pimples(fluidRegions, solidRegions);
-	
+    #include "readGravitationalAcceleration.H"
+//	#include "createControl.H"
+    PtrList<simpleControl> simples(fluidRegions.size());
+    for(int i=0;i<fluidRegions.size();i++)
+        simples.set(i, new simpleControl(fluidRegions[i]));
+
+    simpleControl& simple = simples[0];
 	#include "createFields.H"
 	#include "createNonReactingFields.H"
     #include "createSolidFields.H"
 
-	#include "readGravitationalAcceleration.H"
-	#include "createOpenSMOKEFields.H"
+    #include "createOpenSMOKEFields.H"
 	#include "createRadiationModel.H"
 	#include "initContinuityErrs.H"
-	#include "createFluidPressureControls.H"
 
-	#include "createTimeControls.H"
-	#include "readSolidTimeControls.H"
-	#include "compressibleMultiRegionCourantNo.H"
-	#include "solidRegionDiffusionNo.H"
-	#include "setInitialMultiRegionDeltaT.H"	
+	turbulence->validate();
 
-	unsigned int runTimeStep = 0;
 
-	while (pimples.run(runTime))
-	{
-		#include "readTimeControls.H"
-		#include "readSolidTimeControls.H"
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-		#include "compressibleMultiRegionCourantNo.H"
-		#include "solidRegionDiffusionNo.H"
-		#include "setMultiRegionDeltaT.H"
+    Info<< "\nStarting time loop\n" << endl;
 
-		runTime++;
-		runTimeStep++;
+    while (simples[0].loop(runTime))
+    {
+        Info<< "Time = " << runTime.userTimeName() << nl << endl;
 
-		Info<< "Time = " << runTime.userTimeName() << nl << endl;
+		// Check for regions to be solved
+		const bool is_fluid_active = runTime.controlDict().lookupOrDefault<Switch>("fluid", true);
+		const bool is_solid_active = runTime.controlDict().lookupOrDefault<Switch>("solid", true);
 
-		// Optional number of energy correctors
-		const int nEcorr = pimples.dict().lookupOrDefault<int>
-		(
-			"nEcorrectors",
-			1
-		);
+        fvModels.correct();
 
-		// --- PIMPLE loop
-		while (pimples.loop())
+        // Solid region equations
+		if (is_solid_active == true)
 		{
-			List<tmp<fvVectorMatrix>> UEqns(fluidRegions.size());
-
-			for(int Ecorr=0; Ecorr<nEcorr; Ecorr++)
+			// Solve solid regions
+			forAll(solidRegions, i)
 			{
-				forAll(solidRegions, i)
-				{
-					Info << "\nSolving for solid region " << solidRegions[i].name() << endl;
-					#include "setRegionSolidFields.H"
-					#include "solveSolid.H"
-				}
+				Info << "\nSolving for solid region " << solidRegions[i].name() << endl;
 
-				// Reacting region
-				{
-					Info << "\nSolving for reacting fluid region " << fluidRegions[0].name() << endl;
-
-					// Set reacting fluid fields
-					pimpleNoLoopControl& pimple = pimples.pimple(0);
-					pressureReference& pressureReference = pressureReferenceFluid[0];
-					scalar cumulativeContErr = cumulativeContErrs[0];
-
-					// This solver does not support moving mesh but it uses the pressure
-					// equation of one which does, so we need a dummy face-momentum field
-					autoPtr<surfaceVectorField> rhoUf(nullptr);
-			
-					#include "solveFluid.H"
-				}
-
-				// Non reacting regions
-				for(int i=1;i<fluidRegions.size();i++)
-				{
-					Info << "\nSolving for non-reacting fluid region " << fluidRegions[i].name() << endl;
-					#include "setRegionFluidFields.H"
-					#include "solveNonReactingFluid.H"
-				}
+				#include "setRegionSolidFields.H"
+				#include "solveSolid.H"
 			}
 		}
 
-		runTime.write();
+        // Fluid region equations
+		if (is_fluid_active == true)
+		{
+            // Solving for reacting region
+            {
+                Info << "\nSolving for reacting fluid region " << fluidRegions[0].name() << endl;
 
-		Info	<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
-			<< "  ClockTime = " << runTime.elapsedClockTime() << " s"
-			<< nl << endl;
-	}
+                simpleControl& simple = simples[0];
 
-	Info << "End\n" << endl;
+                scalar cumulativeContErr = cumulativeContErrs[0];
 
-	return 0;
+	            if (momentumEquations == true)
+	            {
+		            // Pressure-velocity SIMPLE corrector
+		            {
+		                #include "UEqn.H"
+		                #include "properties.H"
+		                #include "YEqn.H"
+		                #include "EEqn.H"
+		                #include "pEqn.H"
+		            }
+	            }
+	            else
+	            {
+		            #include "properties.H"
+		            #include "YEqn.H"
+		            #include "EEqn.H"
+	            }
+
+                turbulence->correct();
+            }
+
+        	// Non reacting regions
+			for(int i=1;i<fluidRegions.size();i++)
+			{
+				Info << "\nSolving for non-reacting fluid region " << fluidRegions[i].name() << endl;
+
+				#include "setRegionFluidFields.H"
+
+                // Set simple control
+                simpleControl& simple = simples[i];
+                simple.read();
+                simple.storePrevIterFields();
+
+                tmp<fv::convectionScheme<scalar>> mvConvection(nullptr);
+
+                if (momentumEquations == true)
+	            {
+		            // Pressure-velocity SIMPLE corrector
+		            {
+		                #include "UEqnNonReacting.H"
+		                #include "properties.H"
+		                #include "YEqnNonReacting.H"
+		                #include "EEqnNonReacting.H"
+		                #include "pEqn.H"
+		            }
+	            }
+	            else
+	            {
+		            #include "properties.H"
+		            #include "YEqnNonReacting.H"
+		            #include "EEqnNonReacting.H"
+	            }
+
+                turbulence.correct();	
+                thermophysicalTransport.correct();		
+			}
+        }
+
+        runTime.write();
+
+        Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
+            << "  ClockTime = " << runTime.elapsedClockTime() << " s"
+            << nl << endl;
+    }
+
+    Info<< "End\n" << endl;
+
+    return 0;
 }
 
+
+// ************************************************************************* //

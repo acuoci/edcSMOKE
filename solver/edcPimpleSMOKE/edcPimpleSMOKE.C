@@ -112,11 +112,11 @@ int main(int argc, char *argv[])
 {
     unsigned int runTimeStep = 0;
 
-        #include "postProcess.H"
+    #include "postProcess.H"
 
-        #include "setRootCaseLists.H"
-        #include "createTime.H"
-        #include "createMesh.H"
+    #include "setRootCaseLists.H"
+    #include "createTime.H"
+    #include "createMesh.H"
 	#include "readGravitationalAcceleration.H"
 	#include "createDyMControls.H"
 	#include "initContinuityErrs.H"

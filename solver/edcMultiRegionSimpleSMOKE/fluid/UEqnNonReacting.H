@@ -42,129 +42,26 @@
 |                                                                         |
 \*-----------------------------------------------------------------------*/
 
-// This is a steady state simulation
-#define STEADYSTATE 1
+    // Solve the Momentum equation
 
-// OpenSMOKE++ Definitions
-#include "OpenSMOKEpp"
+    MRF.correctBoundaryVelocity(U);
 
-// CHEMKIN maps
-#include "maps/Maps_CHEMKIN"
+    tmp<fvVectorMatrix> tUEqn
+    (
+        fvm::div(phi, U)
+      + MRF.DDt(rho, U)
+      + turbulence.divDevTau(U)
+     ==
+	    rho*g
+      + fvModels.source(rho, U)
+    );
+    fvVectorMatrix& UEqn = tUEqn.ref();
 
-// OpenSMOKE++ Dictionaries
-#include "dictionary/OpenSMOKE_Dictionary"
+    UEqn.relax();
 
-// ODE solvers
-#include "math/native-ode-solvers/MultiValueSolver"
-#include "math/external-ode-solvers/ODE_Parameters.h"
+    fvConstraints.constrain(UEqn);
 
-// NLS solvers
-#include "math/native-nls-solvers/NonLinearSystemSolver"
-#include "math/native-nls-solvers/parameters/NonLinearSolver_Parameters.h"
+    solve(UEqn == -fvc::grad(p));
 
-// OpenFOAM
-#include "fvCFD.H"
-#include "fluidReactionThermo.H"
-#include "combustionModel.H"
-#include "compressibleMomentumTransportModels.H"
-#include "fluidReactionThermophysicalTransportModel.H"
-#include "multivariateScheme.H"
-#include "simpleControl.H"
-#include "pressureReference.H"
-#include "fvModels.H"
-#include "fvConstraints.H"
-#include "radiationModel.H"
-#include "ChemistryLinearModel.H"
+    fvConstraints.constrain(U);
 
-// Utilities
-#include "Utilities.H"
-
-// ODE system
-#include "DRG.H"
-#include "ODE_PSR.H"
-#include "ODE_PSR_Interface.H"
-#include "ODE_PFR.H"
-#include "ODE_PFR_Interface.H"
-#include "ODE_PFR_Laminar.H"
-#include "ODE_PFR_Laminar_Interface.H"
-
-// NLS Systems
-#include "NLS_PSR.H"
-#include "NLS_PSR_Interface.H"
-
-// Characteristic chemical times
-#include "CharacteristicChemicalTimes.H"
-
-// ISAT
-#if EDCSMOKE_USE_ISAT == 1
-    #include "ISAT.h"
-    #include "numericalJacobian4ISAT.H"
-    #include "mappingGradients/mappingGradient4OpenFOAM.h"
-#endif
-
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-int main(int argc, char *argv[])
-{
-    unsigned int runTimeStep = 0;
-
-	#include "postProcess.H"
-
-	#include "setRootCaseLists.H"
-	#include "createTime.H"
-	#include "createMesh.H"
-        #include "readGravitationalAcceleration.H"
-	#include "createControl.H"
-	#include "createFields.H"
-        #include "createOpenSMOKEFields.H"
-	#include "createRadiationModel.H"
-	#include "initContinuityErrs.H"
-
-	turbulence->validate();
-
-
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-    Info<< "\nStarting time loop\n" << endl;
-
-    while (simple.loop(runTime))
-    {
-        Info<< "Time = " << runTime.userTimeName() << nl << endl;
-
-        fvModels.correct();
-
-	    if (momentumEquations == true)
-	    {
-		    // Pressure-velocity SIMPLE corrector
-		    {
-		        #include "UEqn.H"
-		        #include "properties.H"
-		        #include "YEqn.H"
-		        #include "EEqn.H"
-		        #include "pEqn.H"
-		    }
-	    }
-	    else
-	    {
-		    #include "properties.H"
-		    #include "YEqn.H"
-		    #include "EEqn.H"
-	    }
-
-        turbulence->correct();
-
-        runTime.write();
-
-        Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
-            << "  ClockTime = " << runTime.elapsedClockTime() << " s"
-            << nl << endl;
-    }
-
-    Info<< "End\n" << endl;
-
-    return 0;
-}
-
-
-// ************************************************************************* //

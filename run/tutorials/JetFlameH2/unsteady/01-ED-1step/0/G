@@ -23,7 +23,7 @@ boundaryField
 {
     inletfuel           
     {
-	type            MarshakRadiation;
+	    type            MarshakRadiation;
         T               T;
         emissivityMode  lookup;
         emissivity      uniform 1.0;
@@ -32,7 +32,7 @@ boundaryField
 
     inletair           
     {
-	type            MarshakRadiation;
+	    type            MarshakRadiation;
         T               T;
         emissivityMode  lookup;
         emissivity      uniform 1.0;
@@ -41,7 +41,7 @@ boundaryField
 
     outlet          
     {
-	type            MarshakRadiation;
+	    type            MarshakRadiation;
         T               T;
         emissivityMode  lookup;
         emissivity      uniform 1.0;
@@ -50,7 +50,7 @@ boundaryField
 
     leftside      
     {
-	type            MarshakRadiation;
+	    type            MarshakRadiation;
         T               T;
         emissivityMode  lookup;
         emissivity      uniform 1.0;
@@ -59,13 +59,16 @@ boundaryField
 
     burnerwall
     {
-	type            MarshakRadiation;
+	    type            MarshakRadiation;
         T               T;
         emissivityMode  lookup;
         emissivity      uniform 1.0;
         value           uniform 0;
     }
-
+    axis
+    {
+        type            empty;
+    }
     front
     {
         type            wedge;
@@ -74,11 +77,6 @@ boundaryField
     back
     {
         type            wedge;
-    }
-
-    axis
-    {
-        type            empty;
     }
 }
 

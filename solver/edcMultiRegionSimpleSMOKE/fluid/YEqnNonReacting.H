@@ -42,129 +42,45 @@
 |                                                                         |
 \*-----------------------------------------------------------------------*/
 
-// This is a steady state simulation
-#define STEADYSTATE 1
-
-// OpenSMOKE++ Definitions
-#include "OpenSMOKEpp"
-
-// CHEMKIN maps
-#include "maps/Maps_CHEMKIN"
-
-// OpenSMOKE++ Dictionaries
-#include "dictionary/OpenSMOKE_Dictionary"
-
-// ODE solvers
-#include "math/native-ode-solvers/MultiValueSolver"
-#include "math/external-ode-solvers/ODE_Parameters.h"
-
-// NLS solvers
-#include "math/native-nls-solvers/NonLinearSystemSolver"
-#include "math/native-nls-solvers/parameters/NonLinearSolver_Parameters.h"
-
-// OpenFOAM
-#include "fvCFD.H"
-#include "fluidReactionThermo.H"
-#include "combustionModel.H"
-#include "compressibleMomentumTransportModels.H"
-#include "fluidReactionThermophysicalTransportModel.H"
-#include "multivariateScheme.H"
-#include "simpleControl.H"
-#include "pressureReference.H"
-#include "fvModels.H"
-#include "fvConstraints.H"
-#include "radiationModel.H"
-#include "ChemistryLinearModel.H"
-
-// Utilities
-#include "Utilities.H"
-
-// ODE system
-#include "DRG.H"
-#include "ODE_PSR.H"
-#include "ODE_PSR_Interface.H"
-#include "ODE_PFR.H"
-#include "ODE_PFR_Interface.H"
-#include "ODE_PFR_Laminar.H"
-#include "ODE_PFR_Laminar_Interface.H"
-
-// NLS Systems
-#include "NLS_PSR.H"
-#include "NLS_PSR_Interface.H"
-
-// Characteristic chemical times
-#include "CharacteristicChemicalTimes.H"
-
-// ISAT
-#if EDCSMOKE_USE_ISAT == 1
-    #include "ISAT.h"
-    #include "numericalJacobian4ISAT.H"
-    #include "mappingGradients/mappingGradient4OpenFOAM.h"
-#endif
-
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-int main(int argc, char *argv[])
+if (Y.size())
 {
-    unsigned int runTimeStep = 0;
-
-	#include "postProcess.H"
-
-	#include "setRootCaseLists.H"
-	#include "createTime.H"
-	#include "createMesh.H"
-        #include "readGravitationalAcceleration.H"
-	#include "createControl.H"
-	#include "createFields.H"
-        #include "createOpenSMOKEFields.H"
-	#include "createRadiationModel.H"
-	#include "initContinuityErrs.H"
-
-	turbulence->validate();
-
-
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-    Info<< "\nStarting time loop\n" << endl;
-
-    while (simple.loop(runTime))
-    {
-        Info<< "Time = " << runTime.userTimeName() << nl << endl;
-
-        fvModels.correct();
-
-	    if (momentumEquations == true)
-	    {
-		    // Pressure-velocity SIMPLE corrector
-		    {
-		        #include "UEqn.H"
-		        #include "properties.H"
-		        #include "YEqn.H"
-		        #include "EEqn.H"
-		        #include "pEqn.H"
-		    }
-	    }
-	    else
-	    {
-		    #include "properties.H"
-		    #include "YEqn.H"
-		    #include "EEqn.H"
-	    }
-
-        turbulence->correct();
-
-        runTime.write();
-
-        Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
-            << "  ClockTime = " << runTime.elapsedClockTime() << " s"
-            << nl << endl;
-    }
-
-    Info<< "End\n" << endl;
-
-    return 0;
+	mvConvection = tmp<fv::convectionScheme<scalar>>
+	(
+		fv::convectionScheme<scalar>::New
+		(
+			mesh,
+			fields,
+			phi,
+			mesh.schemes().div("div(phi,Yi_h)")
+		)
+	);
 }
 
+reactions.correct();
 
-// ************************************************************************* //
+forAll(Y, i)
+{
+	volScalarField& Yi = Y[i];
+
+	fvScalarMatrix YiEqnNonReacting
+	(
+		  mvConvection->fvmDiv(phi, Yi)
+		- thermophysicalTransport.divj(Yi)
+		==
+		  fvModels.source(rho, Yi)
+	);
+
+	YiEqnNonReacting.relax();
+
+	fvConstraints.constrain(YiEqnNonReacting);
+
+    YiEqnNonReacting.solve("Yi");
+
+	fvConstraints.constrain(Yi);
+
+	Yi.max(0.0);
+}
+
+composition.normalise();
+
+

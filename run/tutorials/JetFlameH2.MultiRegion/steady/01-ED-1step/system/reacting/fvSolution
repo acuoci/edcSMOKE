@@ -1,0 +1,108 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  10
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      fvSolution;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+solvers
+{
+    p
+    {
+        solver                GAMG;
+        tolerance             1e-9;
+        relTol                1e-6;
+        smoother              GaussSeidel;
+        cacheAgglomeration    true;
+        nCellsInCoarsestLevel 20;
+        agglomerator          faceAreaPair;
+        mergeLevels           1;
+    };
+
+    U
+    {
+        solver          smoothSolver;
+        smoother        GaussSeidel;
+
+        tolerance       1e-9;
+        relTol          1e-6;
+	    minIter		    2;
+    }
+
+
+
+    "(h|k|epsilon)"
+    {
+        solver          smoothSolver;
+        smoother        symGaussSeidel;
+        tolerance       1e-9;
+        relTol          1e-6;
+	    minIter		    2;
+    }
+
+    "Yi"
+    {
+        solver          smoothSolver;
+        smoother        symGaussSeidel;
+        tolerance       1e-12;
+        relTol          1e-9;
+	    minIter		    2;
+    }
+
+    G
+    {
+        solver          PCG;
+        preconditioner  DIC;
+        tolerance       1e-08;
+        relTol          0;
+    }
+}
+
+SIMPLE
+{
+    nNonOrthogonalCorrectors 	0;
+
+    residualControl
+    {
+        p                   1e-9;
+        U                   1e-9;
+        "(k|epsilon|omega)" 1e-9;
+    }
+}
+
+relaxationFactors
+{
+    fields
+    {
+        p               0.30;
+        rho             0.01;
+    }
+
+    equations
+    {
+        // species
+        default         0.2;
+
+	    // fluid dynamics fields
+        U               0.2;
+        h               0.2;
+	    e               0.2;
+	    G		        0.2;
+
+	    // turbulence fields
+        k 		    0.2;
+        epsilon 	0.2;
+        omega 		0.2;
+    }
+}
+
+// ************************************************************************* //

@@ -1,0 +1,81 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  10
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    format      ascii;
+    class       volScalarField;
+    location    "0/reacting";
+    object      mut;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [1 -1 -1 0 0 0 0];
+
+internalField   uniform 0;
+
+boundaryField
+{
+    inletfuel
+    {
+        type            calculated;
+        value           uniform 0;
+    }
+    inletair
+    {
+        type            calculated;
+        value           uniform 0;
+    }
+    outlet
+    {
+        type            calculated;
+        value           uniform 0;
+    }
+    leftside
+    {
+        type            mutkWallFunction;
+        Cmu             0.09;
+        kappa           0.41;
+        E               9.8;
+        value           uniform 0;
+    }
+    burnerwall
+    {
+        type            mutkWallFunction;
+        Cmu             0.09;
+        kappa           0.41;
+        E               9.8;
+        value           uniform 0;
+    }
+    front
+    {
+        type            wedge;
+    }
+    back
+    {
+        type            wedge;
+    }
+    reacting_to_solid
+    {
+        type            mutkWallFunction;
+        Cmu             0.09;
+        kappa           0.41;
+        E               9.8;
+        value           uniform 0;
+    }
+    reacting_to_fluid
+    {
+        type            mutkWallFunction;
+        Cmu             0.09;
+        kappa           0.41;
+        E               9.8;
+        value           uniform 0;
+    }
+}
+
+
+// ************************************************************************* //

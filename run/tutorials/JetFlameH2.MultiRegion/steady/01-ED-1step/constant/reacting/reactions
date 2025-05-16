@@ -1,0 +1,14 @@
+reactions
+{
+    un-named-reaction-0
+    {
+        type            irreversibleArrhenius;
+        reaction        "N2 = N2";
+        A               1;
+        beta            0;
+        Ta              0;
+    }
+}
+Tlow            270;
+Thigh           0;
+

@@ -1,0 +1,101 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v1906                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      topoSetDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+actions
+(
+    // Solid region
+    {
+        name    solidCellSet;
+        type    cellSet;
+        action  new;
+        source  boxToCell;
+        sourceInfo
+        {
+            box (0.02 -1 0.30) (0.05 1 0.35); // Edit box bounds as required
+        }
+    }
+    {
+        name    solid;
+        type    cellZoneSet;
+        action  new;
+        source  setToCellZone;
+	    sourceInfo
+	    {
+            	set     solidCellSet;
+	    }
+    }
+
+    // Fluid region
+    {
+        name    fluidCellSet;
+        type    cellSet;
+        action  new;
+        source  boxToCell;
+        sourceInfo
+        {
+            box (0.03 -1 0.20) (0.06 1 0.25); // Edit box bounds as required
+        }
+    }
+    {
+        name    fluid;
+        type    cellZoneSet;
+        action  new;
+        source  setToCellZone;
+	sourceInfo
+	{
+        	set     fluidCellSet;
+	}
+    }
+    
+    // Reacting region
+    {
+        name    reactingCellSet;
+        type    cellSet;
+        action  new;
+        source  cellToCell;
+	sourceInfo
+	{
+		set     fluidCellSet;
+	}
+    }
+    {
+        name    reactingCellSet;
+        type    cellSet;
+        action  add;
+        source  cellToCell;
+	sourceInfo
+	{
+		set     solidCellSet;
+	}
+    }
+    {
+        name    reactingCellSet;
+        type    cellSet;
+        action  invert;
+    }
+    {
+        name    reacting;
+        type    cellZoneSet;
+        action  new;
+        source  setToCellZone;
+	sourceInfo
+	{
+        	set     reactingCellSet;
+	}
+    }
+);
+
+// ************************************************************************* //
